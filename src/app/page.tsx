@@ -17,7 +17,7 @@ export default async function Home() {
   const photos = await getPhotos();
 
   return (
-    <main style={{ width: '100vw', height: '100vh', overflow: 'hidden', backgroundColor: '#111' }}>
+    <main style={{ width: '100vw', height: '100vh', overflow: 'hidden' }}>
       <MapWrapper photos={photos} />
     </main>
   );

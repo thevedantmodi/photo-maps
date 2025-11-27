@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useTheme } from '../hooks/useTheme';
 
 // Fix for default marker icons if we were using them, but we are using custom ones.
 
@@ -23,20 +24,11 @@ interface MapProps {
 
 const MapComponent = ({ photos }: MapProps) => {
     const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+    const theme = useTheme();
 
     const createCustomIcon = (thumbUrl: string) => {
         return L.divIcon({
-            html: `<div style="
-        background-image: url('${thumbUrl}'); 
-        width: 48px; 
-        height: 48px; 
-        background-size: cover; 
-        background-position: center;
-        border-radius: 50%; 
-        border: 3px solid white; 
-        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        transition: transform 0.2s;
-      "></div>`,
+            html: `<div class="photo-marker" style="background-image: url('${thumbUrl}');"></div>`,
             className: 'custom-marker-icon',
             iconSize: [48, 48],
             iconAnchor: [24, 24],
@@ -54,14 +46,13 @@ const MapComponent = ({ photos }: MapProps) => {
 
         if (thumbs.length === 0) {
             // Fallback
-            htmlContent = `<div style="width: 100%; height: 100%; background: #333; border-radius: 50%;"></div>`;
+            htmlContent = `<div style="width: 100%; height: 100%; background: var(--cluster-bg); border-radius: 50%;"></div>`;
         } else if (thumbs.length === 1) {
             htmlContent = `<div style="background-image: url('${thumbs[0]}'); width: 100%; height: 100%; background-size: cover; border-radius: 50%;"></div>`;
         } else {
             // Create a collage
-            const subSize = 24; // approx half
             // We'll just overlay them slightly
-            htmlContent = `<div style="position: relative; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background: #222;">`;
+            htmlContent = `<div style="position: relative; width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background: var(--cluster-bg);">`;
             thumbs.forEach((thumb: string, i: number) => {
                 // Simple grid/stack logic
                 // Better layout:
@@ -85,52 +76,29 @@ const MapComponent = ({ photos }: MapProps) => {
         }
 
         return L.divIcon({
-            html: `<div style="
-        background-color: rgba(30, 30, 30, 0.8); 
-        backdrop-filter: blur(10px);
-        border-radius: 50%; 
-        width: 64px; 
-        height: 64px; 
-        display: flex; 
-        align-items: center; 
-        justify-content: center; 
-        color: white; 
-        font-weight: bold; 
-        font-size: 14px;
-        border: 3px solid rgba(255,255,255,0.8);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-        overflow: hidden;
-        position: relative;
-      ">
+            html: `<div class="cluster-marker-container">
         ${htmlContent}
-        <div style="
-            position: absolute; 
-            top: 50%; 
-            left: 50%; 
-            transform: translate(-50%, -50%); 
-            background: rgba(0,0,0,0.6); 
-            color: white; 
-            border-radius: 12px; 
-            padding: 2px 6px; 
-            font-size: 12px;
-            pointer-events: none;
-        ">${count}</div>
+        <div class="cluster-count-badge">${count}</div>
       </div>`,
             className: 'custom-cluster-icon',
             iconSize: [64, 64]
         });
     };
 
+    const tileLayerUrl = theme === 'dark'
+        ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+
     return (
         <>
             <MapContainer
                 center={[20, 0]}
                 zoom={2}
-                style={{ height: '100vh', width: '100%', background: '#111' }}
+                style={{ height: '100vh', width: '100%', background: 'var(--map-background)' }}
                 minZoom={2}
             >
                 <TileLayer
-                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                    url={tileLayerUrl}
                     attribution='&copy; <a href="https://carto.com/attributions">CARTO</a>'
                 />
 
@@ -156,21 +124,7 @@ const MapComponent = ({ photos }: MapProps) => {
 
             {selectedPhoto && (
                 <div
-                    style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        backgroundColor: 'rgba(0,0,0,0.95)',
-                        zIndex: 9999,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '20px',
-                        backdropFilter: 'blur(10px)',
-                        flexDirection: 'column'
-                    }}
+                    className="modal-overlay"
                     onClick={() => setSelectedPhoto(null)}
                 >
                     <div style={{ position: 'relative', maxWidth: '90%', maxHeight: '85%', display: 'flex', justifyContent: 'center' }}>
@@ -181,37 +135,20 @@ const MapComponent = ({ photos }: MapProps) => {
                                 maxWidth: '100%',
                                 maxHeight: '80vh',
                                 borderRadius: '4px',
-                                boxShadow: '0 20px 50px rgba(0,0,0,0.8)'
+                                boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
                             }}
                         />
                         <button
+                            className="modal-close-btn"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedPhoto(null);
-                            }}
-                            style={{
-                                position: 'absolute',
-                                top: '-20px',
-                                right: '-20px',
-                                background: 'rgba(255,255,255,0.2)',
-                                border: 'none',
-                                color: 'white',
-                                fontSize: '24px',
-                                cursor: 'pointer',
-                                width: '40px',
-                                height: '40px',
-                                borderRadius: '50%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                transition: 'background 0.2s',
-                                backdropFilter: 'blur(5px)'
                             }}
                         >
                             &times;
                         </button>
                     </div>
-                    <div style={{ marginTop: '20px', color: '#ccc', fontFamily: 'sans-serif' }}>
+                    <div className="modal-caption">
                         {selectedPhoto.originalName}
                     </div>
                 </div>
@@ -219,7 +156,5 @@ const MapComponent = ({ photos }: MapProps) => {
         </>
     );
 };
-
-
 
 export default MapComponent;

@@ -1,20 +1,57 @@
 :root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 0, 0, 0;
-  --background-end-rgb: 0, 0, 0;
+  /* Light Mode Defaults */
+  --background: #ffffff;
+  --foreground: #171717;
+  --map-background: #e5e5e5;
+  --modal-background: rgba(255, 255, 255, 0.95);
+  --modal-text: #171717;
+  --modal-close-bg: rgba(0, 0, 0, 0.1);
+  --modal-close-text: #171717;
+
+  --cluster-bg: rgba(255, 255, 255, 0.9);
+  --cluster-border: rgba(0, 0, 0, 0.2);
+  --cluster-text: #171717;
+  --cluster-shadow: rgba(0, 0, 0, 0.2);
+
+  --marker-border: #ffffff;
+  --marker-shadow: rgba(0, 0, 0, 0.3);
+
+  --loading-bg: #f5f5f5;
+  --loading-text: #333;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Dark Mode Overrides */
+    --background: #0a0a0a;
+    --foreground: #ededed;
+    --map-background: #111111;
+    --modal-background: rgba(0, 0, 0, 0.95);
+    --modal-text: #ededed;
+    --modal-close-bg: rgba(255, 255, 255, 0.2);
+    --modal-close-text: #ffffff;
+
+    --cluster-bg: rgba(30, 30, 30, 0.8);
+    --cluster-border: rgba(255, 255, 255, 0.8);
+    --cluster-text: #ffffff;
+    --cluster-shadow: rgba(0, 0, 0, 0.5);
+
+    --marker-border: #ffffff;
+    /* Keep white border for contrast in dark mode too, or change if needed */
+    --marker-shadow: rgba(0, 0, 0, 0.5);
+
+    --loading-bg: #111;
+    --loading-text: #fff;
+  }
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  color: var(--foreground);
+  background: var(--background);
   margin: 0;
   padding: 0;
   overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 /* Leaflet Cluster Custom Styles */
@@ -23,25 +60,127 @@ body {
   border: none;
 }
 
+.cluster-marker-container {
+  background-color: var(--cluster-bg);
+  backdrop-filter: blur(10px);
+  border-radius: 50%;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cluster-text);
+  font-weight: bold;
+  font-size: 14px;
+  border: 3px solid var(--cluster-border);
+  box-shadow: 0 4px 12px var(--cluster-shadow);
+  overflow: hidden;
+  position: relative;
+}
+
+.cluster-count-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border-radius: 12px;
+  padding: 2px 6px;
+  font-size: 12px;
+  pointer-events: none;
+  z-index: 10;
+}
+
 .custom-marker-icon {
   background: transparent;
   border: none;
 }
 
+.photo-marker {
+  width: 48px;
+  height: 48px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 50%;
+  border: 3px solid var(--marker-border);
+  box-shadow: 0 4px 8px var(--marker-shadow);
+  transition: transform 0.2s;
+}
+
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .leaflet-popup-content-wrapper {
-  background: rgba(20, 20, 20, 0.9);
+  background: var(--cluster-bg);
   backdrop-filter: blur(10px);
-  color: white;
+  color: var(--foreground);
   border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 1px solid var(--cluster-border);
 }
 
 .leaflet-popup-tip {
-  background: rgba(20, 20, 20, 0.9);
+  background: var(--cluster-bg);
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--modal-background);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+  flex-direction: column;
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  background: var(--modal-close-bg);
+  border: none;
+  color: var(--modal-close-text);
+  font-size: 24px;
+  cursor: pointer;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  backdrop-filter: blur(5px);
+}
+
+.modal-caption {
+  margin-top: 20px;
+  color: var(--modal-text);
+  font-family: sans-serif;
+}
+
+.loading-container {
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--loading-bg);
+  color: var(--loading-text);
 }
