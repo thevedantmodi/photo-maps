@@ -3,7 +3,7 @@
   --background: #ffffff;
   --foreground: #171717;
   --map-background: #e5e5e5;
-  --modal-background: rgba(255, 255, 255, 0.95);
+  --modal-background: rgba(255, 255, 255, 0.6);
   --modal-text: #171717;
   --modal-close-bg: rgba(0, 0, 0, 0.1);
   --modal-close-text: #171717;
@@ -26,7 +26,7 @@
     --background: #0a0a0a;
     --foreground: #ededed;
     --map-background: #111111;
-    --modal-background: rgba(0, 0, 0, 0.95);
+    --modal-background: rgba(0, 0, 0, 0.6);
     --modal-text: #ededed;
     --modal-close-bg: rgba(255, 255, 255, 0.2);
     --modal-close-text: #ffffff;
@@ -146,7 +146,8 @@ body {
   align-items: center;
   justify-content: center;
   padding: 20px;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(25px) saturate(180%);
+  -webkit-backdrop-filter: blur(25px) saturate(180%);
   flex-direction: column;
 }
 

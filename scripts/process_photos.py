@@ -29,8 +29,8 @@ def get_gps_details(image):
     exif = image.getexif()
     if not exif:
         return None
-        
-    gps_info = exif.get_ifd(0x8825)
+    GPSINFO = 0x8825
+    gps_info = exif.get_ifd(GPSINFO)
     if not gps_info:
         return None
 
