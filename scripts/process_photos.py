@@ -46,6 +46,45 @@ def get_gps_details(image):
         
     return None
 
+def get_caption(image):
+    exif = image.getexif()
+    if not exif:
+        return None
+    
+    # Try ImageDescription (0x010E)
+    caption = exif.get(0x010E)
+    if caption:
+        # Decode if bytes, though usually string in getexif()
+        if isinstance(caption, bytes):
+            try:
+                return caption.decode('utf-8').strip()
+            except:
+                pass
+        return str(caption).strip()
+        
+    # Try UserComment (0x9286) - often complex structure, but let's try simple get
+    # Note: UserComment is often in Exif IFD, not main IFD
+    exif_ifd = exif.get_ifd(0x8769)
+    if exif_ifd:
+        user_comment = exif_ifd.get(0x9286)
+        if user_comment:
+             if isinstance(user_comment, bytes):
+                # UserComment starts with 8-byte encoding ID
+                # often b'ASCII\x00\x00\x00'
+                try:
+                    if user_comment.startswith(b'ASCII\0\0\0'):
+                        return user_comment[8:].decode('utf-8').strip()
+                    elif user_comment.startswith(b'UNICODE\0'):
+                        return user_comment[8:].decode('utf-16').strip()
+                    else:
+                        # Try utf-8 blindly
+                        return user_comment.decode('utf-8', errors='ignore').strip()
+                except:
+                    pass
+             return str(user_comment).strip()
+
+    return None
+
 def process_photos():
     if not RAW_DIR.exists():
         print(f"Directory {RAW_DIR} does not exist.")
@@ -81,6 +120,9 @@ def process_photos():
                 
                 lat, lng = lat_lng
                 
+                # Extract Caption
+                caption = get_caption(img)
+                
                 # Generate filenames
                 file_id = file_path.stem
                 thumb_name = f"{file_id}_thumb.jpg"
@@ -109,7 +151,8 @@ def process_photos():
                     "lng": lng,
                     "thumb": f"/photos/{thumb_name}",
                     "large": f"/photos/{large_name}",
-                    "originalName": file_path.name
+                    "originalName": file_path.name,
+                    "caption": caption or "" 
                 })
                 
                 print(f"Processed {file_path.name}: {lat}, {lng}")

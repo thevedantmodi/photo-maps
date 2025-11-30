@@ -16,6 +16,7 @@ interface Photo {
     thumb: string;
     large: string;
     originalName: string;
+    caption?: string;
 }
 
 interface MapProps {
@@ -127,7 +128,7 @@ const MapComponent = ({ photos }: MapProps) => {
                     className="modal-overlay"
                     onClick={() => setSelectedPhoto(null)}
                 >
-                    <div style={{ position: 'relative', maxWidth: '90%', maxHeight: '85%', display: 'flex', justifyContent: 'center' }}>
+                    <div className="modal-content">
                         <img
                             src={selectedPhoto.large}
                             alt="Full size"
@@ -149,7 +150,7 @@ const MapComponent = ({ photos }: MapProps) => {
                         </button>
                     </div>
                     <div className="modal-caption">
-                        {selectedPhoto.originalName}
+                        {selectedPhoto.caption || selectedPhoto.originalName}
                     </div>
                 </div>
             )}

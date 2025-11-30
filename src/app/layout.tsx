@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Photos",
+  title: "Photos by Vedant Modi",
   description: "Photos! Mapped!",
 };
 
