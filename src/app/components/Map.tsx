@@ -132,7 +132,7 @@ const MapComponent = ({ photos }: MapProps) => {
             >
                 <TileLayer
                     url={tileLayerUrl}
-                    attribution='&copy; <a href="https://carto.com/attributions">CARTO</a> <a href="https://www.github.com/thevedantmodi/photo-maps">Source code</a>'
+                    attribution='&copy; <a href="https://carto.com/attributions">CARTO</a> | <a href="https://www.github.com/thevedantmodi/photo-maps">Source code</a>'
                 />
 
                 <MarkerClusterGroup
