@@ -94,6 +94,7 @@ def process_photos():
     PUBLIC_PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
 
     photos = []
+    missing_gps = []
     files = [f for f in RAW_DIR.iterdir() if f.is_file() and not f.name.startswith('.')]
     
     print(f"Found {len(files)} files in {RAW_DIR}")
@@ -116,6 +117,7 @@ def process_photos():
                 
                 if not lat_lng:
                     print(f"No GPS data found for {file_path.name}. Skipping.")
+                    missing_gps.append(file_path.name)
                     continue
                 
                 lat, lng = lat_lng
@@ -162,7 +164,12 @@ def process_photos():
 
     with open(DATA_FILE, 'w') as f:
         json.dump(photos, f, indent=2)
-        
+    print("-" * 40)
+    if missing_gps:
+        print(f"Missing GPS data for {len(missing_gps)} photos:")
+        for name in missing_gps:
+            print(name)
+    print("-" * 40)
     print(f"Done! Processed {len(photos)} photos. Metadata saved to {DATA_FILE}")
 
 if __name__ == "__main__":

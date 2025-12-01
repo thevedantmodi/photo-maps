@@ -1,6 +1,8 @@
 import os
 import sys
 import subprocess
+import base64
+from io import BytesIO
 from pathlib import Path
 from PIL import Image
 import pillow_heif
@@ -11,6 +13,30 @@ pillow_heif.register_heif_opener()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 RAW_DIR = BASE_DIR / "photos"
+
+def print_iterm_image(path):
+    """Displays image in iTerm2 using inline image protocol"""
+    try:
+        with Image.open(path) as img:
+            # Create a thumbnail for display to keep it snappy
+            display_img = img.copy()
+            display_img.thumbnail((500, 500))
+            
+            if display_img.mode != 'RGB':
+                display_img = display_img.convert('RGB')
+            
+            bio = BytesIO()
+            display_img.save(bio, format='JPEG', quality=80)
+            content = bio.getvalue()
+            
+            encoded = base64.b64encode(content).decode('utf-8')
+            
+            # Print OSC code
+            print(f"\033]1337;File=inline=1;width=auto;height=auto:{encoded}\a")
+            print() # Add a newline
+            
+    except Exception as e:
+        pass
 
 def get_decimal_from_dms(dms, ref):
     degrees = dms[0]
@@ -108,6 +134,10 @@ def ingest():
             continue
             
         print(f"\n[{count+1}/{len(files)}] {file_path.name}")
+        
+        # Display image
+        print_iterm_image(file_path)
+        
         try:
             with Image.open(file_path) as img:
                 date = get_date_taken(img)
