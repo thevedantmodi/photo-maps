@@ -5,7 +5,6 @@ from pathlib import Path
 from PIL import Image, ExifTags
 import pillow_heif
 
-# Register HEIC opener
 pillow_heif.register_heif_opener()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -46,13 +45,23 @@ def get_gps_details(image):
         
     return None
 
+
+
+def fix_encoding(s):
+    if not isinstance(s, str):
+        return s
+    try:
+        return s.encode('latin-1').decode('utf-8')
+    except:
+        return s
+
 def get_caption(image):
     exif = image.getexif()
     if not exif:
         return None
     
-    # Try ImageDescription (0x010E)
-    caption = exif.get(0x010E)
+    ImageDescription = 0x010E
+    caption = exif.get(ImageDescription)
     if caption:
         # Decode if bytes, though usually string in getexif()
         if isinstance(caption, bytes):
@@ -60,10 +69,8 @@ def get_caption(image):
                 return caption.decode('utf-8').strip()
             except:
                 pass
-        return str(caption).strip()
+        return fix_encoding(str(caption).strip())
         
-    # Try UserComment (0x9286) - often complex structure, but let's try simple get
-    # Note: UserComment is often in Exif IFD, not main IFD
     exif_ifd = exif.get_ifd(0x8769)
     if exif_ifd:
         user_comment = exif_ifd.get(0x9286)
@@ -81,7 +88,8 @@ def get_caption(image):
                         return user_comment.decode('utf-8', errors='ignore').strip()
                 except:
                     pass
-             return str(user_comment).strip()
+             return fix_encoding(str(user_comment).strip())
+
 
     return None
 
@@ -90,7 +98,6 @@ def process_photos():
         print(f"Directory {RAW_DIR} does not exist.")
         return
 
-    # Ensure output directory exists
     PUBLIC_PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
 
     photos = []
@@ -107,12 +114,7 @@ def process_photos():
         print(f"Processing {file_path.name}...")
 
         try:
-            # Open image
             with Image.open(file_path) as img:
-                # Extract GPS
-                # Note: For HEIC, pillow-heif handles opening, but EXIF might need care.
-                # Image.open() with pillow-heif should preserve EXIF.
-                
                 lat_lng = get_gps_details(img)
                 
                 if not lat_lng:
@@ -122,18 +124,15 @@ def process_photos():
                 
                 lat, lng = lat_lng
                 
-                # Extract Caption
                 caption = get_caption(img)
                 
-                # Generate filenames
                 file_id = file_path.stem
                 thumb_name = f"{file_id}_thumb.jpg"
                 large_name = f"{file_id}_large.jpg"
                 
-                # Resize and save Thumbnail
                 img_thumb = img.copy()
                 img_thumb.thumbnail((300, 300))
-                # Convert to RGB if necessary (e.g. from RGBA or CMYK)
+                # enforces rgb color space
                 if img_thumb.mode in ('RGBA', 'P'):
                     img_thumb = img_thumb.convert('RGB')
                 
@@ -162,8 +161,8 @@ def process_photos():
         except Exception as e:
             print(f"Error processing {file_path.name}: {e}")
 
-    with open(DATA_FILE, 'w') as f:
-        json.dump(photos, f, indent=2)
+    with open(DATA_FILE, 'w', encoding='utf-8') as f:
+        json.dump(photos, f, indent=2, ensure_ascii=False)
     print("-" * 40)
     if missing_gps:
         print(f"Missing GPS data for {len(missing_gps)} photos:")

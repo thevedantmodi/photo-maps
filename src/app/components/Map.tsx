@@ -109,6 +109,7 @@ const MapComponent = ({ photos }: MapProps) => {
                     iconCreateFunction={createClusterIcon}
                     maxClusterRadius={60}
                     spiderfyOnMaxZoom={true}
+                    showCoverageOnHover={false}
                 >
                     {photos.map((photo) => (
                         <Marker
