@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../hooks/useTheme';
 
 import DateFilter from './DateFilter';
@@ -45,6 +46,17 @@ const MapComponent = ({ photos }: MapProps) => {
         });
         setFilteredPhotos(filtered);
     }, [selectedYear, photos]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setSelectedPhoto(null);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     const createCustomIcon = (thumbUrl: string) => {
         return L.divIcon({
@@ -150,46 +162,64 @@ const MapComponent = ({ photos }: MapProps) => {
                 onYearChange={setSelectedYear}
             />
 
-            {selectedPhoto && (
-                <div
-                    className="modal-overlay"
-                    onClick={() => setSelectedPhoto(null)}
-                >
-                    <div className="modal-content">
-                        <img
-                            src={selectedPhoto.large}
-                            alt="Full size"
-                            style={{
-                                maxWidth: '100%',
-                                maxHeight: '80vh',
-                                borderRadius: '4px',
-                                boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
-                            }}
-                        />
-                        <button
-                            className="modal-close-btn"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedPhoto(null);
-                            }}
+            <AnimatePresence>
+                {selectedPhoto && (
+                    <motion.div
+                        className="modal-overlay"
+                        onClick={() => setSelectedPhoto(null)}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <motion.div
+                            className="modal-content"
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            transition={{ duration: 0.2 }}
                         >
-                            &times;
-                        </button>
-                    </div>
-                    <div className="modal-caption">
-                        {selectedPhoto.caption || selectedPhoto.originalName}
-                        {selectedPhoto.date && (
-                            <div style={{ fontSize: '0.8em', opacity: 0.8, marginTop: '4px' }}>
-                                {new Date(selectedPhoto.date).toLocaleDateString(undefined, {
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                })}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
+                            <img
+                                src={selectedPhoto.large}
+                                alt="Full size"
+                                style={{
+                                    maxWidth: '100%',
+                                    maxHeight: '80vh',
+                                    borderRadius: '4px',
+                                    boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+                                }}
+                            />
+                            <button
+                                className="modal-close-btn"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedPhoto(null);
+                                }}
+                            >
+                                &times;
+                            </button>
+                        </motion.div>
+                        <motion.div
+                            className="modal-caption"
+                            initial={{ y: 20, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 20, opacity: 0 }}
+                            transition={{ duration: 0.2, delay: 0.1 }}
+                        >
+                            {selectedPhoto.caption || selectedPhoto.originalName}
+                            {selectedPhoto.date && (
+                                <div style={{ fontSize: '0.8em', opacity: 0.8, marginTop: '4px' }}>
+                                    {new Date(selectedPhoto.date).toLocaleDateString(undefined, {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
+                                    })}
+                                </div>
+                            )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </>
     );
 };
