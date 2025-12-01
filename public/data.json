@@ -20,6 +20,16 @@
     "date": "2025-11-12T11:21:47"
   },
   {
+    "id": "IMG_2818",
+    "lat": 40.752858333333336,
+    "lng": -73.97763888888889,
+    "thumb": "/photos/IMG_2818_thumb.jpg",
+    "large": "/photos/IMG_2818_large.jpg",
+    "originalName": "IMG_2818.png",
+    "caption": "Grand Central main hall",
+    "date": "2025-07-22T17:44:32"
+  },
+  {
     "id": "bukit-bintang-skyline",
     "lat": 3.1462777777777777,
     "lng": 101.71378333333334,
@@ -340,6 +350,16 @@
     "date": "2023-11-24T17:59:15"
   },
   {
+    "id": "IMG_4465",
+    "lat": 40.75578333333333,
+    "lng": -73.97638055555555,
+    "thumb": "/photos/IMG_4465_thumb.jpg",
+    "large": "/photos/IMG_4465_large.jpg",
+    "originalName": "IMG_4465.png",
+    "caption": "383 Madison Ave Lobby (JPMorganChase former headquarters)",
+    "date": "2025-08-05T17:29:41"
+  },
+  {
     "id": "shinjuku",
     "lat": 35.69352222222222,
     "lng": 139.70237777777777,
@@ -418,6 +438,16 @@
     "originalName": "aroumd.jpeg",
     "caption": "Aroumd Village",
     "date": "2023-11-22T10:12:46"
+  },
+  {
+    "id": "IMG_3218",
+    "lat": 40.751038888888885,
+    "lng": -73.99334722222223,
+    "thumb": "/photos/IMG_3218_thumb.jpg",
+    "large": "/photos/IMG_3218_large.jpg",
+    "originalName": "IMG_3218.png",
+    "caption": "Keshi concert at Madison Square Garden",
+    "date": "2025-07-24T22:40:27"
   },
   {
     "id": "villa-franca-town",
@@ -580,6 +610,16 @@
     "date": "2023-11-20T11:46:20"
   },
   {
+    "id": "IMG_2699",
+    "lat": 40.75503611111111,
+    "lng": -73.97556944444445,
+    "thumb": "/photos/IMG_2699_thumb.jpg",
+    "large": "/photos/IMG_2699_large.jpg",
+    "originalName": "IMG_2699.png",
+    "caption": "JPMorganChase Midtown offices",
+    "date": "2025-07-20T18:54:09"
+  },
+  {
     "id": "thar-desert",
     "lat": 26.888925,
     "lng": 70.53850555555556,
@@ -640,6 +680,16 @@
     "date": "2023-05-27T20:50:32"
   },
   {
+    "id": "IMG_1807",
+    "lat": 40.72813888888889,
+    "lng": -74.02474166666667,
+    "thumb": "/photos/IMG_1807_thumb.jpg",
+    "large": "/photos/IMG_1807_large.jpg",
+    "originalName": "IMG_1807.png",
+    "caption": "Financial District from a NY/NJ waterway ferry",
+    "date": "2025-07-10T18:34:19"
+  },
+  {
     "id": "IMG_7133",
     "lat": 25.026888888888887,
     "lng": 121.57442499999999,
@@ -648,6 +698,16 @@
     "originalName": "IMG_7133.png",
     "caption": "Taipei 101 at dusk",
     "date": "2025-05-26T18:43:11"
+  },
+  {
+    "id": "IMG_1967",
+    "lat": 40.77383888888889,
+    "lng": -73.97092500000001,
+    "thumb": "/photos/IMG_1967_thumb.jpg",
+    "large": "/photos/IMG_1967_large.jpg",
+    "originalName": "IMG_1967.png",
+    "caption": "Bethesda Terrace in the summer",
+    "date": "2025-07-12T14:57:23"
   },
   {
     "id": "pokaran",
@@ -900,6 +960,16 @@
     "date": "2023-05-27T20:50:32"
   },
   {
+    "id": "IMG_1612",
+    "lat": 40.705197222222225,
+    "lng": -73.98945555555555,
+    "thumb": "/photos/IMG_1612_thumb.jpg",
+    "large": "/photos/IMG_1612_large.jpg",
+    "originalName": "IMG_1612.png",
+    "caption": "Financial District from the Manhattan Bridge at sunset",
+    "date": "2025-07-06T20:26:19"
+  },
+  {
     "id": "sagrada-familia",
     "lat": 41.40405277777778,
     "lng": 2.1750499999999997,
@@ -1118,6 +1188,16 @@
     "originalName": "klcc.jpeg",
     "caption": "Petronas Towers",
     "date": "2024-05-24T21:41:36"
+  },
+  {
+    "id": "IMG_2219",
+    "lat": 40.73071388888889,
+    "lng": -73.99755833333333,
+    "thumb": "/photos/IMG_2219_thumb.jpg",
+    "large": "/photos/IMG_2219_large.jpg",
+    "originalName": "IMG_2219.png",
+    "caption": "Washington Square Park after a storm",
+    "date": "2025-07-14T21:22:22"
   },
   {
     "id": "amer-fort",
