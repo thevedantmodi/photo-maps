@@ -1,36 +1,20 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Photos by Vedant Modi
 
-## Getting Started
+Full application for my photos display.
 
-First, run the development server:
+## Frontend
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Lives at `src/app` and requires the photos to be loaded in the `public/` directory to render.
+Start the web application with `npm run dev`.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Backend
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Lives mainly at `scripts` and has two steps, ingestion and processing.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Ingestion is an interactive step that allows the user to preview each photo and add a caption to display on each image's display. You must have `exiftool` installed in order for this application to work. If you have iterm2 running, then the image thumbnail will be put to stdout for your viewing. Ingestion assumes that the photos that you wish to add live at `<root>/photos/`. Note that `<root>/photos/` is ignored by the repository so retaining the contents of this directory is your responsibilty.
 
-## Learn More
+Run ingestion with `npm run ingest`.
 
-To learn more about Next.js, take a look at the following resources:
+Processing scrapes the EXIF data from each photo and prepares them for web-friendly display. When this script is run it will take the photos in `<root>/photos/` and generate web-friendly photos in `<root>/public/photos`. A thumbnail and large version will be generated in that directory. An accompanying `<root>/public/data.json` will be generated as well. This is the file that the frontend application with interface with.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Run ingestion with `npm run process`.
