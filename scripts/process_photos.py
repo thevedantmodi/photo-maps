@@ -3,6 +3,7 @@ import json
 import shutil
 from pathlib import Path
 from PIL import Image, ExifTags
+from datetime import datetime
 import pillow_heif
 
 pillow_heif.register_heif_opener()
@@ -93,6 +94,35 @@ def get_caption(image):
 
     return None
 
+def get_date_taken(image):
+    exif = image.getexif()
+    if not exif:
+        return None
+    
+    # DateTimeOriginal = 36867
+    # DateTimeDigitized = 36868
+    # DateTime = 306
+    
+    date_str = exif.get(36867) or exif.get(36868) or exif.get(306)
+    
+    if not date_str:
+         exif_ifd = exif.get_ifd(0x8769)
+         if exif_ifd:
+             date_str = exif_ifd.get(36867) or exif_ifd.get(36868) or exif_ifd.get(306)
+
+    if date_str:
+        # Clean up null bytes or whitespace
+        date_str = str(date_str).strip().replace('\0', '')
+        try:
+            # Standardize to ISO format
+            # EXIF dates are typically YYYY:MM:DD HH:MM:SS
+            dt = datetime.strptime(date_str, '%Y:%m:%d %H:%M:%S')
+            return dt.isoformat()
+        except ValueError:
+            pass
+            
+    return None
+
 def process_photos():
     if not RAW_DIR.exists():
         print(f"Directory {RAW_DIR} does not exist.")
@@ -125,6 +155,7 @@ def process_photos():
                 lat, lng = lat_lng
                 
                 caption = get_caption(img)
+                date_taken = get_date_taken(img)
                 
                 file_id = file_path.stem
                 thumb_name = f"{file_id}_thumb.jpg"
@@ -153,7 +184,8 @@ def process_photos():
                     "thumb": f"/photos/{thumb_name}",
                     "large": f"/photos/{large_name}",
                     "originalName": file_path.name,
-                    "caption": caption or "" 
+                    "caption": caption or "",
+                    "date": date_taken or ""
                 })
                 
                 print(f"Processed {file_path.name}: {lat}, {lng}")

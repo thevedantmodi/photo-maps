@@ -212,3 +212,233 @@ body {
   background-color: var(--loading-bg);
   color: var(--loading-text);
 }
+
+/* Time Slider Styles */
+.slider-container {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 85%;
+  max-width: 600px;
+  height: 60px;
+  /* Increased height for better touch target */
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  padding: 10px 20px;
+  border-radius: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .slider-container {
+    bottom: 80px;
+    /* Move up slightly on mobile to avoid bottom bar/gestures */
+    width: 90%;
+    padding: 10px 15px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .slider-container {
+    background: rgba(0, 0, 0, 0.6);
+  }
+}
+
+.slider {
+  position: relative;
+  width: 100%;
+}
+
+.slider__track,
+.slider__range {
+  position: absolute;
+  border-radius: 3px;
+  height: 6px;
+  /* Slightly thicker */
+}
+
+.slider__track {
+  background-color: #ced4da;
+  width: 100%;
+  z-index: 1;
+}
+
+.slider__range {
+  background-color: #007bff;
+  z-index: 2;
+  transition: left 0.1s ease, width 0.1s ease;
+  /* Smooth track movement */
+}
+
+.thumb,
+.thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.thumb {
+  pointer-events: none;
+  position: absolute;
+  height: 0;
+  /* Fix alignment: thumb width is 24px.
+     We make input wider so thumb center travels 0 to 100% of parent */
+  width: calc(100% + 24px);
+  left: -12px;
+  outline: none;
+  z-index: 3;
+}
+
+.thumb--left {
+  z-index: 4;
+}
+
+.thumb--right {
+  z-index: 5;
+}
+
+/* For Chrome browsers */
+.thumb::-webkit-slider-thumb {
+  background-color: #f1f5f7;
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 0 1px 1px #ced4da;
+  cursor: pointer;
+  height: 24px;
+  /* Larger thumb */
+  width: 24px;
+  margin-top: 4px;
+  pointer-events: all;
+  position: relative;
+  transition: transform 0.1s ease;
+}
+
+.thumb::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  background-color: #fff;
+}
+
+.thumb::-webkit-slider-thumb:active {
+  transform: scale(1.2);
+  cursor: grabbing;
+}
+
+/* For Firefox */
+.thumb::-moz-range-thumb {
+  background-color: #f1f5f7;
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 0 1px 1px #ced4da;
+  cursor: pointer;
+  height: 24px;
+  width: 24px;
+  margin-top: 4px;
+  pointer-events: all;
+  position: relative;
+  transition: transform 0.1s ease;
+}
+
+.thumb::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  background-color: #fff;
+}
+
+.thumb::-moz-range-thumb:active {
+  transform: scale(1.2);
+  cursor: grabbing;
+}
+
+.slider__left-value,
+.slider__right-value {
+  color: var(--foreground);
+  font-size: 12px;
+  margin-top: 24px;
+  position: absolute;
+  top: 10px;
+  font-weight: 500;
+  pointer-events: none;
+  /* Prevent blocking clicks */
+}
+
+.slider__left-value {
+  left: 0;
+}
+
+.slider__right-value {
+  right: 0;
+}
+
+/* Date Filter Chips */
+.date-filter-container {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  gap: 10px;
+  padding: 10px 15px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  overflow-x: auto;
+  max-width: 90%;
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE 10+ */
+}
+
+.date-filter-container::-webkit-scrollbar {
+  display: none;
+  /* Chrome/Safari */
+}
+
+.filter-chip {
+  background: transparent;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.filter-chip:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.filter-chip.active {
+  background: #007bff;
+  color: white;
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+@media (prefers-color-scheme: dark) {
+  .date-filter-container {
+    background: rgba(0, 0, 0, 0.6);
+  }
+
+  .filter-chip:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+@media (max-width: 768px) {
+  .date-filter-container {
+    bottom: 80px;
+    width: auto;
+    max-width: 95%;
+    justify-content: flex-start;
+    /* Allow scrolling */
+  }
+}

@@ -7,6 +7,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useTheme } from '../hooks/useTheme';
 
+import DateFilter from './DateFilter';
+
 // Fix for default marker icons if we were using them, but we are using custom ones.
 
 interface Photo {
@@ -17,6 +19,7 @@ interface Photo {
     large: string;
     originalName: string;
     caption?: string;
+    date?: string;
 }
 
 interface MapProps {
@@ -25,7 +28,23 @@ interface MapProps {
 
 const MapComponent = ({ photos }: MapProps) => {
     const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+    const [filteredPhotos, setFilteredPhotos] = useState<Photo[]>(photos);
+    const [selectedYear, setSelectedYear] = useState<number | null>(null);
     const theme = useTheme();
+
+    useEffect(() => {
+        if (selectedYear === null) {
+            setFilteredPhotos(photos);
+            return;
+        }
+
+        const filtered = photos.filter(photo => {
+            if (!photo.date) return false;
+            const year = new Date(photo.date).getFullYear();
+            return year === selectedYear;
+        });
+        setFilteredPhotos(filtered);
+    }, [selectedYear, photos]);
 
     const createCustomIcon = (thumbUrl: string) => {
         return L.divIcon({
@@ -111,7 +130,7 @@ const MapComponent = ({ photos }: MapProps) => {
                     spiderfyOnMaxZoom={true}
                     showCoverageOnHover={false}
                 >
-                    {photos.map((photo) => (
+                    {filteredPhotos.map((photo) => (
                         <Marker
                             key={photo.id}
                             position={[photo.lat, photo.lng]}
@@ -124,6 +143,12 @@ const MapComponent = ({ photos }: MapProps) => {
                     ))}
                 </MarkerClusterGroup>
             </MapContainer>
+
+            <DateFilter
+                photos={photos}
+                selectedYear={selectedYear}
+                onYearChange={setSelectedYear}
+            />
 
             {selectedPhoto && (
                 <div
@@ -153,6 +178,15 @@ const MapComponent = ({ photos }: MapProps) => {
                     </div>
                     <div className="modal-caption">
                         {selectedPhoto.caption || selectedPhoto.originalName}
+                        {selectedPhoto.date && (
+                            <div style={{ fontSize: '0.8em', opacity: 0.8, marginTop: '4px' }}>
+                                {new Date(selectedPhoto.date).toLocaleDateString(undefined, {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                })}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

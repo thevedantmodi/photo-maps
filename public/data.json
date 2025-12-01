@@ -6,7 +6,8 @@
     "thumb": "/photos/IMG_6868_thumb.jpg",
     "large": "/photos/IMG_6868_large.jpg",
     "originalName": "IMG_6868.png",
-    "caption": "Taipei 101 in fog"
+    "caption": "Taipei 101 in fog",
+    "date": "2025-05-26T17:50:15"
   },
   {
     "id": "bukit-bintang-skyline",
@@ -15,7 +16,8 @@
     "thumb": "/photos/bukit-bintang-skyline_thumb.jpg",
     "large": "/photos/bukit-bintang-skyline_large.jpg",
     "originalName": "bukit-bintang-skyline.jpeg",
-    "caption": "Bukit Bintang at night"
+    "caption": "Bukit Bintang at night",
+    "date": "2024-05-24T19:31:41"
   },
   {
     "id": "hawa-mahal",
@@ -24,7 +26,8 @@
     "thumb": "/photos/hawa-mahal_thumb.jpg",
     "large": "/photos/hawa-mahal_large.jpg",
     "originalName": "hawa-mahal.jpeg",
-    "caption": "Hawa Mahal"
+    "caption": "Hawa Mahal",
+    "date": "2024-01-04T17:33:18"
   },
   {
     "id": "IMG_6706",
@@ -33,7 +36,8 @@
     "thumb": "/photos/IMG_6706_thumb.jpg",
     "large": "/photos/IMG_6706_large.jpg",
     "originalName": "IMG_6706.png",
-    "caption": "Shanghai Pudong Airport"
+    "caption": "Shanghai Pudong Airport",
+    "date": "2025-05-26T06:48:16"
   },
   {
     "id": "kyoto-wall",
@@ -42,7 +46,8 @@
     "thumb": "/photos/kyoto-wall_thumb.jpg",
     "large": "/photos/kyoto-wall_large.jpg",
     "originalName": "kyoto-wall.jpeg",
-    "caption": "Kyoto"
+    "caption": "Kyoto",
+    "date": "2024-05-19T17:26:40"
   },
   {
     "id": "IMG_5353",
@@ -51,7 +56,8 @@
     "thumb": "/photos/IMG_5353_thumb.jpg",
     "large": "/photos/IMG_5353_large.jpg",
     "originalName": "IMG_5353.png",
-    "caption": "Raffles City"
+    "caption": "Raffles City",
+    "date": "2025-05-23T17:17:24"
   },
   {
     "id": "town-mts",
@@ -60,7 +66,8 @@
     "thumb": "/photos/town-mts_thumb.jpg",
     "large": "/photos/town-mts_large.jpg",
     "originalName": "town-mts.jpg",
-    "caption": "Ždiar"
+    "caption": "Ždiar",
+    "date": "2023-05-30T07:48:54"
   },
   {
     "id": "havran",
@@ -69,7 +76,8 @@
     "thumb": "/photos/havran_thumb.jpg",
     "large": "/photos/havran_large.jpg",
     "originalName": "havran.jpg",
-    "caption": "Havran, High Tatras"
+    "caption": "Havran, High Tatras",
+    "date": "2023-05-30T07:48:54"
   },
   {
     "id": "IMG_7355",
@@ -78,7 +86,8 @@
     "thumb": "/photos/IMG_7355_thumb.jpg",
     "large": "/photos/IMG_7355_large.jpg",
     "originalName": "IMG_7355.png",
-    "caption": "Noodles (of goose) at Ningxia Night Market"
+    "caption": "Noodles (of goose) at Ningxia Night Market",
+    "date": "2025-05-26T22:39:59"
   },
   {
     "id": "gbf-1",
@@ -87,7 +96,8 @@
     "thumb": "/photos/gbf-1_thumb.jpg",
     "large": "/photos/gbf-1_large.jpg",
     "originalName": "gbf-1.jpeg",
-    "caption": "Great Barrier Reef underwater"
+    "caption": "Great Barrier Reef underwater",
+    "date": ""
   },
   {
     "id": "IMG_2749",
@@ -96,7 +106,8 @@
     "thumb": "/photos/IMG_2749_thumb.jpg",
     "large": "/photos/IMG_2749_large.jpg",
     "originalName": "IMG_2749.png",
-    "caption": "Boating in Ueno Park"
+    "caption": "Boating in Ueno Park",
+    "date": "2025-05-14T15:38:03"
   },
   {
     "id": "marrakech-donkey",
@@ -105,7 +116,8 @@
     "thumb": "/photos/marrakech-donkey_thumb.jpg",
     "large": "/photos/marrakech-donkey_large.jpg",
     "originalName": "marrakech-donkey.jpeg",
-    "caption": "Donkey in Marrakech"
+    "caption": "Donkey in Marrakech",
+    "date": "2023-11-20T12:29:28"
   },
   {
     "id": "gateway-of-india",
@@ -114,7 +126,8 @@
     "thumb": "/photos/gateway-of-india_thumb.jpg",
     "large": "/photos/gateway-of-india_large.jpg",
     "originalName": "gateway-of-india.jpeg",
-    "caption": "Gateway of India"
+    "caption": "Gateway of India",
+    "date": "2024-01-10T16:22:26"
   },
   {
     "id": "IMG_6315",
@@ -123,7 +136,8 @@
     "thumb": "/photos/IMG_6315_thumb.jpg",
     "large": "/photos/IMG_6315_large.jpg",
     "originalName": "IMG_6315.png",
-    "caption": "Shanghai Custom House"
+    "caption": "Shanghai Custom House",
+    "date": "2025-05-25T18:59:23"
   },
   {
     "id": "IMG_8106",
@@ -132,7 +146,8 @@
     "thumb": "/photos/IMG_8106_thumb.jpg",
     "large": "/photos/IMG_8106_large.jpg",
     "originalName": "IMG_8106.png",
-    "caption": "TSMC Fab 20"
+    "caption": "TSMC Fab 20",
+    "date": "2025-05-28T15:33:59"
   },
   {
     "id": "jaipur-bazaar",
@@ -141,7 +156,8 @@
     "thumb": "/photos/jaipur-bazaar_thumb.jpg",
     "large": "/photos/jaipur-bazaar_large.jpg",
     "originalName": "jaipur-bazaar.jpeg",
-    "caption": "Bapu Bazar"
+    "caption": "Bapu Bazar",
+    "date": "2024-01-04T17:46:37"
   },
   {
     "id": "castle",
@@ -150,7 +166,8 @@
     "thumb": "/photos/castle_thumb.jpg",
     "large": "/photos/castle_large.jpg",
     "originalName": "castle.jpg",
-    "caption": "Spišské Podhradie"
+    "caption": "Spišské Podhradie",
+    "date": "2023-05-30T07:48:53"
   },
   {
     "id": "IMG_5618",
@@ -159,7 +176,8 @@
     "thumb": "/photos/IMG_5618_thumb.jpg",
     "large": "/photos/IMG_5618_large.jpg",
     "originalName": "IMG_5618.png",
-    "caption": "Hotel in Chongqing"
+    "caption": "Hotel in Chongqing",
+    "date": "2025-05-23T23:28:45"
   },
   {
     "id": "gbf-0",
@@ -168,7 +186,8 @@
     "thumb": "/photos/gbf-0_thumb.jpg",
     "large": "/photos/gbf-0_large.jpg",
     "originalName": "gbf-0.jpeg",
-    "caption": "Great Barrier Reef underwater"
+    "caption": "Great Barrier Reef underwater",
+    "date": ""
   },
   {
     "id": "IMG_6715",
@@ -177,7 +196,8 @@
     "thumb": "/photos/IMG_6715_thumb.jpg",
     "large": "/photos/IMG_6715_large.jpg",
     "originalName": "IMG_6715.png",
-    "caption": "Gates at Pudong Airport"
+    "caption": "Gates at Pudong Airport",
+    "date": "2025-05-26T07:34:45"
   },
   {
     "id": "porto-apt",
@@ -186,7 +206,8 @@
     "thumb": "/photos/porto-apt_thumb.jpg",
     "large": "/photos/porto-apt_large.jpg",
     "originalName": "porto-apt.jpeg",
-    "caption": "Apartment in Porto"
+    "caption": "Apartment in Porto",
+    "date": "2025-01-07T16:25:23"
   },
   {
     "id": "stephensplatz",
@@ -195,7 +216,8 @@
     "thumb": "/photos/stephensplatz_thumb.jpg",
     "large": "/photos/stephensplatz_large.jpg",
     "originalName": "stephensplatz.jpeg",
-    "caption": "Stephensplatz"
+    "caption": "Stephensplatz",
+    "date": "2025-01-02T11:05:23"
   },
   {
     "id": "toubkal-ante-summit",
@@ -204,7 +226,8 @@
     "thumb": "/photos/toubkal-ante-summit_thumb.jpg",
     "large": "/photos/toubkal-ante-summit_large.jpg",
     "originalName": "toubkal-ante-summit.jpeg",
-    "caption": "Before the summit of Toubkal"
+    "caption": "Before the summit of Toubkal",
+    "date": "2024-02-09T11:51:18"
   },
   {
     "id": "rooftop-pool",
@@ -213,7 +236,8 @@
     "thumb": "/photos/rooftop-pool_thumb.jpg",
     "large": "/photos/rooftop-pool_large.jpg",
     "originalName": "rooftop-pool.jpeg",
-    "caption": "Infinity pool on a rooftop in KL"
+    "caption": "Infinity pool on a rooftop in KL",
+    "date": "2024-05-21T22:48:04"
   },
   {
     "id": "hathi-udaipur",
@@ -222,7 +246,8 @@
     "thumb": "/photos/hathi-udaipur_thumb.jpg",
     "large": "/photos/hathi-udaipur_large.jpg",
     "originalName": "hathi-udaipur.jpeg",
-    "caption": "Udaipur"
+    "caption": "Udaipur",
+    "date": "2024-01-04T13:11:50"
   },
   {
     "id": "itoya-ginza",
@@ -231,7 +256,8 @@
     "thumb": "/photos/itoya-ginza_thumb.jpg",
     "large": "/photos/itoya-ginza_large.jpg",
     "originalName": "itoya-ginza.jpeg",
-    "caption": "Itoya, my favorite stationery store in Ginza"
+    "caption": "Itoya, my favorite stationery store in Ginza",
+    "date": "2024-05-15T11:37:19"
   },
   {
     "id": "imlil-valley",
@@ -240,7 +266,8 @@
     "thumb": "/photos/imlil-valley_thumb.jpg",
     "large": "/photos/imlil-valley_large.jpg",
     "originalName": "imlil-valley.jpeg",
-    "caption": "Imlil Valley"
+    "caption": "Imlil Valley",
+    "date": "2023-11-22T09:46:07"
   },
   {
     "id": "chapel",
@@ -249,7 +276,8 @@
     "thumb": "/photos/chapel_thumb.jpg",
     "large": "/photos/chapel_large.jpg",
     "originalName": "chapel.jpg",
-    "caption": "Chapel"
+    "caption": "Chapel",
+    "date": "2023-05-30T07:48:54"
   },
   {
     "id": "havran-hero",
@@ -258,7 +286,8 @@
     "thumb": "/photos/havran-hero_thumb.jpg",
     "large": "/photos/havran-hero_large.jpg",
     "originalName": "havran-hero.jpg",
-    "caption": "Havran, High Tatras"
+    "caption": "Havran, High Tatras",
+    "date": "2023-05-30T07:48:54"
   },
   {
     "id": "marina-bay-sands",
@@ -267,7 +296,8 @@
     "thumb": "/photos/marina-bay-sands_thumb.jpg",
     "large": "/photos/marina-bay-sands_large.jpg",
     "originalName": "marina-bay-sands.jpeg",
-    "caption": "Marina Bay Sands from Gardens by the Bay"
+    "caption": "Marina Bay Sands from Gardens by the Bay",
+    "date": "2024-05-25T13:45:56"
   },
   {
     "id": "tacchedirt-moon",
@@ -276,7 +306,8 @@
     "thumb": "/photos/tacchedirt-moon_thumb.jpg",
     "large": "/photos/tacchedirt-moon_large.jpg",
     "originalName": "tacchedirt-moon.jpeg",
-    "caption": "Tacchedirt at sunset"
+    "caption": "Tacchedirt at sunset",
+    "date": "2023-11-24T17:59:15"
   },
   {
     "id": "shinjuku",
@@ -285,7 +316,8 @@
     "thumb": "/photos/shinjuku_thumb.jpg",
     "large": "/photos/shinjuku_large.jpg",
     "originalName": "shinjuku.jpeg",
-    "caption": "Shinjuku"
+    "caption": "Shinjuku",
+    "date": "2024-05-15T23:32:39"
   },
   {
     "id": "town-from-cathedral",
@@ -294,7 +326,8 @@
     "thumb": "/photos/town-from-cathedral_thumb.jpg",
     "large": "/photos/town-from-cathedral_large.jpg",
     "originalName": "town-from-cathedral.jpeg",
-    "caption": "Porto"
+    "caption": "Porto",
+    "date": "2025-01-08T12:24:56"
   },
   {
     "id": "gas-station",
@@ -303,7 +336,8 @@
     "thumb": "/photos/gas-station_thumb.jpg",
     "large": "/photos/gas-station_large.jpg",
     "originalName": "gas-station.jpeg",
-    "caption": "Abandoned gas pump"
+    "caption": "Abandoned gas pump",
+    "date": "2024-03-20T08:52:56"
   },
   {
     "id": "IMG_7353",
@@ -312,7 +346,8 @@
     "thumb": "/photos/IMG_7353_thumb.jpg",
     "large": "/photos/IMG_7353_large.jpg",
     "originalName": "IMG_7353.png",
-    "caption": "Goose at Ningxia Night Market"
+    "caption": "Goose at Ningxia Night Market",
+    "date": "2025-05-26T22:37:56"
   },
   {
     "id": "IMG_8060",
@@ -321,7 +356,8 @@
     "thumb": "/photos/IMG_8060_thumb.jpg",
     "large": "/photos/IMG_8060_large.jpg",
     "originalName": "IMG_8060.png",
-    "caption": "Me asking Morris Chang a question at the TSMC campus"
+    "caption": "Me asking Morris Chang a question at the TSMC campus",
+    "date": "2025-05-28T14:29:33"
   },
   {
     "id": "tanot",
@@ -330,7 +366,8 @@
     "thumb": "/photos/tanot_thumb.jpg",
     "large": "/photos/tanot_large.jpg",
     "originalName": "tanot.jpeg",
-    "caption": "Tanot"
+    "caption": "Tanot",
+    "date": "2024-01-09T17:44:56"
   },
   {
     "id": "aroumd",
@@ -339,7 +376,8 @@
     "thumb": "/photos/aroumd_thumb.jpg",
     "large": "/photos/aroumd_large.jpg",
     "originalName": "aroumd.jpeg",
-    "caption": "Aroumd Village"
+    "caption": "Aroumd Village",
+    "date": "2023-11-22T10:12:46"
   },
   {
     "id": "villa-franca-town",
@@ -348,7 +386,8 @@
     "thumb": "/photos/villa-franca-town_thumb.jpg",
     "large": "/photos/villa-franca-town_large.jpg",
     "originalName": "villa-franca-town.jpg",
-    "caption": "Villa Franca do Campo at sunset"
+    "caption": "Villa Franca do Campo at sunset",
+    "date": "2023-05-27T20:50:33"
   },
   {
     "id": "road",
@@ -357,7 +396,8 @@
     "thumb": "/photos/road_thumb.jpg",
     "large": "/photos/road_large.jpg",
     "originalName": "road.jpg",
-    "caption": "Road in Flores"
+    "caption": "Road in Flores",
+    "date": "2023-05-27T20:50:33"
   },
   {
     "id": "IMG_5522",
@@ -366,7 +406,8 @@
     "thumb": "/photos/IMG_5522_thumb.jpg",
     "large": "/photos/IMG_5522_large.jpg",
     "originalName": "IMG_5522.png",
-    "caption": "Hongya Caves at night"
+    "caption": "Hongya Caves at night",
+    "date": "2025-05-23T21:40:23"
   },
   {
     "id": "peak-whitney",
@@ -375,7 +416,8 @@
     "thumb": "/photos/peak-whitney_thumb.jpg",
     "large": "/photos/peak-whitney_large.jpg",
     "originalName": "peak-whitney.jpg",
-    "caption": "Mount Whitney"
+    "caption": "Mount Whitney",
+    "date": "2024-03-24T19:23:43"
   },
   {
     "id": "IMG_5720",
@@ -384,7 +426,8 @@
     "thumb": "/photos/IMG_5720_thumb.jpg",
     "large": "/photos/IMG_5720_large.jpg",
     "originalName": "IMG_5720.png",
-    "caption": "Liziba Station"
+    "caption": "Liziba Station",
+    "date": "2025-05-24T15:50:58"
   },
   {
     "id": "chinatown",
@@ -393,7 +436,8 @@
     "thumb": "/photos/chinatown_thumb.jpg",
     "large": "/photos/chinatown_large.jpg",
     "originalName": "chinatown.jpeg",
-    "caption": "Singapore of Chinatown"
+    "caption": "Singapore of Chinatown",
+    "date": "2024-05-25T15:39:47"
   },
   {
     "id": "IMG_5124",
@@ -402,7 +446,8 @@
     "thumb": "/photos/IMG_5124_thumb.jpg",
     "large": "/photos/IMG_5124_large.jpg",
     "originalName": "IMG_5124.png",
-    "caption": "What the check-in agent told me (he did not think I would get past immigration at Wuxi)"
+    "caption": "What the check-in agent told me (he did not think I would get past immigration at Wuxi)",
+    "date": "2025-05-22T12:24:03"
   },
   {
     "id": "IMG_7647",
@@ -411,7 +456,8 @@
     "thumb": "/photos/IMG_7647_thumb.jpg",
     "large": "/photos/IMG_7647_large.jpg",
     "originalName": "IMG_7647.png",
-    "caption": "Yinhe Cave Temple and Waterfall"
+    "caption": "Yinhe Cave Temple and Waterfall",
+    "date": "2025-05-27T17:18:15"
   },
   {
     "id": "IMG_8763",
@@ -420,7 +466,8 @@
     "thumb": "/photos/IMG_8763_thumb.jpg",
     "large": "/photos/IMG_8763_large.jpg",
     "originalName": "IMG_8763.png",
-    "caption": "Mission Dolores Park"
+    "caption": "Mission Dolores Park",
+    "date": "2025-05-30T19:51:05"
   },
   {
     "id": "flores-farm",
@@ -429,7 +476,8 @@
     "thumb": "/photos/flores-farm_thumb.jpg",
     "large": "/photos/flores-farm_large.jpg",
     "originalName": "flores-farm.jpg",
-    "caption": "Farm overhead"
+    "caption": "Farm overhead",
+    "date": "2023-05-27T20:50:33"
   },
   {
     "id": "IMG_5125",
@@ -438,7 +486,8 @@
     "thumb": "/photos/IMG_5125_thumb.jpg",
     "large": "/photos/IMG_5125_large.jpg",
     "originalName": "IMG_5125.png",
-    "caption": "All clear in Macau!"
+    "caption": "All clear in Macau!",
+    "date": "2025-05-22T12:36:50"
   },
   {
     "id": "IMG_5119",
@@ -447,7 +496,8 @@
     "thumb": "/photos/IMG_5119_thumb.jpg",
     "large": "/photos/IMG_5119_large.jpg",
     "originalName": "IMG_5119.png",
-    "caption": "My itinerary, as explained to the check-in agent in Macau"
+    "caption": "My itinerary, as explained to the check-in agent in Macau",
+    "date": "2025-05-22T12:05:43"
   },
   {
     "id": "IMG_3024",
@@ -456,7 +506,8 @@
     "thumb": "/photos/IMG_3024_thumb.jpg",
     "large": "/photos/IMG_3024_large.jpg",
     "originalName": "IMG_3024.png",
-    "caption": "Tokyo Tower at night"
+    "caption": "Tokyo Tower at night",
+    "date": "2025-05-15T22:04:54"
   },
   {
     "id": "hofburg-palace",
@@ -465,7 +516,8 @@
     "thumb": "/photos/hofburg-palace_thumb.jpg",
     "large": "/photos/hofburg-palace_large.jpg",
     "originalName": "hofburg-palace.jpeg",
-    "caption": "Hofburg Palace"
+    "caption": "Hofburg Palace",
+    "date": "2025-01-02T11:46:10"
   },
   {
     "id": "IMG_7044",
@@ -474,7 +526,8 @@
     "thumb": "/photos/IMG_7044_thumb.jpg",
     "large": "/photos/IMG_7044_large.jpg",
     "originalName": "IMG_7044.png",
-    "caption": "Taipei 101 at sunset"
+    "caption": "Taipei 101 at sunset",
+    "date": "2025-05-26T18:25:46"
   },
   {
     "id": "marrakech-medina",
@@ -483,7 +536,8 @@
     "thumb": "/photos/marrakech-medina_thumb.jpg",
     "large": "/photos/marrakech-medina_large.jpg",
     "originalName": "marrakech-medina.jpeg",
-    "caption": "Marrakech Medina"
+    "caption": "Marrakech Medina",
+    "date": "2023-11-20T11:46:20"
   },
   {
     "id": "thar-desert",
@@ -492,7 +546,8 @@
     "thumb": "/photos/thar-desert_thumb.jpg",
     "large": "/photos/thar-desert_large.jpg",
     "originalName": "thar-desert.jpeg",
-    "caption": "Thar Desert at sunset"
+    "caption": "Thar Desert at sunset",
+    "date": "2024-01-08T17:45:09"
   },
   {
     "id": "IMG_3430",
@@ -501,7 +556,8 @@
     "thumb": "/photos/IMG_3430_thumb.jpg",
     "large": "/photos/IMG_3430_large.jpg",
     "originalName": "IMG_3430.png",
-    "caption": "Aged sushi"
+    "caption": "Aged sushi",
+    "date": "2025-05-16T22:12:43"
   },
   {
     "id": "waterfall-hike",
@@ -510,7 +566,8 @@
     "thumb": "/photos/waterfall-hike_thumb.jpg",
     "large": "/photos/waterfall-hike_large.jpg",
     "originalName": "waterfall-hike.jpg",
-    "caption": "Waterfall"
+    "caption": "Waterfall",
+    "date": "2023-05-27T20:50:34"
   },
   {
     "id": "mehrangarh",
@@ -519,7 +576,8 @@
     "thumb": "/photos/mehrangarh_thumb.jpg",
     "large": "/photos/mehrangarh_large.jpg",
     "originalName": "mehrangarh.jpeg",
-    "caption": "Mehrangarh"
+    "caption": "Mehrangarh",
+    "date": "2024-01-07T17:21:03"
   },
   {
     "id": "IMG_5450",
@@ -528,7 +586,8 @@
     "thumb": "/photos/IMG_5450_thumb.jpg",
     "large": "/photos/IMG_5450_large.jpg",
     "originalName": "IMG_5450.png",
-    "caption": "Hotpot!"
+    "caption": "Hotpot!",
+    "date": "2025-05-23T19:47:40"
   },
   {
     "id": "ribeira-grande-1",
@@ -537,7 +596,8 @@
     "thumb": "/photos/ribeira-grande-1_thumb.jpg",
     "large": "/photos/ribeira-grande-1_large.jpg",
     "originalName": "ribeira-grande-1.jpg",
-    "caption": "Ribeira Grande"
+    "caption": "Ribeira Grande",
+    "date": "2023-05-27T20:50:32"
   },
   {
     "id": "IMG_7133",
@@ -546,7 +606,8 @@
     "thumb": "/photos/IMG_7133_thumb.jpg",
     "large": "/photos/IMG_7133_large.jpg",
     "originalName": "IMG_7133.png",
-    "caption": "Taipei 101 at dusk"
+    "caption": "Taipei 101 at dusk",
+    "date": "2025-05-26T18:43:11"
   },
   {
     "id": "pokaran",
@@ -555,7 +616,8 @@
     "thumb": "/photos/pokaran_thumb.jpg",
     "large": "/photos/pokaran_large.jpg",
     "originalName": "pokaran.jpeg",
-    "caption": "Pokaran sign"
+    "caption": "Pokaran sign",
+    "date": "2024-01-08T14:26:00"
   },
   {
     "id": "changi-1",
@@ -564,7 +626,8 @@
     "thumb": "/photos/changi-1_thumb.jpg",
     "large": "/photos/changi-1_large.jpg",
     "originalName": "changi-1.jpeg",
-    "caption": "The Rain Vortex at Jewel Changi Airport"
+    "caption": "The Rain Vortex at Jewel Changi Airport",
+    "date": "2024-06-16T21:50:12"
   },
   {
     "id": "osaka-dotonbori",
@@ -573,7 +636,8 @@
     "thumb": "/photos/osaka-dotonbori_thumb.jpg",
     "large": "/photos/osaka-dotonbori_large.jpg",
     "originalName": "osaka-dotonbori.jpeg",
-    "caption": "Dotunburi District at night"
+    "caption": "Dotunburi District at night",
+    "date": "2024-05-18T21:37:53"
   },
   {
     "id": "hotel-sacher",
@@ -582,7 +646,8 @@
     "thumb": "/photos/hotel-sacher_thumb.jpg",
     "large": "/photos/hotel-sacher_large.jpg",
     "originalName": "hotel-sacher.jpeg",
-    "caption": "Hotel Sacher"
+    "caption": "Hotel Sacher",
+    "date": "2025-01-02T14:16:19"
   },
   {
     "id": "eclipse",
@@ -591,7 +656,8 @@
     "thumb": "/photos/eclipse_thumb.jpg",
     "large": "/photos/eclipse_large.jpg",
     "originalName": "eclipse.jpeg",
-    "caption": "Total Solar Eclipse at Lake Champlain waterfront"
+    "caption": "Total Solar Eclipse at Lake Champlain waterfront",
+    "date": "2024-04-08T15:28:48"
   },
   {
     "id": "ribeira-grande-0",
@@ -600,7 +666,8 @@
     "thumb": "/photos/ribeira-grande-0_thumb.jpg",
     "large": "/photos/ribeira-grande-0_large.jpg",
     "originalName": "ribeira-grande-0.jpg",
-    "caption": "Ribeira Grande"
+    "caption": "Ribeira Grande",
+    "date": "2023-05-27T20:50:32"
   },
   {
     "id": "IMG_7261",
@@ -609,7 +676,8 @@
     "thumb": "/photos/IMG_7261_thumb.jpg",
     "large": "/photos/IMG_7261_large.jpg",
     "originalName": "IMG_7261.png",
-    "caption": "Taipei skyline at night"
+    "caption": "Taipei skyline at night",
+    "date": "2025-05-26T19:27:03"
   },
   {
     "id": "sete-cidades",
@@ -618,7 +686,8 @@
     "thumb": "/photos/sete-cidades_thumb.jpg",
     "large": "/photos/sete-cidades_large.jpg",
     "originalName": "sete-cidades.jpg",
-    "caption": "Sete Cidades"
+    "caption": "Sete Cidades",
+    "date": "2023-05-27T20:50:33"
   },
   {
     "id": "moreton-island",
@@ -627,7 +696,8 @@
     "thumb": "/photos/moreton-island_thumb.jpg",
     "large": "/photos/moreton-island_large.jpg",
     "originalName": "moreton-island.jpeg",
-    "caption": "Moreton Island (Mulgumpin)"
+    "caption": "Moreton Island (Mulgumpin)",
+    "date": "2024-06-20T14:35:13"
   },
   {
     "id": "IMG_8191",
@@ -636,7 +706,8 @@
     "thumb": "/photos/IMG_8191_thumb.jpg",
     "large": "/photos/IMG_8191_large.jpg",
     "originalName": "IMG_8191.png",
-    "caption": "Taipei underpass"
+    "caption": "Taipei underpass",
+    "date": "2025-05-28T17:29:54"
   },
   {
     "id": "museum",
@@ -645,7 +716,8 @@
     "thumb": "/photos/museum_thumb.jpg",
     "large": "/photos/museum_large.jpg",
     "originalName": "museum.jpeg",
-    "caption": "Museum of Science"
+    "caption": "Museum of Science",
+    "date": "2025-01-02T12:28:51"
   },
   {
     "id": "batu-caves",
@@ -654,7 +726,8 @@
     "thumb": "/photos/batu-caves_thumb.jpg",
     "large": "/photos/batu-caves_large.jpg",
     "originalName": "batu-caves.jpeg",
-    "caption": "Batu Caves"
+    "caption": "Batu Caves",
+    "date": "2024-05-22T14:31:36"
   },
   {
     "id": "changi-2",
@@ -663,7 +736,8 @@
     "thumb": "/photos/changi-2_thumb.jpg",
     "large": "/photos/changi-2_large.jpg",
     "originalName": "changi-2.jpeg",
-    "caption": "The Rain Vortex at Jewel Changi Airport at night"
+    "caption": "The Rain Vortex at Jewel Changi Airport at night",
+    "date": "2024-06-16T21:24:43"
   },
   {
     "id": "toubkal-base-camp",
@@ -672,7 +746,8 @@
     "thumb": "/photos/toubkal-base-camp_thumb.jpg",
     "large": "/photos/toubkal-base-camp_large.jpg",
     "originalName": "toubkal-base-camp.jpeg",
-    "caption": "Toubkal Base Camp"
+    "caption": "Toubkal Base Camp",
+    "date": "2023-11-22T17:21:49"
   },
   {
     "id": "sydney-harbor",
@@ -681,7 +756,8 @@
     "thumb": "/photos/sydney-harbor_thumb.jpg",
     "large": "/photos/sydney-harbor_large.jpg",
     "originalName": "sydney-harbor.png",
-    "caption": "Sydney Opera House and Harbor Bridge"
+    "caption": "Sydney Opera House and Harbor Bridge",
+    "date": "2024-06-29T12:51:32"
   },
   {
     "id": "IMG_3762",
@@ -690,7 +766,8 @@
     "thumb": "/photos/IMG_3762_thumb.jpg",
     "large": "/photos/IMG_3762_large.jpg",
     "originalName": "IMG_3762.png",
-    "caption": "Red Incense Peak"
+    "caption": "Red Incense Peak",
+    "date": "2025-05-18T19:00:26"
   },
   {
     "id": "town-overhead-0",
@@ -699,7 +776,8 @@
     "thumb": "/photos/town-overhead-0_thumb.jpg",
     "large": "/photos/town-overhead-0_large.jpg",
     "originalName": "town-overhead-0.jpg",
-    "caption": "Ponta Delgada overhead"
+    "caption": "Ponta Delgada overhead",
+    "date": "2023-05-27T20:50:32"
   },
   {
     "id": "taj-mahal",
@@ -708,7 +786,8 @@
     "thumb": "/photos/taj-mahal_thumb.jpg",
     "large": "/photos/taj-mahal_large.jpg",
     "originalName": "taj-mahal.jpeg",
-    "caption": "Taj Mahal"
+    "caption": "Taj Mahal",
+    "date": "2024-01-03T10:50:09"
   },
   {
     "id": "costa-do-lajedo-farm",
@@ -717,7 +796,8 @@
     "thumb": "/photos/costa-do-lajedo-farm_thumb.jpg",
     "large": "/photos/costa-do-lajedo-farm_large.jpg",
     "originalName": "costa-do-lajedo-farm.jpg",
-    "caption": "Costa do Lajedo Farm"
+    "caption": "Costa do Lajedo Farm",
+    "date": "2023-05-27T20:50:33"
   },
   {
     "id": "byron-bay-coast",
@@ -726,7 +806,8 @@
     "thumb": "/photos/byron-bay-coast_thumb.jpg",
     "large": "/photos/byron-bay-coast_large.jpg",
     "originalName": "byron-bay-coast.png",
-    "caption": ""
+    "caption": "",
+    "date": ""
   },
   {
     "id": "town-overhead-1",
@@ -735,7 +816,8 @@
     "thumb": "/photos/town-overhead-1_thumb.jpg",
     "large": "/photos/town-overhead-1_large.jpg",
     "originalName": "town-overhead-1.jpg",
-    "caption": "Ponta Delgada overhead"
+    "caption": "Ponta Delgada overhead",
+    "date": "2023-05-27T20:50:32"
   },
   {
     "id": "sagrada-familia",
@@ -744,7 +826,8 @@
     "thumb": "/photos/sagrada-familia_thumb.jpg",
     "large": "/photos/sagrada-familia_large.jpg",
     "originalName": "sagrada-familia.jpeg",
-    "caption": "Sagrada Família"
+    "caption": "Sagrada Família",
+    "date": "2025-01-05T11:22:59"
   },
   {
     "id": "toubkal-peak",
@@ -753,7 +836,8 @@
     "thumb": "/photos/toubkal-peak_thumb.jpg",
     "large": "/photos/toubkal-peak_large.jpg",
     "originalName": "toubkal-peak.jpeg",
-    "caption": "Toubkal summit"
+    "caption": "Toubkal summit",
+    "date": "2023-11-23T11:39:17"
   },
   {
     "id": "madrid",
@@ -762,7 +846,8 @@
     "thumb": "/photos/madrid_thumb.jpg",
     "large": "/photos/madrid_large.jpg",
     "originalName": "madrid.jpeg",
-    "caption": "Madrid"
+    "caption": "Madrid",
+    "date": "2025-01-06T18:15:06"
   },
   {
     "id": "ice-slide",
@@ -771,7 +856,8 @@
     "thumb": "/photos/ice-slide_thumb.jpg",
     "large": "/photos/ice-slide_large.jpg",
     "originalName": "ice-slide.jpg",
-    "caption": "High Tatras"
+    "caption": "High Tatras",
+    "date": "2023-05-30T07:48:54"
   },
   {
     "id": "IMG_5315",
@@ -780,7 +866,8 @@
     "thumb": "/photos/IMG_5315_thumb.jpg",
     "large": "/photos/IMG_5315_large.jpg",
     "originalName": "IMG_5315.png",
-    "caption": "Dongshuimen Bridge"
+    "caption": "Dongshuimen Bridge",
+    "date": "2025-05-23T16:19:05"
   },
   {
     "id": "boat",
@@ -789,7 +876,8 @@
     "thumb": "/photos/boat_thumb.jpg",
     "large": "/photos/boat_large.jpg",
     "originalName": "boat.jpeg",
-    "caption": "Cox's Bazar boat at sunset"
+    "caption": "Cox's Bazar boat at sunset",
+    "date": ""
   },
   {
     "id": "tangalooma",
@@ -798,7 +886,8 @@
     "thumb": "/photos/tangalooma_thumb.jpg",
     "large": "/photos/tangalooma_large.jpg",
     "originalName": "tangalooma.jpeg",
-    "caption": "Tangalooma Resort at sunset"
+    "caption": "Tangalooma Resort at sunset",
+    "date": "2024-06-20T16:23:30"
   },
   {
     "id": "IMG_5274",
@@ -807,7 +896,8 @@
     "thumb": "/photos/IMG_5274_thumb.jpg",
     "large": "/photos/IMG_5274_large.jpg",
     "originalName": "IMG_5274.png",
-    "caption": "Below Kuixinglou Square"
+    "caption": "Below Kuixinglou Square",
+    "date": "2025-05-23T15:29:26"
   },
   {
     "id": "mountains-bang",
@@ -816,7 +906,8 @@
     "thumb": "/photos/mountains-bang_thumb.jpg",
     "large": "/photos/mountains-bang_large.jpg",
     "originalName": "mountains-bang.jpg",
-    "caption": "High Tatras"
+    "caption": "High Tatras",
+    "date": "2023-05-30T07:48:54"
   },
   {
     "id": "costa-do-lajedo-hillside",
@@ -825,7 +916,8 @@
     "thumb": "/photos/costa-do-lajedo-hillside_thumb.jpg",
     "large": "/photos/costa-do-lajedo-hillside_large.jpg",
     "originalName": "costa-do-lajedo-hillside.jpg",
-    "caption": "Costa do Lajedo Coast"
+    "caption": "Costa do Lajedo Coast",
+    "date": "2023-05-27T20:50:34"
   },
   {
     "id": "fuji-lake-yamanakako-landscape",
@@ -834,7 +926,8 @@
     "thumb": "/photos/fuji-lake-yamanakako-landscape_thumb.jpg",
     "large": "/photos/fuji-lake-yamanakako-landscape_large.jpg",
     "originalName": "fuji-lake-yamanakako-landscape.png",
-    "caption": "Mount Fuji over Lake Yamanakako"
+    "caption": "Mount Fuji over Lake Yamanakako",
+    "date": ""
   },
   {
     "id": "skyline",
@@ -843,7 +936,8 @@
     "thumb": "/photos/skyline_thumb.jpg",
     "large": "/photos/skyline_large.jpg",
     "originalName": "skyline.jpeg",
-    "caption": "New York City skyline from Amtrak"
+    "caption": "New York City skyline from Amtrak",
+    "date": "2025-02-17T10:16:15"
   },
   {
     "id": "IMG_8737",
@@ -852,7 +946,8 @@
     "thumb": "/photos/IMG_8737_thumb.jpg",
     "large": "/photos/IMG_8737_large.jpg",
     "originalName": "IMG_8737.png",
-    "caption": "Golden Gate Park"
+    "caption": "Golden Gate Park",
+    "date": "2025-05-30T18:28:58"
   },
   {
     "id": "waterfall-lake",
@@ -861,7 +956,8 @@
     "thumb": "/photos/waterfall-lake_thumb.jpg",
     "large": "/photos/waterfall-lake_large.jpg",
     "originalName": "waterfall-lake.jpg",
-    "caption": "Waterfall into lake"
+    "caption": "Waterfall into lake",
+    "date": "2023-05-27T20:50:34"
   },
   {
     "id": "tahoe",
@@ -870,7 +966,8 @@
     "thumb": "/photos/tahoe_thumb.jpg",
     "large": "/photos/tahoe_large.jpg",
     "originalName": "tahoe.png",
-    "caption": "Lake Tahoe from B6934"
+    "caption": "Lake Tahoe from B6934",
+    "date": "2025-11-26T16:32:26"
   },
   {
     "id": "hillside",
@@ -879,7 +976,8 @@
     "thumb": "/photos/hillside_thumb.jpg",
     "large": "/photos/hillside_large.jpg",
     "originalName": "hillside.jpeg",
-    "caption": "Darjeeling Hillside"
+    "caption": "Darjeeling Hillside",
+    "date": "2024-08-06T09:33:01"
   },
   {
     "id": "fuji-sunset",
@@ -888,7 +986,8 @@
     "thumb": "/photos/fuji-sunset_thumb.jpg",
     "large": "/photos/fuji-sunset_large.jpg",
     "originalName": "fuji-sunset.png",
-    "caption": "Mount Fuji and Kawaguchiko at sunset"
+    "caption": "Mount Fuji and Kawaguchiko at sunset",
+    "date": ""
   },
   {
     "id": "IMG_6282",
@@ -897,7 +996,8 @@
     "thumb": "/photos/IMG_6282_thumb.jpg",
     "large": "/photos/IMG_6282_large.jpg",
     "originalName": "IMG_6282.png",
-    "caption": "Hunan Road House"
+    "caption": "Hunan Road House",
+    "date": "2025-05-25T18:13:51"
   },
   {
     "id": "klcc",
@@ -906,7 +1006,8 @@
     "thumb": "/photos/klcc_thumb.jpg",
     "large": "/photos/klcc_large.jpg",
     "originalName": "klcc.jpeg",
-    "caption": "Petronas Towers"
+    "caption": "Petronas Towers",
+    "date": "2024-05-24T21:41:36"
   },
   {
     "id": "amer-fort",
@@ -915,7 +1016,8 @@
     "thumb": "/photos/amer-fort_thumb.jpg",
     "large": "/photos/amer-fort_large.jpg",
     "originalName": "amer-fort.jpeg",
-    "caption": "Amer Fort"
+    "caption": "Amer Fort",
+    "date": "2024-01-04T11:11:06"
   },
   {
     "id": "toubkal-rocks",
@@ -924,7 +1026,8 @@
     "thumb": "/photos/toubkal-rocks_thumb.jpg",
     "large": "/photos/toubkal-rocks_large.jpg",
     "originalName": "toubkal-rocks.jpeg",
-    "caption": "Rocks before Toubkal summit"
+    "caption": "Rocks before Toubkal summit",
+    "date": "2023-11-23T10:54:37"
   },
   {
     "id": "villa-franca-island",
@@ -933,7 +1036,8 @@
     "thumb": "/photos/villa-franca-island_thumb.jpg",
     "large": "/photos/villa-franca-island_large.jpg",
     "originalName": "villa-franca-island.jpg",
-    "caption": "Villa Franca do Campo secret island"
+    "caption": "Villa Franca do Campo secret island",
+    "date": "2023-05-27T20:50:32"
   },
   {
     "id": "vedant-taj-mahal",
@@ -942,7 +1046,8 @@
     "thumb": "/photos/vedant-taj-mahal_thumb.jpg",
     "large": "/photos/vedant-taj-mahal_large.jpg",
     "originalName": "vedant-taj-mahal.jpeg",
-    "caption": "Me with OCI in front of Taj Mahal"
+    "caption": "Me with OCI in front of Taj Mahal",
+    "date": "2024-01-03T10:17:46"
   },
   {
     "id": "msg",
@@ -951,7 +1056,8 @@
     "thumb": "/photos/msg_thumb.jpg",
     "large": "/photos/msg_large.jpg",
     "originalName": "msg.jpeg",
-    "caption": "Madison Square Garden, section 1"
+    "caption": "Madison Square Garden, section 1",
+    "date": "2025-01-13T20:07:58"
   },
   {
     "id": "IMG_6871",
@@ -960,7 +1066,8 @@
     "thumb": "/photos/IMG_6871_thumb.jpg",
     "large": "/photos/IMG_6871_large.jpg",
     "originalName": "IMG_6871.png",
-    "caption": "Taipei 101 in more fog"
+    "caption": "Taipei 101 in more fog",
+    "date": "2025-05-26T17:50:36"
   },
   {
     "id": "fuji-lake-yamanakako-portrait",
@@ -969,7 +1076,8 @@
     "thumb": "/photos/fuji-lake-yamanakako-portrait_thumb.jpg",
     "large": "/photos/fuji-lake-yamanakako-portrait_large.jpg",
     "originalName": "fuji-lake-yamanakako-portrait.png",
-    "caption": "Mount Fuji over Lake Yamanakako portrait"
+    "caption": "Mount Fuji over Lake Yamanakako portrait",
+    "date": ""
   },
   {
     "id": "shibuya-scramble",
@@ -978,6 +1086,7 @@
     "thumb": "/photos/shibuya-scramble_thumb.jpg",
     "large": "/photos/shibuya-scramble_large.jpg",
     "originalName": "shibuya-scramble.jpeg",
-    "caption": "Shibuya Scramble"
+    "caption": "Shibuya Scramble",
+    "date": "2024-05-14T19:24:26"
   }
 ]
