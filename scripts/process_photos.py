@@ -141,15 +141,13 @@ def process_photos():
         if ext not in ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.dng']:
             continue
 
-        print(f"Processing {file_path.name}...")
-
         try:
             with Image.open(file_path) as img:
                 lat_lng = get_gps_details(img)
                 
                 if not lat_lng:
                     print(f"No GPS data found for {file_path.name}. Skipping.")
-                    missing_gps.append(file_path.name)
+                    missing_gps.append(RAW_DIR + file_path.name)
                     continue
                 
                 lat, lng = lat_lng

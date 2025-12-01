@@ -10,6 +10,16 @@
     "date": "2025-05-26T17:50:15"
   },
   {
+    "id": "golden-gate-sunset",
+    "lat": 37.80704444444444,
+    "lng": -122.47848611111111,
+    "thumb": "/photos/golden-gate-sunset_thumb.jpg",
+    "large": "/photos/golden-gate-sunset_large.jpg",
+    "originalName": "golden-gate-sunset.png",
+    "caption": "",
+    "date": "2025-11-12T11:21:47"
+  },
+  {
     "id": "bukit-bintang-skyline",
     "lat": 3.1462777777777777,
     "lng": 101.71378333333334,
@@ -90,6 +100,16 @@
     "date": "2025-05-26T22:39:59"
   },
   {
+    "id": "nyc",
+    "lat": 40.78449722222222,
+    "lng": -73.92446111111111,
+    "thumb": "/photos/nyc_thumb.jpg",
+    "large": "/photos/nyc_large.jpg",
+    "originalName": "nyc.png",
+    "caption": "",
+    "date": "2025-08-09T14:32:27"
+  },
+  {
     "id": "gbf-1",
     "lat": -16.52187222222222,
     "lng": 146.0025777777778,
@@ -160,6 +180,26 @@
     "date": "2024-01-04T17:46:37"
   },
   {
+    "id": "jumbo",
+    "lat": 42.40782222222222,
+    "lng": -71.12043055555554,
+    "thumb": "/photos/jumbo_thumb.jpg",
+    "large": "/photos/jumbo_large.jpg",
+    "originalName": "jumbo.png",
+    "caption": "",
+    "date": "2025-02-01T10:56:07"
+  },
+  {
+    "id": "red-incense",
+    "lat": 22.28236111111111,
+    "lng": 114.19689166666667,
+    "thumb": "/photos/red-incense_thumb.jpg",
+    "large": "/photos/red-incense_large.jpg",
+    "originalName": "red-incense.png",
+    "caption": "",
+    "date": "2025-05-18T19:13:09"
+  },
+  {
     "id": "castle",
     "lat": 49.000817,
     "lng": 20.770578,
@@ -218,16 +258,6 @@
     "originalName": "stephensplatz.jpeg",
     "caption": "Stephensplatz",
     "date": "2025-01-02T11:05:23"
-  },
-  {
-    "id": "toubkal-ante-summit",
-    "lat": 31.056030555555555,
-    "lng": -7.91835,
-    "thumb": "/photos/toubkal-ante-summit_thumb.jpg",
-    "large": "/photos/toubkal-ante-summit_large.jpg",
-    "originalName": "toubkal-ante-summit.jpeg",
-    "caption": "Before the summit of Toubkal",
-    "date": "2024-02-09T11:51:18"
   },
   {
     "id": "rooftop-pool",
@@ -338,6 +368,16 @@
     "originalName": "gas-station.jpeg",
     "caption": "Abandoned gas pump",
     "date": "2024-03-20T08:52:56"
+  },
+  {
+    "id": "sonoma-vines",
+    "lat": 38.24275686112261,
+    "lng": -122.40426255555556,
+    "thumb": "/photos/sonoma-vines_thumb.jpg",
+    "large": "/photos/sonoma-vines_large.jpg",
+    "originalName": "sonoma-vines.png",
+    "caption": "",
+    "date": "2025-11-12T12:52:43"
   },
   {
     "id": "IMG_7353",
@@ -630,6 +670,16 @@
     "date": "2024-06-16T21:50:12"
   },
   {
+    "id": "ballou",
+    "lat": 42.40643055555555,
+    "lng": -71.12086388888888,
+    "thumb": "/photos/ballou_thumb.jpg",
+    "large": "/photos/ballou_large.jpg",
+    "originalName": "ballou.png",
+    "caption": "",
+    "date": "2025-02-06T09:44:53"
+  },
+  {
     "id": "osaka-dotonbori",
     "lat": 34.668838888888885,
     "lng": 135.50149444444443,
@@ -770,6 +820,16 @@
     "date": "2025-05-18T19:00:26"
   },
   {
+    "id": "montauk",
+    "lat": 41.06931227777778,
+    "lng": -71.85547516669781,
+    "thumb": "/photos/montauk_thumb.jpg",
+    "large": "/photos/montauk_large.jpg",
+    "originalName": "montauk.png",
+    "caption": "",
+    "date": "2025-11-12T11:40:21"
+  },
+  {
     "id": "town-overhead-0",
     "lat": 37.82339,
     "lng": -25.520322,
@@ -808,6 +868,26 @@
     "originalName": "byron-bay-coast.png",
     "caption": "",
     "date": ""
+  },
+  {
+    "id": "jaipur",
+    "lat": 26.92393611111111,
+    "lng": 75.82705,
+    "thumb": "/photos/jaipur_thumb.jpg",
+    "large": "/photos/jaipur_large.jpg",
+    "originalName": "jaipur.png",
+    "caption": "",
+    "date": "2024-01-04T17:33:18"
+  },
+  {
+    "id": "tokyo",
+    "lat": 35.68901388888889,
+    "lng": 139.69106944444445,
+    "thumb": "/photos/tokyo_thumb.jpg",
+    "large": "/photos/tokyo_large.jpg",
+    "originalName": "tokyo.png",
+    "caption": "",
+    "date": "2025-05-16T18:31:12"
   },
   {
     "id": "town-overhead-1",
@@ -890,6 +970,16 @@
     "date": "2024-06-20T16:23:30"
   },
   {
+    "id": "toubkal",
+    "lat": 31.056030555555555,
+    "lng": -7.91835,
+    "thumb": "/photos/toubkal_thumb.jpg",
+    "large": "/photos/toubkal_large.jpg",
+    "originalName": "toubkal.png",
+    "caption": "",
+    "date": "2023-11-23T10:39:54"
+  },
+  {
     "id": "IMG_5274",
     "lat": 29.563755555555556,
     "lng": 106.56980833333333,
@@ -968,6 +1058,26 @@
     "originalName": "tahoe.png",
     "caption": "Lake Tahoe from B6934",
     "date": "2025-11-26T16:32:26"
+  },
+  {
+    "id": "sonoma-winehouse",
+    "lat": 38.25640555555555,
+    "lng": -122.35114999999999,
+    "thumb": "/photos/sonoma-winehouse_thumb.jpg",
+    "large": "/photos/sonoma-winehouse_large.jpg",
+    "originalName": "sonoma-winehouse.png",
+    "caption": "",
+    "date": "2025-11-08T16:57:37"
+  },
+  {
+    "id": "tahoe-skies",
+    "lat": 38.79387777777777,
+    "lng": -119.99558333333333,
+    "thumb": "/photos/tahoe-skies_thumb.jpg",
+    "large": "/photos/tahoe-skies_large.jpg",
+    "originalName": "tahoe-skies.png",
+    "caption": "",
+    "date": "2025-08-23T00:16:53"
   },
   {
     "id": "hillside",

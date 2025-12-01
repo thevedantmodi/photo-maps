@@ -66,6 +66,51 @@ def get_gps_details(image):
         return lat, lng
     return None
 
+def fix_encoding(s):
+    if not isinstance(s, str):
+        return s
+    try:
+        return s.encode('latin-1').decode('utf-8')
+    except:
+        return s
+
+def get_caption(image):
+    exif = image.getexif()
+    if not exif:
+        return None
+    
+    ImageDescription = 0x010E
+    caption = exif.get(ImageDescription)
+    if caption:
+        # Decode if bytes, though usually string in getexif()
+        if isinstance(caption, bytes):
+            try:
+                return caption.decode('utf-8').strip()
+            except:
+                pass
+        return fix_encoding(str(caption).strip())
+        
+    exif_ifd = exif.get_ifd(0x8769)
+    if exif_ifd:
+        user_comment = exif_ifd.get(0x9286)
+        if user_comment:
+             if isinstance(user_comment, bytes):
+                # UserComment starts with 8-byte encoding ID
+                # often b'ASCII\x00\x00\x00'
+                try:
+                    if user_comment.startswith(b'ASCII\0\0\0'):
+                        return user_comment[8:].decode('utf-8').strip()
+                    elif user_comment.startswith(b'UNICODE\0'):
+                        return user_comment[8:].decode('utf-16').strip()
+                    else:
+                        # Try utf-8 blindly
+                        return user_comment.decode('utf-8', errors='ignore').strip()
+                except:
+                    pass
+             return fix_encoding(str(user_comment).strip())
+
+    return None
+
 def get_date_taken(image):
     exif = image.getexif()
     if not exif:
@@ -96,19 +141,6 @@ def set_caption(file_path, caption):
         except subprocess.CalledProcessError as e:
             print(f"  [Error] exiftool failed: {e}")
             return False
-
-    # Method 2: Use piexif (JPEG only)
-    if file_path.suffix.lower() in ['.jpg', '.jpeg']:
-        try:
-            exif_dict = piexif.load(str(file_path))
-            # 0x010E is ImageDescription
-            exif_dict['0th'][piexif.ImageIFD.ImageDescription] = caption.encode('utf-8')
-            exif_bytes = piexif.dump(exif_dict)
-            piexif.insert(exif_bytes, str(file_path))
-            return True
-        except Exception as e:
-            print(f"  [Error] piexif failed: {e}")
-            return False
             
     print("  [Warning] No suitable tool found to write metadata for this file type.")
     print("  Please install 'exiftool' for HEIC support: brew install exiftool")
@@ -120,40 +152,32 @@ def ingest():
         return
 
     print("--- Photo Ingest Workflow ---")
-    if has_exiftool():
-        print("✓ exiftool detected (Full support)")
-    else:
+    if not has_exiftool():
         print("! exiftool not found. HEIC writing will be skipped. Install with 'brew install exiftool'")
+        sys.exit(1)
 
     files = [f for f in RAW_DIR.iterdir() if f.is_file() and not f.name.startswith('.')]
     files.sort()
     
-    count = 0
-    for file_path in files:
+    for i, file_path in enumerate(files):
         if file_path.suffix.lower() not in ['.jpg', '.jpeg', '.png', '.heic', '.dng']:
             continue
             
-        print(f"\n[{count+1}/{len(files)}] {file_path.name}")
-        
-        # Display image
-        print_iterm_image(file_path)
-        
         try:
             with Image.open(file_path) as img:
                 date = get_date_taken(img)
                 gps = get_gps_details(img)
                 
+                # Check for existing caption
+                existing_caption = get_caption(img)
+                if existing_caption:
+                    print(f"[{i+1}/{len(files)}] Skipping {file_path.name} (Has caption: {existing_caption[:30]}...)")
+                    continue
+
+                print(f"\n[{i+1}/{len(files)}] {file_path.name}")
+                print_iterm_image(file_path)
                 print(f"  Date: {date or 'Unknown'}")
                 print(f"  GPS:  {gps or 'Unknown'}")
-                
-                # Check for existing caption
-                exif = img.getexif()
-                existing = exif.get(0x010E)
-                if existing:
-                    # Decode if bytes
-                    if isinstance(existing, bytes):
-                        existing = existing.decode('utf-8', errors='ignore')
-                    print(f"  Current Caption: {existing}")
                 
         except Exception as e:
             print(f"  [Error] Reading metadata: {e}")
@@ -165,8 +189,6 @@ def ingest():
                 print("  ✓ Saved caption to EXIF")
             else:
                 print("  ✗ Failed to save")
-        
-        count += 1
 
 if __name__ == "__main__":
     ingest()
