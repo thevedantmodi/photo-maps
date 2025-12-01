@@ -97,6 +97,7 @@ const MapComponent = ({ photos }: MapProps) => {
                 zoom={2}
                 style={{ height: '100vh', width: '100%', background: 'var(--map-background)' }}
                 minZoom={2}
+                worldCopyJump={true}
             >
                 <TileLayer
                     url={tileLayerUrl}

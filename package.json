@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "process-photos": "./venv/bin/python scripts/process_photos.py"
+    "process": "./venv/bin/python scripts/process_photos.py",
+    "ingest": "./venv/bin/python scripts/ingest_photos.py"
   },
   "dependencies": {
     "exifr": "^7.1.3",
