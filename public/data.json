@@ -230,6 +230,16 @@
     "date": "2025-05-23T23:28:45"
   },
   {
+    "id": "JAMAICADEC21-1",
+    "lat": 18.48549,
+    "lng": -77.527911,
+    "thumb": "/photos/JAMAICADEC21-1_thumb.jpg",
+    "large": "/photos/JAMAICADEC21-1_large.jpg",
+    "originalName": "JAMAICADEC21-1.jpg",
+    "caption": "Silver Sands Beach gazebo from above",
+    "date": "2022-06-22T23:44:40"
+  },
+  {
     "id": "gbf-0",
     "lat": -16.52187222222222,
     "lng": 146.0025777777778,
@@ -358,6 +368,16 @@
     "originalName": "IMG_4465.png",
     "caption": "383 Madison Ave Lobby (JPMorganChase former headquarters)",
     "date": "2025-08-05T17:29:41"
+  },
+  {
+    "id": "JAMAICADEC21-2",
+    "lat": 18.48536,
+    "lng": -77.527633,
+    "thumb": "/photos/JAMAICADEC21-2_thumb.jpg",
+    "large": "/photos/JAMAICADEC21-2_large.jpg",
+    "originalName": "JAMAICADEC21-2.jpg",
+    "caption": "Silver Sands Beach from above",
+    "date": "2022-06-22T23:44:39"
   },
   {
     "id": "shinjuku",
@@ -540,6 +560,16 @@
     "date": "2025-05-30T19:51:05"
   },
   {
+    "id": "IMG_8993",
+    "lat": 45.85666666666667,
+    "lng": 9.109880555555556,
+    "thumb": "/photos/IMG_8993_thumb.jpg",
+    "large": "/photos/IMG_8993_large.jpg",
+    "originalName": "IMG_8993.png",
+    "caption": "Lake Como from the docks",
+    "date": "2023-05-20T18:34:58"
+  },
+  {
     "id": "flores-farm",
     "lat": 37.854561,
     "lng": -25.790857,
@@ -688,6 +718,16 @@
     "originalName": "IMG_1807.png",
     "caption": "Financial District from a NY/NJ waterway ferry",
     "date": "2025-07-10T18:34:19"
+  },
+  {
+    "id": "IMG_8412",
+    "lat": 51.50331111111111,
+    "lng": -0.12057222222222222,
+    "thumb": "/photos/IMG_8412_thumb.jpg",
+    "large": "/photos/IMG_8412_large.jpg",
+    "originalName": "IMG_8412.png",
+    "caption": "Big Ben and Houses of Parliament",
+    "date": "2023-05-18T18:58:29"
   },
   {
     "id": "IMG_7133",
@@ -1228,6 +1268,16 @@
     "originalName": "villa-franca-island.jpg",
     "caption": "Villa Franca do Campo secret island",
     "date": "2023-05-27T20:50:32"
+  },
+  {
+    "id": "IMG_8929",
+    "lat": 45.852294444444446,
+    "lng": 9.122202777777778,
+    "thumb": "/photos/IMG_8929_thumb.jpg",
+    "large": "/photos/IMG_8929_large.jpg",
+    "originalName": "IMG_8929.png",
+    "caption": "Lake Como",
+    "date": "2023-05-20T17:10:00"
   },
   {
     "id": "vedant-taj-mahal",
