@@ -48,9 +48,38 @@ const MapComponent = ({ photos }: MapProps) => {
     }, [selectedYear, photos]);
 
     useEffect(() => {
+        const handleHashChange = () => {
+            const hash = window.location.hash.slice(1);
+            if (hash) {
+                let decodedHash = hash;
+                try {
+                    decodedHash = decodeURIComponent(hash);
+                } catch (e) {
+                    console.warn("Invalid hash encoding", e);
+                }
+
+                const photo = photos.find(p => p.id === decodedHash);
+                if (photo) {
+                    setSelectedPhoto(photo);
+                } else {
+                    setSelectedPhoto(null);
+                }
+            } else {
+                setSelectedPhoto(null);
+            }
+        };
+
+        window.addEventListener('hashchange', handleHashChange);
+        // Check hash on mount
+        handleHashChange();
+
+        return () => window.removeEventListener('hashchange', handleHashChange);
+    }, [photos]);
+
+    useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
-                setSelectedPhoto(null);
+                window.location.hash = '';
             }
         };
 
@@ -149,7 +178,9 @@ const MapComponent = ({ photos }: MapProps) => {
                             icon={createCustomIcon(photo.thumb)}
                             title={photo.thumb} // Pass thumb url here for cluster access
                             eventHandlers={{
-                                click: () => setSelectedPhoto(photo),
+                                click: () => {
+                                    window.location.hash = photo.id;
+                                },
                             }}
                         />
                     ))}
@@ -166,7 +197,7 @@ const MapComponent = ({ photos }: MapProps) => {
                 {selectedPhoto && (
                     <motion.div
                         className="modal-overlay"
-                        onClick={() => setSelectedPhoto(null)}
+                        onClick={() => window.location.hash = ''}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -193,7 +224,7 @@ const MapComponent = ({ photos }: MapProps) => {
                                 className="modal-close-btn"
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    setSelectedPhoto(null);
+                                    window.location.hash = '';
                                 }}
                             >
                                 &times;
