@@ -12,12 +12,25 @@ import DateFilter from './DateFilter';
 
 // Fix for default marker icons if we were using them, but we are using custom ones.
 
+// interface Photo {
+//     id: string;
+//     lat: number;
+//     lng: number;
+//     thumb: string;
+//     large: string;
+//     originalName: string;
+//     caption?: string;
+//     date?: string;
+// }
+
 interface Photo {
-    id: string;
+    id: number;
+    /* used as the frag id */
+    friendlyName: string;
     lat: number;
-    lng: number;
-    thumb: string;
-    large: string;
+    lon: number;
+    thumbName: string;
+    largeName: string;
     originalName: string;
     caption?: string;
     date?: string;
@@ -58,7 +71,7 @@ const MapComponent = ({ photos }: MapProps) => {
                     console.warn("Invalid hash encoding", e);
                 }
 
-                const photo = photos.find(p => p.id === decodedHash);
+                const photo = photos.find(p => p.friendlyName === decodedHash);
                 if (photo) {
                     setSelectedPhoto(photo);
                 } else {
@@ -174,12 +187,12 @@ const MapComponent = ({ photos }: MapProps) => {
                     {filteredPhotos.map((photo) => (
                         <Marker
                             key={photo.id}
-                            position={[photo.lat, photo.lng]}
-                            icon={createCustomIcon(photo.thumb)}
-                            title={photo.thumb} // Pass thumb url here for cluster access
+                            position={[photo.lat, photo.lon]}
+                            icon={createCustomIcon(photo.thumbName)}
+                            title={photo.thumbName} // Pass thumb url here for cluster access
                             eventHandlers={{
                                 click: () => {
-                                    window.location.hash = photo.id;
+                                    window.location.hash = photo.friendlyName;
                                 },
                             }}
                         />
@@ -211,7 +224,7 @@ const MapComponent = ({ photos }: MapProps) => {
                             transition={{ duration: 0.2 }}
                         >
                             <img
-                                src={selectedPhoto.large}
+                                src={selectedPhoto.largeName}
                                 alt="Full size"
                                 style={{
                                     maxWidth: '100%',

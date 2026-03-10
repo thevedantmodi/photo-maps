@@ -4,9 +4,13 @@ import MapWrapper from './components/MapWrapper';
 
 async function getPhotos() {
   try {
-    const filePath = path.join(process.cwd(), 'public', 'data.json');
-    const fileContent = await fs.readFile(filePath, 'utf-8');
-    return JSON.parse(fileContent);
+    // const filePath = path.join(process.cwd(), 'public', 'data.json');
+    // const fileContent = await fs.readFile(filePath, 'utf-8');
+    // return JSON.parse(fileContent);
+    // const res = await fetch('http://localhost:8080/photos');
+    const res = await fetch(process.env.NEXT_PUBLIC_PHOTOS_API_URL + '/photos')
+    if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
+    return await res.json();
   } catch (error) {
     console.warn('Error reading data.json (maybe no photos processed yet):', error);
     return [];
