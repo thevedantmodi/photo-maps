@@ -9,6 +9,7 @@ interface PhotoEntry {
     preview: string;
     status: 'ready' | 'uploading' | 'done' | 'error';
     error?: string;
+    captionSource?: 'user' | 'exif' | 'none';
 }
 
 export default function AdminPage() {
@@ -68,7 +69,7 @@ export default function AdminPage() {
                     const res = await fetch('/api/upload', { method: 'POST', body: fd });
                     const data = await res.json();
                     if (!res.ok) throw new Error(data.error ?? 'Upload failed');
-                    setPhotos(prev => prev.map((x, j) => j === i ? { ...x, status: 'done' } : x));
+                    setPhotos(prev => prev.map((x, j) => j === i ? { ...x, status: 'done', captionSource: data.captionSource } : x));
                 } catch (e: any) {
                     setPhotos(prev => prev.map((x, j) => j === i ? { ...x, status: 'error', error: e.message } : x));
                 }
@@ -174,7 +175,10 @@ export default function AdminPage() {
                                             p.status === 'uploading' ? 'var(--color-text-warning)' :
                                                 'var(--color-text-secondary)',
                                 }}>
-                                    {p.status === 'error' ? p.error : p.status}
+                                    {p.status === 'error' ? p.error
+                                        : p.status === 'done' && p.captionSource === 'exif' ? 'caption from exif'
+                                            : p.status === 'done' && p.captionSource === 'none' ? 'no caption'
+                                                : p.status}
                                 </span>
                             </div>
                             <input

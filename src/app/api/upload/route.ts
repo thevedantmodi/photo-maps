@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
         sharp(buffer).resize(400).jpeg({ quality: 80 }).toBuffer(),
         sharp(buffer).resize(1600).jpeg({ quality: 85 }).toBuffer(),
         exifr.parse(buffer, {
-            pick: ['DateTimeOriginal', 'GPSLatitude', 'GPSLongitude', 'GPSLatitudeRef', 'GPSLongitudeRef']
+            pick: ['DateTimeOriginal', 'GPSLatitude', 'GPSLongitude', 'GPSLatitudeRef', 'GPSLongitudeRef', 'ImageDescription']
         }),
     ]);
 
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
       ${originalName},
       ${dmsToNumeric(exif.GPSLatitude, exif.GPSLatitudeRef)},
       ${dmsToNumeric(exif.GPSLongitude, exif.GPSLongitudeRef)},
-      ${caption ?? null},
+      ${caption || exif?.ImageDescription || null},
       ${exif?.DateTimeOriginal ?? null}
     )
   `;
@@ -92,5 +92,5 @@ export async function POST(req: NextRequest) {
 
 
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, captionSource: caption ? 'user' : exif?.ImageDescription ? 'exif' : 'none' });
 }
