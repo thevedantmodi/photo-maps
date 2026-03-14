@@ -23,18 +23,7 @@ import DateFilter from './DateFilter';
 //     date?: string;
 // }
 
-interface Photo {
-    id: number;
-    /* used as the frag id */
-    friendlyName: string;
-    lat: number;
-    lon: number;
-    thumbName: string;
-    largeName: string;
-    originalName: string;
-    caption?: string;
-    date?: string;
-}
+import { Photo } from '../types';   
 
 interface MapProps {
     photos: Photo[];
@@ -71,7 +60,7 @@ const MapComponent = ({ photos }: MapProps) => {
                     console.warn("Invalid hash encoding", e);
                 }
 
-                const photo = photos.find(p => p.friendlyName === decodedHash);
+                const photo = photos.find(p => p.friendly_name === decodedHash);
                 if (photo) {
                     setSelectedPhoto(photo);
                 } else {
@@ -188,11 +177,11 @@ const MapComponent = ({ photos }: MapProps) => {
                         <Marker
                             key={photo.id}
                             position={[photo.lat, photo.lon]}
-                            icon={createCustomIcon(photo.thumbName)}
-                            title={photo.thumbName} // Pass thumb url here for cluster access
+                            icon={createCustomIcon(photo.thumb_name)}
+                            title={photo.thumb_name} // Pass thumb url here for cluster access
                             eventHandlers={{
                                 click: () => {
-                                    window.location.hash = photo.friendlyName;
+                                    window.location.hash = photo.friendly_name;
                                 },
                             }}
                         />
@@ -224,7 +213,7 @@ const MapComponent = ({ photos }: MapProps) => {
                             transition={{ duration: 0.2 }}
                         >
                             <img
-                                src={selectedPhoto.largeName}
+                                src={selectedPhoto.large_name}
                                 alt="Full size"
                                 style={{
                                     maxWidth: '100%',
@@ -250,7 +239,7 @@ const MapComponent = ({ photos }: MapProps) => {
                             exit={{ y: 20, opacity: 0 }}
                             transition={{ duration: 0.2, delay: 0.1 }}
                         >
-                            {selectedPhoto.caption || selectedPhoto.originalName}
+                            {selectedPhoto.caption || selectedPhoto.original_name}
                             {selectedPhoto.date && (
                                 <div style={{ fontSize: '0.8em', opacity: 0.8, marginTop: '4px' }}>
                                     {new Date(selectedPhoto.date).toLocaleDateString(undefined, {
