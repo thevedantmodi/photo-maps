@@ -237,7 +237,7 @@ const MapComponent = ({ photos }: MapProps) => {
                             exit={{ y: 20, opacity: 0 }}
                             transition={{ duration: 0.2, delay: 0.1 }}
                         >
-                            {selectedPhoto.caption || selectedPhoto.original_name}
+                            {selectedPhoto.caption || selectedPhoto.originalName}
                             {selectedPhoto.date && (
                                 <div style={{ fontSize: '0.8em', opacity: 0.8, marginTop: '4px' }}>
                                     {new Date(selectedPhoto.date).toLocaleDateString(undefined, {
