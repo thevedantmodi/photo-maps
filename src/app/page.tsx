@@ -1,20 +1,10 @@
 import MapWrapper from './components/MapWrapper';
 
-import { neon } from '@neondatabase/serverless';
-import { Photo } from './types';
-
-
-const sql = neon(process.env.DATABASE_URL!);
-
-async function getPhotos(): Promise<Photo[]> {
+async function getPhotos() {
   try {
-    const rows = await sql`SELECT * FROM photos ORDER BY date DESC`;
-    const base = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
-    return (rows as unknown as Photo[]).map(photo => ({
-      ...photo,
-      thumb_name: `${base}/${photo.thumb_name}`,
-      large_name: `${base}/${photo.large_name}`,
-    }));
+    const filePath = path.join(process.cwd(), 'public', 'data.json');
+    const fileContent = await fs.readFile(filePath, 'utf-8');
+    return JSON.parse(fileContent);
   } catch (error) {
     console.warn('Failed to fetch photos:', error);
     return [];
