@@ -1,3 +1,5 @@
+import path from 'path';
+import fs from 'fs/promises';
 import MapWrapper from './components/MapWrapper';
 
 async function getPhotos() {
