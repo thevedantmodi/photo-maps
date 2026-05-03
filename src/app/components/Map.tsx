@@ -134,9 +134,10 @@ const MapComponent = ({ photos }: MapProps) => {
         });
     };
 
+    const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
     const tileLayerUrl = theme === 'dark'
-        ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-        : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+        ? `https://api.mapbox.com/styles/v1/mapbox/dark-v11/tiles/512/{z}/{x}/{y}@2x?access_token=${mapboxToken}`
+        : `https://api.mapbox.com/styles/v1/mapbox/light-v11/tiles/512/{z}/{x}/{y}@2x?access_token=${mapboxToken}`;
 
     return (
         <>
@@ -149,7 +150,9 @@ const MapComponent = ({ photos }: MapProps) => {
             >
                 <TileLayer
                     url={tileLayerUrl}
-                    attribution='&copy; <a href="https://carto.com/attributions">CARTO</a> | <a href="https://www.github.com/thevedantmodi/photo-maps">Source code</a>'
+                    attribution='&copy; <a href="https://www.mapbox.com/about/maps/">Mapbox</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> | <a href="https://www.github.com/thevedantmodi/photo-maps">Source code</a>'
+                    tileSize={512}
+                    zoomOffset={-1}
                 />
 
                 <MarkerClusterGroup
@@ -202,8 +205,12 @@ const MapComponent = ({ photos }: MapProps) => {
                                 src={selectedPhoto.large_url}
                                 alt="Full size"
                                 style={{
-                                    maxWidth: '100%',
-                                    maxHeight: '80vh',
+                                    maxWidth: 'calc(100vw - 40px)',
+                                    maxHeight: '65dvh',
+                                    width: 'auto',
+                                    height: 'auto',
+                                    display: 'block',
+                                    margin: '0 auto',
                                     borderRadius: '4px',
                                     boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
                                 }}
