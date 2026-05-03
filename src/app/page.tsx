@@ -1,14 +1,13 @@
-import path from 'path';
-import fs from 'fs/promises';
 import MapWrapper from './components/MapWrapper';
+import { Photo } from './types';
 
-async function getPhotos() {
+async function getPhotos(): Promise<Photo[]> {
+  const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
   try {
-    const filePath = path.join(process.cwd(), 'public', 'data.json');
-    const fileContent = await fs.readFile(filePath, 'utf-8');
-    return JSON.parse(fileContent);
-  } catch (error) {
-    console.warn('Failed to fetch photos:', error);
+    const res = await fetch(`${base}/api/photos`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return res.json();
+  } catch {
     return [];
   }
 }

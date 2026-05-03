@@ -9,19 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../hooks/useTheme';
 
 import DateFilter from './DateFilter';
-
-// Fix for default marker icons if we were using them, but we are using custom ones.
-
-interface Photo {
-    id: string;
-    lat: number;
-    lng: number;
-    thumb: string;
-    large: string;
-    originalName: string;
-    caption?: string;
-    date?: string;
-}
+import { Photo } from '../types';
 
 interface MapProps {
     photos: Photo[];
@@ -58,7 +46,7 @@ const MapComponent = ({ photos }: MapProps) => {
                     console.warn("Invalid hash encoding", e);
                 }
 
-                const photo = photos.find(p => p.id === decodedHash);
+                const photo = photos.find(p => p.friendly_name === decodedHash || p.id === decodedHash);
                 if (photo) {
                     setSelectedPhoto(photo);
                 } else {
@@ -87,9 +75,9 @@ const MapComponent = ({ photos }: MapProps) => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
 
-    const createCustomIcon = (thumbUrl: string) => {
+    const createCustomIcon = (thumb_url: string) => {
         return L.divIcon({
-            html: `<div class="photo-marker" style="background-image: url('${thumbUrl}');"></div>`,
+            html: `<div class="photo-marker" style="background-image: url('${thumb_url}');"></div>`,
             className: 'custom-marker-icon',
             iconSize: [48, 48],
             iconAnchor: [24, 24],
@@ -174,12 +162,12 @@ const MapComponent = ({ photos }: MapProps) => {
                     {filteredPhotos.map((photo) => (
                         <Marker
                             key={photo.id}
-                            position={[photo.lat, photo.lng]}
-                            icon={createCustomIcon(photo.thumb)}
-                            title={photo.thumb} // Pass thumb url here for cluster access
+                            position={[photo.lat ?? 0, photo.lon ?? 0]}
+                            icon={createCustomIcon(photo.thumb_url)}
+                            title={photo.thumb_url}
                             eventHandlers={{
                                 click: () => {
-                                    window.location.hash = photo.id;
+                                    window.location.hash = photo.friendly_name;
                                 },
                             }}
                         />
@@ -211,7 +199,7 @@ const MapComponent = ({ photos }: MapProps) => {
                             transition={{ duration: 0.2 }}
                         >
                             <img
-                                src={selectedPhoto.large}
+                                src={selectedPhoto.large_url}
                                 alt="Full size"
                                 style={{
                                     maxWidth: '100%',
@@ -237,7 +225,7 @@ const MapComponent = ({ photos }: MapProps) => {
                             exit={{ y: 20, opacity: 0 }}
                             transition={{ duration: 0.2, delay: 0.1 }}
                         >
-                            {selectedPhoto.caption || selectedPhoto.originalName}
+                            {selectedPhoto.caption || selectedPhoto.original_name}
                             {selectedPhoto.date && (
                                 <div style={{ fontSize: '0.8em', opacity: 0.8, marginTop: '4px' }}>
                                     {new Date(selectedPhoto.date).toLocaleDateString(undefined, {

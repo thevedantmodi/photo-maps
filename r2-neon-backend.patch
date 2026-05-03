@@ -1,0 +1,851 @@
+From 5bb4014eee31fdbc4c935b6b83e4db3447dd98ab Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 3 May 2026 16:02:17 +0000
+Subject: [PATCH 1/2] Rearchitecture: serve photos from R2 + Neon Postgres
+
+- Add Drizzle schema/client and drizzle.config.ts
+- Add src/lib/r2.ts (S3Client, getPublicUrl, getUploadUrl)
+- Add /api/photos route (queries DB, computes R2 URLs)
+- Add /api/upload route (presigned PUT URL)
+- Wire src/middleware.ts for auth on /admin and /api/upload
+- Update Photo type, Map.tsx field renames, page.tsx runtime fetch
+- Add scripts/migrate_to_r2.py for one-time migration
+- Rewrite process_photos.py to upload to R2 + upsert DB
+---
+ drizzle.config.ts                 |   8 ++
+ requirements.txt                  |   3 +
+ scripts/migrate_to_r2.py          | 108 +++++++++++++++++++++++++
+ scripts/process_photos.py         | 129 +++++++++++++++++++-----------
+ src/app/api/photos/route.ts       |  15 ++++
+ src/app/api/upload/route.ts       |  11 +++
+ src/app/components/DateFilter.tsx |   2 +-
+ src/app/components/Map.tsx        |  32 +++-----
+ src/app/page.tsx                  |  15 ++--
+ src/app/types.ts                  |  24 +++---
+ src/db/index.ts                   |   6 ++
+ src/db/schema.ts                  |  15 ++++
+ src/lib/r2.ts                     |  23 ++++++
+ src/middleware.ts                 |   5 ++
+ 14 files changed, 307 insertions(+), 89 deletions(-)
+ create mode 100644 drizzle.config.ts
+ create mode 100644 scripts/migrate_to_r2.py
+ create mode 100644 src/app/api/photos/route.ts
+ create mode 100644 src/app/api/upload/route.ts
+ create mode 100644 src/db/index.ts
+ create mode 100644 src/db/schema.ts
+ create mode 100644 src/lib/r2.ts
+ create mode 100644 src/middleware.ts
+
+diff --git a/drizzle.config.ts b/drizzle.config.ts
+new file mode 100644
+index 0000000..1da544e
+--- /dev/null
++++ b/drizzle.config.ts
+@@ -0,0 +1,8 @@
++import { defineConfig } from 'drizzle-kit';
++
++export default defineConfig({
++  schema: './src/db/schema.ts',
++  out: './drizzle',
++  dialect: 'postgresql',
++  dbCredentials: { url: process.env.DATABASE_URL_UNPOOLED! },
++});
+diff --git a/requirements.txt b/requirements.txt
+index aa7ccae..4139003 100644
+--- a/requirements.txt
++++ b/requirements.txt
+@@ -1,2 +1,5 @@
+ Pillow
+ pillow-heif
++boto3
++psycopg2-binary
++python-dotenv
+diff --git a/scripts/migrate_to_r2.py b/scripts/migrate_to_r2.py
+new file mode 100644
+index 0000000..622044c
+--- /dev/null
++++ b/scripts/migrate_to_r2.py
+@@ -0,0 +1,108 @@
++#!/usr/bin/env python3
++"""
++One-time migration: upload public/photos/* to R2 and upsert rows into Neon DB.
++Safe to rerun — upserts on friendly_name conflict.
++
++Requires: pip install boto3 psycopg2-binary python-dotenv
++"""
++import json
++import os
++from pathlib import Path
++
++import boto3
++import psycopg2
++from dotenv import load_dotenv
++
++BASE_DIR = Path(__file__).resolve().parent.parent
++load_dotenv(BASE_DIR / ".env.local")
++
++ENDPOINT = os.environ["R2_ENDPOINT"]
++BUCKET = os.environ["R2_BUCKET"]
++ACCESS_KEY = os.environ["R2_ACCESS_KEY_ID"]
++SECRET_KEY = os.environ["R2_SECRET_ACCESS_KEY"]
++DATABASE_URL = os.environ["DATABASE_URL_UNPOOLED"]
++
++DATA_FILE = BASE_DIR / "public" / "data.json"
++PHOTOS_DIR = BASE_DIR / "public" / "photos"
++
++
++def main():
++    s3 = boto3.client(
++        "s3",
++        endpoint_url=ENDPOINT,
++        aws_access_key_id=ACCESS_KEY,
++        aws_secret_access_key=SECRET_KEY,
++        region_name="auto",
++    )
++
++    conn = psycopg2.connect(DATABASE_URL)
++    cur = conn.cursor()
++
++    with open(DATA_FILE, encoding="utf-8") as f:
++        photos = json.load(f)
++
++    print(f"Migrating {len(photos)} photos...")
++
++    for photo in photos:
++        friendly_name = photo["id"]
++        # Strip "/photos/" prefix to get bare filenames as R2 keys
++        thumb_name = photo["thumb"].lstrip("/").removeprefix("photos/")
++        large_name = photo["large"].lstrip("/").removeprefix("photos/")
++
++        # Upload thumb
++        thumb_path = PHOTOS_DIR / thumb_name
++        if thumb_path.exists():
++            with open(thumb_path, "rb") as f:
++                s3.put_object(Bucket=BUCKET, Key=thumb_name, Body=f, ContentType="image/jpeg")
++            print(f"  Uploaded {thumb_name}")
++        else:
++            print(f"  WARNING: {thumb_path} not found, skipping upload")
++
++        # Upload large
++        large_path = PHOTOS_DIR / large_name
++        if large_path.exists():
++            with open(large_path, "rb") as f:
++                s3.put_object(Bucket=BUCKET, Key=large_name, Body=f, ContentType="image/jpeg")
++            print(f"  Uploaded {large_name}")
++        else:
++            print(f"  WARNING: {large_path} not found, skipping upload")
++
++        # Parse date — data.json stores ISO strings without timezone
++        date_val = photo.get("date") or None
++
++        cur.execute(
++            """
++            INSERT INTO photos
++                (friendly_name, thumb_name, large_name, original_name, lat, lon, caption, date, status)
++            VALUES
++                (%s, %s, %s, %s, %s, %s, %s, %s, 'published')
++            ON CONFLICT (friendly_name) DO UPDATE SET
++                thumb_name   = EXCLUDED.thumb_name,
++                large_name   = EXCLUDED.large_name,
++                original_name = EXCLUDED.original_name,
++                lat          = EXCLUDED.lat,
++                lon          = EXCLUDED.lon,
++                caption      = EXCLUDED.caption,
++                date         = EXCLUDED.date,
++                status       = 'published'
++            """,
++            (
++                friendly_name,
++                thumb_name,
++                large_name,
++                photo.get("originalName", ""),
++                photo.get("lat"),
++                photo.get("lng"),   # data.json uses lng; DB column is lon
++                photo.get("caption") or None,
++                date_val,
++            ),
++        )
++
++    conn.commit()
++    cur.close()
++    conn.close()
++    print(f"\nDone! {len(photos)} rows upserted.")
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/scripts/process_photos.py b/scripts/process_photos.py
+index bcdedc2..8bae9dd 100644
+--- a/scripts/process_photos.py
++++ b/scripts/process_photos.py
+@@ -1,28 +1,36 @@
++import io
+ import os
+-import json
+-import shutil
+ from pathlib import Path
+ from PIL import Image, ExifTags
+ from datetime import datetime
+ import pillow_heif
++import boto3
++import psycopg2
++from dotenv import load_dotenv
+ 
+ pillow_heif.register_heif_opener()
+ 
+ BASE_DIR = Path(__file__).resolve().parent.parent
+ RAW_DIR = BASE_DIR / "photos"
+-PUBLIC_PHOTOS_DIR = BASE_DIR / "public" / "photos"
+-DATA_FILE = BASE_DIR / "public" / "data.json"
++
++load_dotenv(BASE_DIR / ".env.local")
++
++ENDPOINT = os.environ["R2_ENDPOINT"]
++BUCKET = os.environ["R2_BUCKET"]
++ACCESS_KEY = os.environ["R2_ACCESS_KEY_ID"]
++SECRET_KEY = os.environ["R2_SECRET_ACCESS_KEY"]
++DATABASE_URL = os.environ["DATABASE_URL_UNPOOLED"]
+ 
+ def get_decimal_from_dms(dms, ref):
+     degrees = dms[0]
+     minutes = dms[1]
+     seconds = dms[2]
+-    
++
+     decimal = degrees + (minutes / 60.0) + (seconds / 3600.0)
+-    
++
+     if ref in ['S', 'W']:
+         decimal = -decimal
+-        
++
+     return decimal
+ 
+ def get_gps_details(image):
+@@ -43,7 +51,7 @@ def get_gps_details(image):
+         lat = get_decimal_from_dms(gps_latitude, gps_latitude_ref)
+         lng = get_decimal_from_dms(gps_longitude, gps_longitude_ref)
+         return lat, lng
+-        
++
+     return None
+ 
+ 
+@@ -60,7 +68,7 @@ def get_caption(image):
+     exif = image.getexif()
+     if not exif:
+         return None
+-    
++
+     ImageDescription = 0x010E
+     caption = exif.get(ImageDescription)
+     if caption:
+@@ -71,7 +79,7 @@ def get_caption(image):
+             except:
+                 pass
+         return fix_encoding(str(caption).strip())
+-        
++
+     exif_ifd = exif.get_ifd(0x8769)
+     if exif_ifd:
+         user_comment = exif_ifd.get(0x9286)
+@@ -98,13 +106,9 @@ def get_date_taken(image):
+     exif = image.getexif()
+     if not exif:
+         return None
+-    
+-    # DateTimeOriginal = 36867
+-    # DateTimeDigitized = 36868
+-    # DateTime = 306
+-    
++
+     date_str = exif.get(36867) or exif.get(36868) or exif.get(306)
+-    
++
+     if not date_str:
+          exif_ifd = exif.get_ifd(0x8769)
+          if exif_ifd:
+@@ -120,7 +124,7 @@ def get_date_taken(image):
+             return dt.isoformat()
+         except ValueError:
+             pass
+-            
++
+     return None
+ 
+ def process_photos():
+@@ -128,12 +132,20 @@ def process_photos():
+         print(f"Directory {RAW_DIR} does not exist.")
+         return
+ 
+-    PUBLIC_PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
++    s3 = boto3.client(
++        "s3",
++        endpoint_url=ENDPOINT,
++        aws_access_key_id=ACCESS_KEY,
++        aws_secret_access_key=SECRET_KEY,
++        region_name="auto",
++    )
++
++    conn = psycopg2.connect(DATABASE_URL)
++    cur = conn.cursor()
+ 
+-    photos = []
+     missing_gps = []
+     files = [f for f in RAW_DIR.iterdir() if f.is_file() and not f.name.startswith('.')]
+-    
++
+     print(f"Found {len(files)} files in {RAW_DIR}")
+ 
+     for file_path in files:
+@@ -144,62 +156,83 @@ def process_photos():
+         try:
+             with Image.open(file_path) as img:
+                 lat_lng = get_gps_details(img)
+-                
++
+                 if not lat_lng:
+                     print(f"No GPS data found for {file_path.name}. Skipping.")
+-                    missing_gps.append(RAW_DIR + file_path.name)
++                    missing_gps.append(str(file_path))
+                     continue
+-                
++
+                 lat, lng = lat_lng
+-                
++
+                 caption = get_caption(img)
+                 date_taken = get_date_taken(img)
+-                
++
+                 file_id = file_path.stem
+                 thumb_name = f"{file_id}_thumb.jpg"
+                 large_name = f"{file_id}_large.jpg"
+-                
++
+                 img_thumb = img.copy()
+                 img_thumb.thumbnail((300, 300))
+-                # enforces rgb color space
+                 if img_thumb.mode in ('RGBA', 'P'):
+                     img_thumb = img_thumb.convert('RGB')
+-                
+-                img_thumb.save(PUBLIC_PHOTOS_DIR / thumb_name, "JPEG", quality=80)
+-                
+-                # Resize and save Large
++
++                buf_thumb = io.BytesIO()
++                img_thumb.save(buf_thumb, "JPEG", quality=80)
++                s3.put_object(Bucket=BUCKET, Key=thumb_name, Body=buf_thumb.getvalue(), ContentType="image/jpeg")
++
+                 img_large = img.copy()
+                 img_large.thumbnail((1600, 1600))
+                 if img_large.mode in ('RGBA', 'P'):
+                     img_large = img_large.convert('RGB')
+-                    
+-                img_large.save(PUBLIC_PHOTOS_DIR / large_name, "JPEG", quality=85)
+-                
+-                photos.append({
+-                    "id": file_id,
+-                    "lat": lat,
+-                    "lng": lng,
+-                    "thumb": f"/photos/{thumb_name}",
+-                    "large": f"/photos/{large_name}",
+-                    "originalName": file_path.name,
+-                    "caption": caption or "",
+-                    "date": date_taken or ""
+-                })
+-                
++
++                buf_large = io.BytesIO()
++                img_large.save(buf_large, "JPEG", quality=85)
++                s3.put_object(Bucket=BUCKET, Key=large_name, Body=buf_large.getvalue(), ContentType="image/jpeg")
++
++                cur.execute(
++                    """
++                    INSERT INTO photos
++                        (friendly_name, thumb_name, large_name, original_name, lat, lon, caption, date, status)
++                    VALUES
++                        (%s, %s, %s, %s, %s, %s, %s, %s, 'published')
++                    ON CONFLICT (friendly_name) DO UPDATE SET
++                        thumb_name    = EXCLUDED.thumb_name,
++                        large_name    = EXCLUDED.large_name,
++                        original_name = EXCLUDED.original_name,
++                        lat           = EXCLUDED.lat,
++                        lon           = EXCLUDED.lon,
++                        caption       = EXCLUDED.caption,
++                        date          = EXCLUDED.date,
++                        status        = 'published'
++                    """,
++                    (
++                        file_id,
++                        thumb_name,
++                        large_name,
++                        file_path.name,
++                        lat,
++                        lng,
++                        caption or None,
++                        date_taken or None,
++                    ),
++                )
++
+                 print(f"Processed {file_path.name}: {lat}, {lng}")
+ 
+         except Exception as e:
+             print(f"Error processing {file_path.name}: {e}")
+ 
+-    with open(DATA_FILE, 'w', encoding='utf-8') as f:
+-        json.dump(photos, f, indent=2, ensure_ascii=False)
++    conn.commit()
++    cur.close()
++    conn.close()
++
+     print("-" * 40)
+     if missing_gps:
+         print(f"Missing GPS data for {len(missing_gps)} photos:")
+         for name in missing_gps:
+             print(name)
+     print("-" * 40)
+-    print(f"Done! Processed {len(photos)} photos. Metadata saved to {DATA_FILE}")
++    print(f"Done! Processed {len(files) - len(missing_gps)} photos.")
+ 
+ if __name__ == "__main__":
+     process_photos()
+diff --git a/src/app/api/photos/route.ts b/src/app/api/photos/route.ts
+new file mode 100644
+index 0000000..bd9dac2
+--- /dev/null
++++ b/src/app/api/photos/route.ts
+@@ -0,0 +1,15 @@
++import { NextResponse } from 'next/server';
++import { db } from '@/db';
++import { photos } from '@/db/schema';
++import { eq } from 'drizzle-orm';
++import { getPublicUrl } from '@/lib/r2';
++
++export async function GET() {
++  const rows = await db.select().from(photos).where(eq(photos.status, 'published'));
++  return NextResponse.json(rows.map(row => ({
++    ...row,
++    date: row.date?.toISOString() ?? null,
++    thumb_url: getPublicUrl(row.thumb_name),
++    large_url: getPublicUrl(row.large_name),
++  })));
++}
+diff --git a/src/app/api/upload/route.ts b/src/app/api/upload/route.ts
+new file mode 100644
+index 0000000..eaae0f5
+--- /dev/null
++++ b/src/app/api/upload/route.ts
+@@ -0,0 +1,11 @@
++import { NextRequest, NextResponse } from 'next/server';
++import { getUploadUrl } from '@/lib/r2';
++
++export async function POST(req: NextRequest) {
++  const { key, contentType } = await req.json();
++  if (!key || !contentType) {
++    return NextResponse.json({ error: 'key and contentType required' }, { status: 400 });
++  }
++  const uploadUrl = await getUploadUrl(key, contentType);
++  return NextResponse.json({ uploadUrl, key });
++}
+diff --git a/src/app/components/DateFilter.tsx b/src/app/components/DateFilter.tsx
+index b8205ce..93fa32b 100644
+--- a/src/app/components/DateFilter.tsx
++++ b/src/app/components/DateFilter.tsx
+@@ -1,7 +1,7 @@
+ import React, { useMemo } from 'react';
+ 
+ interface DateFilterProps {
+-    photos: { date?: string }[];
++    photos: { date?: string | null }[];
+     selectedYear: number | null;
+     onYearChange: (year: number | null) => void;
+ }
+diff --git a/src/app/components/Map.tsx b/src/app/components/Map.tsx
+index b14321c..584cbae 100644
+--- a/src/app/components/Map.tsx
++++ b/src/app/components/Map.tsx
+@@ -9,19 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
+ import { useTheme } from '../hooks/useTheme';
+ 
+ import DateFilter from './DateFilter';
+-
+-// Fix for default marker icons if we were using them, but we are using custom ones.
+-
+-interface Photo {
+-    id: string;
+-    lat: number;
+-    lng: number;
+-    thumb: string;
+-    large: string;
+-    originalName: string;
+-    caption?: string;
+-    date?: string;
+-}
++import { Photo } from '../types';
+ 
+ interface MapProps {
+     photos: Photo[];
+@@ -58,7 +46,7 @@ const MapComponent = ({ photos }: MapProps) => {
+                     console.warn("Invalid hash encoding", e);
+                 }
+ 
+-                const photo = photos.find(p => p.id === decodedHash);
++                const photo = photos.find(p => p.friendly_name === decodedHash || p.id === decodedHash);
+                 if (photo) {
+                     setSelectedPhoto(photo);
+                 } else {
+@@ -87,9 +75,9 @@ const MapComponent = ({ photos }: MapProps) => {
+         return () => window.removeEventListener('keydown', handleKeyDown);
+     }, []);
+ 
+-    const createCustomIcon = (thumbUrl: string) => {
++    const createCustomIcon = (thumb_url: string) => {
+         return L.divIcon({
+-            html: `<div class="photo-marker" style="background-image: url('${thumbUrl}');"></div>`,
++            html: `<div class="photo-marker" style="background-image: url('${thumb_url}');"></div>`,
+             className: 'custom-marker-icon',
+             iconSize: [48, 48],
+             iconAnchor: [24, 24],
+@@ -174,12 +162,12 @@ const MapComponent = ({ photos }: MapProps) => {
+                     {filteredPhotos.map((photo) => (
+                         <Marker
+                             key={photo.id}
+-                            position={[photo.lat, photo.lng]}
+-                            icon={createCustomIcon(photo.thumb)}
+-                            title={photo.thumb} // Pass thumb url here for cluster access
++                            position={[photo.lat ?? 0, photo.lon ?? 0]}
++                            icon={createCustomIcon(photo.thumb_url)}
++                            title={photo.thumb_url}
+                             eventHandlers={{
+                                 click: () => {
+-                                    window.location.hash = photo.id;
++                                    window.location.hash = photo.friendly_name;
+                                 },
+                             }}
+                         />
+@@ -211,7 +199,7 @@ const MapComponent = ({ photos }: MapProps) => {
+                             transition={{ duration: 0.2 }}
+                         >
+                             <img
+-                                src={selectedPhoto.large}
++                                src={selectedPhoto.large_url}
+                                 alt="Full size"
+                                 style={{
+                                     maxWidth: '100%',
+@@ -237,7 +225,7 @@ const MapComponent = ({ photos }: MapProps) => {
+                             exit={{ y: 20, opacity: 0 }}
+                             transition={{ duration: 0.2, delay: 0.1 }}
+                         >
+-                            {selectedPhoto.caption || selectedPhoto.originalName}
++                            {selectedPhoto.caption || selectedPhoto.original_name}
+                             {selectedPhoto.date && (
+                                 <div style={{ fontSize: '0.8em', opacity: 0.8, marginTop: '4px' }}>
+                                     {new Date(selectedPhoto.date).toLocaleDateString(undefined, {
+diff --git a/src/app/page.tsx b/src/app/page.tsx
+index 15aa1a2..b989486 100644
+--- a/src/app/page.tsx
++++ b/src/app/page.tsx
+@@ -1,14 +1,13 @@
+-import path from 'path';
+-import fs from 'fs/promises';
+ import MapWrapper from './components/MapWrapper';
++import { Photo } from './types';
+ 
+-async function getPhotos() {
++async function getPhotos(): Promise<Photo[]> {
++  const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
+   try {
+-    const filePath = path.join(process.cwd(), 'public', 'data.json');
+-    const fileContent = await fs.readFile(filePath, 'utf-8');
+-    return JSON.parse(fileContent);
+-  } catch (error) {
+-    console.warn('Failed to fetch photos:', error);
++    const res = await fetch(`${base}/api/photos`, { cache: 'no-store' });
++    if (!res.ok) return [];
++    return res.json();
++  } catch {
+     return [];
+   }
+ }
+diff --git a/src/app/types.ts b/src/app/types.ts
+index 0c253e4..a88d25a 100644
+--- a/src/app/types.ts
++++ b/src/app/types.ts
+@@ -1,12 +1,16 @@
+ 
+ export interface Photo {
+-    id: number;
+-    friendly_name: string;
+-    lat: number;
+-    lon: number;
+-    thumb_name: string;
+-    large_name: string;
+-    original_name: string;
+-    caption?: string;
+-    date?: string;
+-}
+\ No newline at end of file
++  id: string;
++  friendly_name: string;
++  thumb_name: string;
++  large_name: string;
++  original_name: string;
++  lat: number | null;
++  lon: number | null;
++  caption: string | null;
++  date: string | null;
++  status: string;
++  created_at: string;
++  thumb_url: string;
++  large_url: string;
++}
+diff --git a/src/db/index.ts b/src/db/index.ts
+new file mode 100644
+index 0000000..aea0b83
+--- /dev/null
++++ b/src/db/index.ts
+@@ -0,0 +1,6 @@
++import { drizzle } from 'drizzle-orm/neon-http';
++import { neon } from '@neondatabase/serverless';
++import * as schema from './schema';
++
++const sql = neon(process.env.DATABASE_URL!);
++export const db = drizzle(sql, { schema });
+diff --git a/src/db/schema.ts b/src/db/schema.ts
+new file mode 100644
+index 0000000..66ef37e
+--- /dev/null
++++ b/src/db/schema.ts
+@@ -0,0 +1,15 @@
++import { pgTable, uuid, text, numeric, timestamp, varchar } from 'drizzle-orm/pg-core';
++
++export const photos = pgTable('photos', {
++  id: uuid('id').primaryKey().defaultRandom(),
++  friendly_name: varchar('friendly_name').notNull().unique(),
++  thumb_name: text('thumb_name').notNull(),
++  large_name: text('large_name').notNull(),
++  original_name: text('original_name').notNull(),
++  lat: numeric('lat'),
++  lon: numeric('lon'),
++  caption: text('caption'),
++  date: timestamp('date'),
++  status: varchar('status').notNull().default('published'),
++  created_at: timestamp('created_at').notNull().defaultNow(),
++});
+diff --git a/src/lib/r2.ts b/src/lib/r2.ts
+new file mode 100644
+index 0000000..53fdc18
+--- /dev/null
++++ b/src/lib/r2.ts
+@@ -0,0 +1,23 @@
++import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
++import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
++
++export const r2 = new S3Client({
++  region: 'auto',
++  endpoint: process.env.R2_ENDPOINT!,
++  credentials: {
++    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
++    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
++  },
++});
++
++export function getPublicUrl(key: string): string {
++  return `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${key}`;
++}
++
++export async function getUploadUrl(key: string, contentType: string): Promise<string> {
++  return getSignedUrl(
++    r2,
++    new PutObjectCommand({ Bucket: process.env.R2_BUCKET!, Key: key, ContentType: contentType }),
++    { expiresIn: 3600 }
++  );
++}
+diff --git a/src/middleware.ts b/src/middleware.ts
+new file mode 100644
+index 0000000..0d82367
+--- /dev/null
++++ b/src/middleware.ts
+@@ -0,0 +1,5 @@
++import { NextRequest } from 'next/server';
++import { proxy, config as proxyConfig } from './proxy';
++
++export function middleware(req: NextRequest) { return proxy(req); }
++export const config = proxyConfig;
+-- 
+2.43.0
+
+
+From 0972a4ad8dca6f9ffd057bab1f8aecdc88222a22 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 3 May 2026 16:03:09 +0000
+Subject: [PATCH 2/2] Update package-lock.json after npm install
+
+---
+ package-lock.json | 44 +++++++++++++++++++++++++-------------------
+ 1 file changed, 25 insertions(+), 19 deletions(-)
+
+diff --git a/package-lock.json b/package-lock.json
+index 88b29fe..2fd969f 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -957,7 +957,6 @@
+       "integrity": "sha512-e7jT4DxYvIDLk1ZHmU/m/mB19rex9sv0c2ftBtjSBv+kVM/902eh0fINUzD7UwLLNR+jU585GxUJ8/EBfAM5fw==",
+       "dev": true,
+       "license": "MIT",
+-      "peer": true,
+       "dependencies": {
+         "@babel/code-frame": "^7.27.1",
+         "@babel/generator": "^7.28.5",
+@@ -1227,10 +1226,31 @@
+         "node": ">=16"
+       }
+     },
++    "node_modules/@emnapi/core": {
++      "version": "1.10.0",
++      "resolved": "https://registry.npmjs.org/@emnapi/core/-/core-1.10.0.tgz",
++      "integrity": "sha512-yq6OkJ4p82CAfPl0u9mQebQHKPJkY7WrIuk205cTYnYe+k2Z8YBh11FrbRG/H6ihirqcacOgl2BIO8oyMQLeXw==",
++      "license": "MIT",
++      "optional": true,
++      "dependencies": {
++        "@emnapi/wasi-threads": "1.2.1",
++        "tslib": "^2.4.0"
++      }
++    },
++    "node_modules/@emnapi/runtime": {
++      "version": "1.10.0",
++      "resolved": "https://registry.npmjs.org/@emnapi/runtime/-/runtime-1.10.0.tgz",
++      "integrity": "sha512-ewvYlk86xUoGI0zQRNq/mC+16R1QeDlKQy21Ki3oSYXNgLb45GV1P6A0M+/s6nyCuNDqe5VpaY84BzXGwVbwFA==",
++      "license": "MIT",
++      "optional": true,
++      "dependencies": {
++        "tslib": "^2.4.0"
++      }
++    },
+     "node_modules/@emnapi/wasi-threads": {
+-      "version": "1.1.0",
+-      "resolved": "https://registry.npmjs.org/@emnapi/wasi-threads/-/wasi-threads-1.1.0.tgz",
+-      "integrity": "sha512-WI0DdZ8xFSbgMjR1sFsKABJ/C5OnRrjT06JXbZKexJGrDuPTzZdDYfFlsgcCXCyf+suG5QU2e/y1Wo2V/OapLQ==",
++      "version": "1.2.1",
++      "resolved": "https://registry.npmjs.org/@emnapi/wasi-threads/-/wasi-threads-1.2.1.tgz",
++      "integrity": "sha512-uTII7OYF+/Mes/MrcIOYp5yOtSMLBWSIoLPpcgwipoiKbli6k322tcoFsxoIIxPDqW01SQGAgko4EzZi2BNv2w==",
+       "license": "MIT",
+       "optional": true,
+       "dependencies": {
+@@ -3438,7 +3458,6 @@
+       "resolved": "https://registry.npmjs.org/@react-leaflet/core/-/core-3.0.0.tgz",
+       "integrity": "sha512-3EWmekh4Nz+pGcr+xjf0KNyYfC3U2JjnkWsh0zcqaexYqmmB5ZhH37kz41JXGmKzpaMZCnPofBBm64i+YrEvGQ==",
+       "license": "Hippocratic-2.1",
+-      "peer": true,
+       "peerDependencies": {
+         "leaflet": "^1.9.0",
+         "react": "^19.0.0",
+@@ -4574,7 +4593,6 @@
+       "integrity": "sha512-MWtvHrGZLFttgeEj28VXHxpmwYbor/ATPYbBfSFZEIRK0ecCFLl2Qo55z52Hss+UV9CRN7trSeq1zbgx7YDWWg==",
+       "dev": true,
+       "license": "MIT",
+-      "peer": true,
+       "dependencies": {
+         "csstype": "^3.2.2"
+       }
+@@ -4645,7 +4663,6 @@
+       "integrity": "sha512-jCzKdm/QK0Kg4V4IK/oMlRZlY+QOcdjv89U2NgKHZk1CYTj82/RVSx1mV/0gqCVMJ/DA+Zf/S4NBWNF8GQ+eqQ==",
+       "dev": true,
+       "license": "MIT",
+-      "peer": true,
+       "dependencies": {
+         "@typescript-eslint/scope-manager": "8.48.0",
+         "@typescript-eslint/types": "8.48.0",
+@@ -6860,7 +6877,6 @@
+       "resolved": "https://registry.npmjs.org/acorn/-/acorn-8.15.0.tgz",
+       "integrity": "sha512-NZyJarBfL7nWwIq+FDL6Zp/yHEhePMNnnJ0y3qfieCrmNvYct8uvtiV41UvlSe6apAfk0fY1FbWx+NwfmpvtTg==",
+       "license": "MIT",
+-      "peer": true,
+       "bin": {
+         "acorn": "bin/acorn"
+       },
+@@ -7307,7 +7323,6 @@
+         }
+       ],
+       "license": "MIT",
+-      "peer": true,
+       "dependencies": {
+         "baseline-browser-mapping": "^2.8.25",
+         "caniuse-lite": "^1.0.30001754",
+@@ -8252,7 +8267,6 @@
+       "integrity": "sha512-BhHmn2yNOFA9H9JmmIVKJmd288g9hrVRDkdoIgRCRuSySRUHH7r/DI6aAXW9T1WwUuY3DFgrcaqB+deURBLR5g==",
+       "dev": true,
+       "license": "MIT",
+-      "peer": true,
+       "dependencies": {
+         "@eslint-community/eslint-utils": "^4.8.0",
+         "@eslint-community/regexpp": "^4.12.1",
+@@ -8438,7 +8452,6 @@
+       "integrity": "sha512-whOE1HFo/qJDyX4SnXzP4N6zOWn79WhnCUY/iDR0mPfQZO8wcYE4JClzI2oZrhBnnMUCBCHZhO6VQyoBU95mZA==",
+       "dev": true,
+       "license": "MIT",
+-      "peer": true,
+       "dependencies": {
+         "@rtsao/scc": "^1.1.0",
+         "array-includes": "^3.1.9",
+@@ -10209,8 +10222,7 @@
+       "version": "1.9.4",
+       "resolved": "https://registry.npmjs.org/leaflet/-/leaflet-1.9.4.tgz",
+       "integrity": "sha512-nxS1ynzJOmOlHp+iL3FyWqK89GtNL8U8rvlMOsQdTTssxZwCXh8N2NB3GDQOL+YR3XnWyZAxwQixURb+FA74PA==",
+-      "license": "BSD-2-Clause",
+-      "peer": true
++      "license": "BSD-2-Clause"
+     },
+     "node_modules/leaflet.markercluster": {
+       "version": "1.5.3",
+@@ -11323,7 +11335,6 @@
+       "resolved": "https://registry.npmjs.org/react/-/react-19.2.0.tgz",
+       "integrity": "sha512-tmbWg6W31tQLeB5cdIBOicJDJRR2KzXsV7uSK9iNfLWQ5bIZfxuPEHp7M8wiHyHnn0DD1i7w3Zmin0FtkrwoCQ==",
+       "license": "MIT",
+-      "peer": true,
+       "engines": {
+         "node": ">=0.10.0"
+       }
+@@ -11333,7 +11344,6 @@
+       "resolved": "https://registry.npmjs.org/react-dom/-/react-dom-19.2.0.tgz",
+       "integrity": "sha512-UlbRu4cAiGaIewkPyiRGJk0imDN2T3JjieT6spoL2UeSf5od4n5LB/mQ4ejmxhCFT1tYe8IvaFulzynWovsEFQ==",
+       "license": "MIT",
+-      "peer": true,
+       "dependencies": {
+         "scheduler": "^0.27.0"
+       },
+@@ -11353,7 +11363,6 @@
+       "resolved": "https://registry.npmjs.org/react-leaflet/-/react-leaflet-5.0.0.tgz",
+       "integrity": "sha512-CWbTpr5vcHw5bt9i4zSlPEVQdTVcML390TjeDG0cK59z1ylexpqC6M1PJFjV8jD7CF+ACBFsLIDs6DRMoLEofw==",
+       "license": "Hippocratic-2.1",
+-      "peer": true,
+       "dependencies": {
+         "@react-leaflet/core": "^3.0.0"
+       },
+@@ -12416,7 +12425,6 @@
+       "integrity": "sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q==",
+       "dev": true,
+       "license": "MIT",
+-      "peer": true,
+       "engines": {
+         "node": ">=12"
+       },
+@@ -13093,7 +13101,6 @@
+       "resolved": "https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz",
+       "integrity": "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==",
+       "license": "Apache-2.0",
+-      "peer": true,
+       "bin": {
+         "tsc": "bin/tsc",
+         "tsserver": "bin/tsserver"
+@@ -13997,7 +14004,6 @@
+       "resolved": "https://registry.npmjs.org/zod/-/zod-4.1.13.tgz",
+       "integrity": "sha512-AvvthqfqrAhNH9dnfmrfKzX5upOdjUVJYFqNSlkmGf64gRaTzlPwz99IHYnVs28qYAybvAlBV+H7pn0saFY4Ig==",
+       "license": "MIT",
+-      "peer": true,
+       "funding": {
+         "url": "https://github.com/sponsors/colinhacks"
+       }
+-- 
+2.43.0

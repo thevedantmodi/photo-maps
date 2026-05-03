@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 
 interface DateFilterProps {
-    photos: { date?: string }[];
+    photos: { date?: string | null }[];
     selectedYear: number | null;
     onYearChange: (year: number | null) => void;
 }
