@@ -10,7 +10,7 @@ export interface Photo {
   caption: string | null;
   date: string | null;
   status: string;
-  created_at: string;
+  created_at: string | null;
   thumb_url: string;
   large_url: string;
 }
