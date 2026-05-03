@@ -23,7 +23,7 @@ async function getPhotos(): Promise<Photo[]> {
 export default async function Home() {
   const photos = await getPhotos();
   return (
-    <main style={{ width: '100vw', height: '100vh', overflow: 'hidden' }}>
+    <main style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'fixed' }}>
       <MapWrapper photos={photos} />
     </main>
   );
