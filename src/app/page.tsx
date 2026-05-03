@@ -2,7 +2,9 @@ import MapWrapper from './components/MapWrapper';
 import { Photo } from './types';
 
 async function getPhotos(): Promise<Photo[]> {
-  const base = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
+  const base = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : (process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000');
   try {
     const res = await fetch(`${base}/api/photos`, { cache: 'no-store' });
     if (!res.ok) return [];
