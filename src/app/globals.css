@@ -221,7 +221,7 @@ body {
 
 .modal-content {
   position: relative;
-  width: calc(100vw - 40px);
+  width: fit-content;
   max-width: calc(100vw - 40px);
   flex-shrink: 1;
   min-height: 0;
