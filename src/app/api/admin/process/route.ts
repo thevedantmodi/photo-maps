@@ -43,6 +43,20 @@ function extractGps(exifData: Record<string, unknown> | null): { latitude: numbe
   return { latitude, longitude };
 }
 
+// GPS timestamps are UTC; used as last-resort fallback when EXIF/XMP dates are stripped (e.g. by Photoshop).
+function extractGpsDate(exifData: Record<string, unknown> | null): Date | null {
+  if (!exifData) return null;
+  const stamp = exifData.GPSDateStamp;
+  if (typeof stamp !== 'string') return null;
+  const datePart = stamp.replace(/:/g, '-');
+  const time = exifData.GPSTimeStamp;
+  if (Array.isArray(time) && time.length === 3) {
+    const [h, m, s] = time as number[];
+    return new Date(`${datePart}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(Math.floor(s)).padStart(2, '0')}Z`);
+  }
+  return new Date(`${datePart}T00:00:00Z`);
+}
+
 export async function POST(req: NextRequest) {
   const { key, friendly_name, original_name, caption } = await req.json();
 
@@ -72,7 +86,7 @@ export async function POST(req: NextRequest) {
     const dateTaken: Date | null =
       exifData?.DateTimeOriginal instanceof Date ? exifData.DateTimeOriginal
       : exifData?.CreateDate instanceof Date ? exifData.CreateDate
-      : null;
+      : extractGpsDate(exifData);
 
     console.log(`[process] key=${key} gps=${JSON.stringify(gps)} date=${dateTaken} bufLen=${buffer.length}`);
 
