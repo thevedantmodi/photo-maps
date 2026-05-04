@@ -1,20 +1,71 @@
-# Photos by Vedant Modi
+# Photo Maps
 
-Full application for my photos display.
+An interactive map application for displaying geotagged photos. Photos are plotted on a Mapbox map with clustering, filterable by date, and viewable in a full-size lightbox.
 
-## Frontend
+## Stack
 
-Lives at `src/app` and requires the photos to be loaded in the `public/` directory to render.
-Start the web application with `npm run dev`.
+- **Frontend**: Next.js (App Router), React, Mapbox GL via `react-map-gl`, Framer Motion
+- **Database**: Neon (PostgreSQL) via Drizzle ORM
+- **Storage**: Cloudflare R2 (thumbnails + full-size images)
+- **Photo processing**: Python scripts (`Pillow`, `boto3`)
+- **Deployment**: Vercel
 
-## Backend
+## Prerequisites
 
-Lives mainly at `scripts` and has two steps, ingestion and processing.
+- Node.js and npm
+- Python 3 with a virtual environment at `./venv`
+- `exiftool` (for EXIF extraction during ingestion)
+- A Neon database, Cloudflare R2 bucket, and Mapbox token
 
-Ingestion is an interactive step that allows the user to preview each photo and add a caption to display on each image's display. You must have `exiftool` installed in order for this application to work. If you have iterm2 running, then the image thumbnail will be put to stdout for your viewing. Ingestion assumes that the photos that you wish to add live at `<root>/photos/`. Note that `<root>/photos/` is ignored by the repository so retaining the contents of this directory is your responsibilty.
+## Environment Variables
 
-Run ingestion with `npm run ingest`.
+Create a `.env.local` file with:
 
-Processing scrapes the EXIF data from each photo and prepares them for web-friendly display. When this script is run it will take the photos in `<root>/photos/` and generate web-friendly photos in `<root>/public/photos`. A thumbnail and large version will be generated in that directory. An accompanying `<root>/public/data.json` will be generated as well. This is the file that the frontend application with interface with.
+```
+DATABASE_URL=...
+DATABASE_URL_UNPOOLED=...
+R2_ACCOUNT_ID=...
+R2_ACCESS_KEY_ID=...
+R2_SECRET_ACCESS_KEY=...
+R2_BUCKET_NAME=...
+R2_PUBLIC_URL=...
+NEXT_PUBLIC_MAPBOX_TOKEN=...
+```
 
-Run ingestion with `npm run process`.
+## Development
+
+```bash
+npm install
+npm run dev
+```
+
+## Photo Workflow
+
+Raw photos (HEIC, DNG, JPG) go in `photos/` at the repo root — this directory is git-ignored.
+
+### 1. Ingest
+
+Reviews each photo interactively and lets you add a caption. Displays a thumbnail in the terminal if iTerm2 is running.
+
+```bash
+npm run ingest
+```
+
+### 2. Process
+
+Reads EXIF data, generates a thumbnail and an optimized large image, uploads both to R2, and writes a record to the database.
+
+```bash
+npm run process
+```
+
+### 3. Admin
+
+A password-protected admin panel is available at `/admin` for reviewing, rotating, and approving or rejecting processed photos before they appear on the map.
+
+## Database Migrations
+
+```bash
+npx drizzle-kit generate
+npx drizzle-kit migrate
+```
