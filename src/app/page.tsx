@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import MapWrapper from './components/MapWrapper';
 import { Photo } from './types';
 import { db } from '@/db';
