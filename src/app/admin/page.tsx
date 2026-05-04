@@ -10,6 +10,8 @@ interface AdminPhoto {
   status: string;
   thumb_url: string;
   date: string | null;
+  lat: number | null;
+  lon: number | null;
 }
 
 type Theme = "light" | "dark";
@@ -349,6 +351,11 @@ function ManageTab({ theme }: { theme: Theme }) {
                 {photo.caption}
               </div>
             )}
+            <div style={{ fontSize: 10, color: c.muted, lineHeight: 1.4, marginTop: 2 }}>
+              {photo.lat != null && photo.lon != null
+                ? `${photo.lat.toFixed(5)}, ${photo.lon.toFixed(5)}`
+                : "No GPS"}
+            </div>
           </div>
           <button
             onClick={() => handleDelete(photo)}
