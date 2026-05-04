@@ -86,7 +86,7 @@ function UploadTab({ theme }: { theme: Theme }) {
     setFriendlyName(slugify(f.name));
   };
 
-  const handleUpload = async () => {
+  const handleUpload = useCallback(async () => {
     if (!file || !friendlyName) return;
     setUploading(true);
     setProgress(10);
@@ -142,7 +142,17 @@ function UploadTab({ theme }: { theme: Theme }) {
     } finally {
       setUploading(false);
     }
-  };
+  }, [file, friendlyName, caption]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        handleUpload();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleUpload]);
 
   const inputStyle: React.CSSProperties = {
     width: "100%",
