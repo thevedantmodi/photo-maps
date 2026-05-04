@@ -22,7 +22,6 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Dark Mode Overrides */
     --background: #0a0a0a;
     --foreground: #ededed;
     --map-background: #111111;
@@ -30,19 +29,51 @@
     --modal-text: #ededed;
     --modal-close-bg: rgba(255, 255, 255, 0.2);
     --modal-close-text: #ffffff;
-
     --cluster-bg: rgba(30, 30, 30, 0.8);
     --cluster-border: rgba(255, 255, 255, 0.8);
     --cluster-text: #ffffff;
     --cluster-shadow: rgba(0, 0, 0, 0.5);
-
     --marker-border: #ffffff;
-    /* Keep white border for contrast in dark mode too, or change if needed */
     --marker-shadow: rgba(0, 0, 0, 0.5);
-
     --loading-bg: #111;
     --loading-text: #fff;
   }
+}
+
+html[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --map-background: #111111;
+  --modal-background: rgba(0, 0, 0, 0.6);
+  --modal-text: #ededed;
+  --modal-close-bg: rgba(255, 255, 255, 0.2);
+  --modal-close-text: #ffffff;
+  --cluster-bg: rgba(30, 30, 30, 0.8);
+  --cluster-border: rgba(255, 255, 255, 0.8);
+  --cluster-text: #ffffff;
+  --cluster-shadow: rgba(0, 0, 0, 0.5);
+  --marker-border: #ffffff;
+  --marker-shadow: rgba(0, 0, 0, 0.5);
+  --loading-bg: #111;
+  --loading-text: #fff;
+}
+
+html[data-theme="light"] {
+  --background: #ffffff;
+  --foreground: #171717;
+  --map-background: #e5e5e5;
+  --modal-background: rgba(255, 255, 255, 0.6);
+  --modal-text: #171717;
+  --modal-close-bg: rgba(0, 0, 0, 0.1);
+  --modal-close-text: #171717;
+  --cluster-bg: rgba(255, 255, 255, 0.9);
+  --cluster-border: rgba(0, 0, 0, 0.2);
+  --cluster-text: #171717;
+  --cluster-shadow: rgba(0, 0, 0, 0.2);
+  --marker-border: #ffffff;
+  --marker-shadow: rgba(0, 0, 0, 0.3);
+  --loading-bg: #f5f5f5;
+  --loading-text: #333;
 }
 
 body {
@@ -120,17 +151,6 @@ body {
   }
 }
 
-.leaflet-popup-content-wrapper {
-  background: var(--cluster-bg);
-  backdrop-filter: blur(10px);
-  color: var(--foreground);
-  border-radius: 8px;
-  border: 1px solid var(--cluster-border);
-}
-
-.leaflet-popup-tip {
-  background: var(--cluster-bg);
-}
 
 /* Modal Styles */
 .modal-overlay {
@@ -219,6 +239,16 @@ body {
   }
 }
 
+html[data-theme="dark"] .modal-caption {
+  background: rgba(30, 30, 30, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+html[data-theme="light"] .modal-caption {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
 .modal-content {
   position: relative;
   width: fit-content;
@@ -277,6 +307,14 @@ body {
   .slider-container {
     background: rgba(0, 0, 0, 0.6);
   }
+}
+
+html[data-theme="dark"] .slider-container {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+html[data-theme="light"] .slider-container {
+  background: rgba(255, 255, 255, 0.8);
 }
 
 .slider {
@@ -462,12 +500,82 @@ body {
   }
 }
 
+html[data-theme="dark"] .date-filter-container {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+html[data-theme="dark"] .filter-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+html[data-theme="light"] .date-filter-container {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+html[data-theme="light"] .filter-chip:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
 @media (max-width: 768px) {
   .date-filter-container {
     bottom: 80px;
     width: auto;
     max-width: 95%;
     justify-content: flex-start;
-    /* Allow scrolling */
   }
+}
+
+.theme-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  color: var(--foreground);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.theme-toggle:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.35);
+}
+
+@media (prefers-color-scheme: dark) {
+  .theme-toggle {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
+
+  .theme-toggle:hover {
+    background: rgba(255, 255, 255, 0.18);
+  }
+}
+
+html[data-theme="dark"] .theme-toggle {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+html[data-theme="dark"] .theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+html[data-theme="light"] .theme-toggle {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }

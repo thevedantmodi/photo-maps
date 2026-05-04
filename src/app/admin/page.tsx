@@ -379,7 +379,7 @@ function ManageTab({ theme }: { theme: Theme }) {
 }
 
 export default function AdminPage() {
-  const systemTheme = useTheme();
+  const [systemTheme] = useTheme();
   const [tab, setTab] = useState<"upload" | "manage">("upload");
   const [theme, setTheme] = useState<Theme>(systemTheme);
 
