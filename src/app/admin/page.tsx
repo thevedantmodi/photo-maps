@@ -36,6 +36,9 @@ function colors(theme: Theme) {
         progressFill: "#fff",
         tabActive: "#fff",
         tabBorder: "#444",
+        overlay: "rgba(0,0,0,0.75)",
+        modalBg: "#1a1a1a",
+        danger: "#e55",
       }
     : {
         bg: "#fff",
@@ -55,6 +58,9 @@ function colors(theme: Theme) {
         progressFill: "#000",
         tabActive: "#000",
         tabBorder: "#eee",
+        overlay: "rgba(0,0,0,0.5)",
+        modalBg: "#fff",
+        danger: "#c00",
       };
 }
 
@@ -277,11 +283,271 @@ function UploadTab({ theme }: { theme: Theme }) {
   );
 }
 
+interface EditModalProps {
+  photo: AdminPhoto;
+  theme: Theme;
+  onClose: () => void;
+  onSaved: (updated: AdminPhoto) => void;
+}
+
+function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
+  const c = colors(theme);
+  const [caption, setCaption] = useState(photo.caption ?? "");
+  const [lat, setLat] = useState(photo.lat != null ? String(photo.lat) : "");
+  const [lon, setLon] = useState(photo.lon != null ? String(photo.lon) : "");
+  const [date, setDate] = useState(
+    photo.date ? new Date(photo.date).toISOString().slice(0, 16) : ""
+  );
+  const [saving, setSaving] = useState(false);
+  const [rotating, setRotating] = useState(false);
+  const [statusMsg, setStatusMsg] = useState("");
+  const [thumbUrl, setThumbUrl] = useState(photo.thumb_url);
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    padding: "8px 12px",
+    border: `1px solid ${c.inputBorder}`,
+    borderRadius: 6,
+    fontSize: 14,
+    boxSizing: "border-box",
+    background: c.input,
+    color: c.text,
+  };
+
+  const labelStyle: React.CSSProperties = {
+    display: "block",
+    fontSize: 13,
+    fontWeight: 500,
+    marginBottom: 4,
+    color: c.text,
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setStatusMsg("");
+    try {
+      const body: Record<string, unknown> = {
+        caption: caption || null,
+        lat: lat !== "" ? parseFloat(lat) : null,
+        lon: lon !== "" ? parseFloat(lon) : null,
+        date: date || null,
+      };
+      const res = await fetch(`/api/admin/photos/${photo.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Save failed");
+      }
+      onSaved({
+        ...photo,
+        caption: caption || null,
+        lat: lat !== "" ? parseFloat(lat) : null,
+        lon: lon !== "" ? parseFloat(lon) : null,
+        date: date || null,
+      });
+      onClose();
+    } catch (err: unknown) {
+      setStatusMsg(`Error: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRotate = async (degrees: number) => {
+    setRotating(true);
+    setStatusMsg("");
+    try {
+      const res = await fetch(`/api/admin/photos/${photo.id}/rotate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ degrees }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Rotation failed");
+      }
+      // Bust the cache by appending a timestamp
+      setThumbUrl(`${photo.thumb_url}?t=${Date.now()}`);
+      setStatusMsg("Rotated successfully.");
+    } catch (err: unknown) {
+      setStatusMsg(`Error: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setRotating(false);
+    }
+  };
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: c.overlay,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 1000,
+        padding: 20,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: c.modalBg,
+          borderRadius: 10,
+          padding: 24,
+          width: "100%",
+          maxWidth: 480,
+          maxHeight: "90vh",
+          overflowY: "auto",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0, color: c.text }}>
+            Edit: {photo.friendly_name}
+          </h2>
+          <button
+            onClick={onClose}
+            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: c.muted, padding: 0 }}
+          >
+            ×
+          </button>
+        </div>
+
+        <img
+          src={thumbUrl}
+          alt={photo.friendly_name}
+          style={{ width: "100%", borderRadius: 6, marginBottom: 16, objectFit: "cover", maxHeight: 200 }}
+        />
+
+        {/* Rotation controls */}
+        <div style={{ marginBottom: 20 }}>
+          <label style={labelStyle}>Rotate</label>
+          <div style={{ display: "flex", gap: 8 }}>
+            {[
+              { label: "↺ 90° CCW", deg: 270 },
+              { label: "↻ 90° CW", deg: 90 },
+              { label: "↕ 180°", deg: 180 },
+            ].map(({ label, deg }) => (
+              <button
+                key={deg}
+                onClick={() => handleRotate(deg)}
+                disabled={rotating}
+                style={{
+                  flex: 1,
+                  padding: "7px 4px",
+                  background: c.cardBg,
+                  color: c.text,
+                  border: `1px solid ${c.inputBorder}`,
+                  borderRadius: 6,
+                  fontSize: 13,
+                  cursor: rotating ? "not-allowed" : "pointer",
+                  opacity: rotating ? 0.5 : 1,
+                }}
+              >
+                {rotating ? "…" : label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <label style={labelStyle}>Caption</label>
+        <textarea
+          value={caption}
+          onChange={(e) => setCaption(e.target.value)}
+          placeholder="Optional caption"
+          rows={3}
+          style={{ ...inputStyle, marginBottom: 16, resize: "vertical" }}
+        />
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+          <div>
+            <label style={labelStyle}>Latitude</label>
+            <input
+              value={lat}
+              onChange={(e) => setLat(e.target.value)}
+              placeholder="e.g. 40.71280"
+              type="number"
+              step="any"
+              style={inputStyle}
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>Longitude</label>
+            <input
+              value={lon}
+              onChange={(e) => setLon(e.target.value)}
+              placeholder="e.g. -74.00600"
+              type="number"
+              step="any"
+              style={inputStyle}
+            />
+          </div>
+        </div>
+
+        <label style={labelStyle}>Date &amp; Time</label>
+        <input
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          type="datetime-local"
+          style={{ ...inputStyle, marginBottom: 20 }}
+        />
+
+        {statusMsg && (
+          <p style={{ fontSize: 13, color: statusMsg.startsWith("Error") ? c.danger : c.muted, marginBottom: 12 }}>
+            {statusMsg}
+          </p>
+        )}
+
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1,
+              padding: "9px",
+              background: "none",
+              color: c.text,
+              border: `1px solid ${c.inputBorder}`,
+              borderRadius: 6,
+              fontSize: 14,
+              cursor: "pointer",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            style={{
+              flex: 2,
+              padding: "9px",
+              background: c.btn,
+              color: c.btnText,
+              border: "none",
+              borderRadius: 6,
+              fontSize: 14,
+              cursor: saving ? "not-allowed" : "pointer",
+              opacity: saving ? 0.5 : 1,
+            }}
+          >
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ManageTab({ theme }: { theme: Theme }) {
   const c = colors(theme);
   const [photos, setPhotos] = useState<AdminPhoto[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [editing, setEditing] = useState<AdminPhoto | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -302,91 +568,130 @@ function ManageTab({ theme }: { theme: Theme }) {
     setDeleting(null);
   };
 
+  const handleSaved = (updated: AdminPhoto) => {
+    setPhotos((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+  };
+
   if (loading) return <p style={{ color: c.muted, fontSize: 14 }}>Loading…</p>;
 
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-        gap: 12,
-      }}
-    >
-      {photos.map((photo) => (
-        <div
-          key={photo.id}
-          style={{
-            position: "relative",
-            borderRadius: 8,
-            overflow: "hidden",
-            background: c.cardBg,
-          }}
-        >
-          <img
-            src={photo.thumb_url}
-            alt={photo.friendly_name}
+    <>
+      {editing && (
+        <EditModal
+          photo={editing}
+          theme={theme}
+          onClose={() => setEditing(null)}
+          onSaved={handleSaved}
+        />
+      )}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+          gap: 12,
+        }}
+      >
+        {photos.map((photo) => (
+          <div
+            key={photo.id}
             style={{
-              width: "100%",
-              aspectRatio: "1",
-              objectFit: "cover",
-              display: "block",
-            }}
-          />
-          <div style={{ padding: "8px 10px" }}>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                lineHeight: 1.4,
-                marginBottom: 2,
-                color: c.text,
-              }}
-            >
-              {photo.friendly_name}
-            </div>
-            {photo.caption && (
-              <div
-                style={{ fontSize: 11, color: c.captionText, lineHeight: 1.4 }}
-              >
-                {photo.caption}
-              </div>
-            )}
-            <div style={{ fontSize: 10, color: c.muted, lineHeight: 1.4, marginTop: 2 }}>
-              {photo.lat != null && photo.lon != null
-                ? `${photo.lat.toFixed(5)}, ${photo.lon.toFixed(5)}`
-                : "No GPS"}
-            </div>
-            <div style={{ fontSize: 10, color: c.muted, lineHeight: 1.4, marginTop: 2 }}>
-              {photo.date != null
-                ? `${new Date(photo.date).toLocaleDateString()}`
-                : "No Date"}
-            </div>
-          </div>
-          <button
-            onClick={() => handleDelete(photo)}
-            disabled={deleting === photo.id}
-            style={{
-              position: "absolute",
-              top: 6,
-              right: 6,
-              background: "rgba(0,0,0,0.6)",
-              color: "#fff",
-              border: "none",
-              borderRadius: 4,
-              width: 24,
-              height: 24,
-              cursor: "pointer",
-              fontSize: 14,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              position: "relative",
+              borderRadius: 8,
+              overflow: "hidden",
+              background: c.cardBg,
             }}
           >
-            {deleting === photo.id ? "…" : "×"}
-          </button>
-        </div>
-      ))}
-    </div>
+            <img
+              src={photo.thumb_url}
+              alt={photo.friendly_name}
+              style={{
+                width: "100%",
+                aspectRatio: "1",
+                objectFit: "cover",
+                display: "block",
+              }}
+            />
+            <div style={{ padding: "8px 10px" }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  lineHeight: 1.4,
+                  marginBottom: 2,
+                  color: c.text,
+                }}
+              >
+                {photo.friendly_name}
+              </div>
+              {photo.caption && (
+                <div
+                  style={{ fontSize: 11, color: c.captionText, lineHeight: 1.4 }}
+                >
+                  {photo.caption}
+                </div>
+              )}
+              <div style={{ fontSize: 10, color: c.muted, lineHeight: 1.4, marginTop: 2 }}>
+                {photo.lat != null && photo.lon != null
+                  ? `${photo.lat.toFixed(5)}, ${photo.lon.toFixed(5)}`
+                  : "No GPS"}
+              </div>
+              <div style={{ fontSize: 10, color: c.muted, lineHeight: 1.4, marginTop: 2 }}>
+                {photo.date != null
+                  ? `${new Date(photo.date).toLocaleDateString()}`
+                  : "No Date"}
+              </div>
+            </div>
+            {/* Edit button */}
+            <button
+              onClick={() => setEditing(photo)}
+              style={{
+                position: "absolute",
+                top: 6,
+                right: 34,
+                background: "rgba(0,0,0,0.6)",
+                color: "#fff",
+                border: "none",
+                borderRadius: 4,
+                width: 24,
+                height: 24,
+                cursor: "pointer",
+                fontSize: 13,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              title="Edit"
+            >
+              ✎
+            </button>
+            {/* Delete button */}
+            <button
+              onClick={() => handleDelete(photo)}
+              disabled={deleting === photo.id}
+              style={{
+                position: "absolute",
+                top: 6,
+                right: 6,
+                background: "rgba(0,0,0,0.6)",
+                color: "#fff",
+                border: "none",
+                borderRadius: 4,
+                width: 24,
+                height: 24,
+                cursor: "pointer",
+                fontSize: 14,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              title="Delete"
+            >
+              {deleting === photo.id ? "…" : "×"}
+            </button>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
