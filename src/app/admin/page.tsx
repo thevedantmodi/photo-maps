@@ -386,13 +386,8 @@ function ManageTab({ theme }: { theme: Theme }) {
 }
 
 export default function AdminPage() {
-  const [systemTheme] = useTheme();
+  const [theme, toggleTheme] = useTheme();
   const [tab, setTab] = useState<"upload" | "manage">("upload");
-  const [theme, setTheme] = useState<Theme>(systemTheme);
-
-  useEffect(() => {
-    setTheme(systemTheme);
-  }, [systemTheme]);
 
   const c = colors(theme);
 
@@ -416,7 +411,7 @@ export default function AdminPage() {
         >
           <h1 style={{ fontSize: 20, fontWeight: 600, margin: 0 }}>Admin</h1>
           <button
-            onClick={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+            onClick={toggleTheme}
             style={{
               background: "none",
               border: `1px solid ${c.inputBorder}`,
