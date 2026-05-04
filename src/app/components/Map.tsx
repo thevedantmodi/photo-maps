@@ -29,6 +29,7 @@ const MapComponent = ({ photos }: MapProps) => {
     -180, -85, 180, 85,
   ]);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
   const mapRef = useRef<MapRef>(null);
   const [theme, toggleTheme] = useTheme();
 
@@ -57,6 +58,7 @@ const MapComponent = ({ photos }: MapProps) => {
         const photo = photos.find(
           (p) => p.friendly_name === decodedHash || p.id === decodedHash,
         );
+        setImgLoaded(false);
         setSelectedPhoto(photo ?? null);
       } else {
         setSelectedPhoto(null);
@@ -251,6 +253,7 @@ const MapComponent = ({ photos }: MapProps) => {
               latitude={latitude}
               anchor="center"
               onClick={() => {
+                setImgLoaded(false);
                 window.location.hash = photo.friendly_name;
               }}
             >
@@ -288,15 +291,27 @@ const MapComponent = ({ photos }: MapProps) => {
               exit={{ scale: 0.9, opacity: 0 }}
               transition={{ duration: 0.2 }}
             >
+              {!imgLoaded && (
+                <div
+                  className="skeleton-pulse"
+                  style={{
+                    width: "min(calc(100vw - 40px), 800px)",
+                    height: "min(65dvh, 500px)",
+                    borderRadius: 4,
+                    margin: "0 auto",
+                  }}
+                />
+              )}
               <img
                 src={selectedPhoto.large_url}
                 alt="Full size"
+                onLoad={() => setImgLoaded(true)}
                 style={{
                   maxWidth: "calc(100vw - 40px)",
                   maxHeight: "65dvh",
                   width: "auto",
                   height: "auto",
-                  display: "block",
+                  display: imgLoaded ? "block" : "none",
                   margin: "0 auto",
                   borderRadius: "4px",
                   boxShadow: "0 20px 50px rgba(0,0,0,0.5)",

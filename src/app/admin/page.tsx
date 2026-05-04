@@ -356,6 +356,11 @@ function ManageTab({ theme }: { theme: Theme }) {
                 ? `${photo.lat.toFixed(5)}, ${photo.lon.toFixed(5)}`
                 : "No GPS"}
             </div>
+            <div style={{ fontSize: 10, color: c.muted, lineHeight: 1.4, marginTop: 2 }}>
+              {photo.date != null
+                ? `${new Date(photo.date).toLocaleDateString()}`
+                : "No Date"}
+            </div>
           </div>
           <button
             onClick={() => handleDelete(photo)}
