@@ -76,8 +76,8 @@ export async function POST(req: NextRequest) {
     const largeName = `${friendly_name}_large.jpg`;
 
     const [thumbBuf, largeBuf, exifData] = await Promise.all([
-      sharp(buffer).resize(300, 300, { fit: 'inside' }).jpeg({ quality: 80 }).toBuffer(),
-      sharp(buffer).resize(1600, 1600, { fit: 'inside' }).jpeg({ quality: 85 }).toBuffer(),
+      sharp(buffer).rotate().resize(300, 300, { fit: 'inside' }).jpeg({ quality: 80 }).toBuffer(),
+      sharp(buffer).rotate().resize(1600, 1600, { fit: 'inside' }).jpeg({ quality: 85 }).toBuffer(),
       exifr.parse(buffer, { gps: true, xmp: true, exif: true, tiff: true, translateValues: false })
         .catch((e) => { console.error('[exifr error]', e); return null; }),
     ]);
