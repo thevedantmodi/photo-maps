@@ -21,8 +21,8 @@ const MapComponent = ({ photos }: MapProps) => {
   const [filteredPhotos, setFilteredPhotos] = useState<Photo[]>(photos);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [viewState, setViewState] = useState({
-    longitude: 0,
-    latitude: 20,
+    longitude: -96.40442327908295,
+    latitude: 39.206117736168125,
     zoom: 2,
   });
   const [bounds, setBounds] = useState<[number, number, number, number]>([
