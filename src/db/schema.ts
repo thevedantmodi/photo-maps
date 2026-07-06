@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, doublePrecision, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, doublePrecision, integer, timestamp, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 export const photos = pgTable(
@@ -13,6 +13,8 @@ export const photos = pgTable(
     lon: doublePrecision('lon'),
     caption: text('caption'),
     date: timestamp('date', { withTimezone: true }),
+    width: integer('width'),
+    height: integer('height'),
     status: text('status').notNull().default('pending'),
     created_at: timestamp('created_at', { withTimezone: true }).default(sql`now()`),
   },

@@ -57,6 +57,43 @@ function extractGpsDate(exifData: Record<string, unknown> | null): Date | null {
   return new Date(`${datePart}T00:00:00Z`);
 }
 
+interface WorkerProcessResponse {
+  thumb_name: string;
+  large_name: string;
+  lat: number | null;
+  lon: number | null;
+  date: string | null;
+  width: number;
+  height: number;
+}
+
+async function processViaWorker(key: string, friendly_name: string): Promise<WorkerProcessResponse> {
+  const PROCESSOR_URL = process.env.PROCESSOR_URL!;
+  const res = await fetch(`${PROCESSOR_URL}/process`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-processor-secret': process.env.PROCESSOR_SECRET!,
+    },
+    body: JSON.stringify({ key, friendly_name }),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: `worker returned ${res.status}` }));
+    throw new WorkerError(body.error ?? `worker returned ${res.status}`, res.status);
+  }
+
+  return res.json();
+}
+
+class WorkerError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
 export async function POST(req: NextRequest) {
   const { key, friendly_name, original_name, caption } = await req.json();
 
@@ -67,6 +104,58 @@ export async function POST(req: NextRequest) {
   const BUCKET = process.env.R2_BUCKET!;
 
   try {
+    if (process.env.PROCESSOR_URL) {
+      let result: WorkerProcessResponse;
+      try {
+        result = await processViaWorker(key, friendly_name);
+      } catch (e) {
+        const status = e instanceof WorkerError ? e.status : 502;
+        return NextResponse.json({ error: e instanceof Error ? e.message : String(e) }, { status });
+      }
+
+      const dateTaken = result.date ? new Date(result.date) : null;
+
+      await db.insert(photos).values({
+        friendly_name,
+        thumb_name: result.thumb_name,
+        large_name: result.large_name,
+        original_name: original_name ?? key,
+        caption: caption || null,
+        lat: result.lat,
+        lon: result.lon,
+        date: dateTaken,
+        width: result.width,
+        height: result.height,
+        status: 'published',
+      }).onConflictDoUpdate({
+        target: photos.friendly_name,
+        set: {
+          thumb_name: result.thumb_name,
+          large_name: result.large_name,
+          caption: caption || null,
+          lat: result.lat,
+          lon: result.lon,
+          date: dateTaken,
+          width: result.width,
+          height: result.height,
+          status: 'published',
+        },
+      });
+
+      // Delete the original only after the DB write succeeds, so a failed
+      // insert leaves the original in place for a retry (unlike the fallback
+      // branch below, which deletes before the insert).
+      try {
+        await r2.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
+      } catch (e) {
+        console.error('[process] failed to delete original after insert', e);
+      }
+
+      return NextResponse.json({ ok: true, lat: result.lat, lon: result.lon });
+    }
+
+    // Fallback path: PROCESSOR_URL unset. Temporary safety net during the
+    // worker migration, verbatim from before the Rust worker existed.
     const obj = await r2.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
     const chunks: Uint8Array[] = [];
     for await (const chunk of obj.Body as AsyncIterable<Uint8Array>) chunks.push(chunk);

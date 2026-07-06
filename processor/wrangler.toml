@@ -1,0 +1,12 @@
+  name = "photo-maps-processor"
+  main = "build/worker/shim.mjs"
+  compatibility_date = "2025-01-01"
+
+  [[r2_buckets]]
+  binding = "PHOTOS"
+  bucket_name = "photos"
+
+  [vars]
+
+[limits]
+cpu_ms = 50000
