@@ -6,9 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "process": "./venv/bin/python scripts/process_photos.py",
-    "ingest": "./venv/bin/python scripts/ingest_photos.py"
+    "lint": "next lint"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",

@@ -7,14 +7,12 @@ An interactive map application for displaying geotagged photos. Photos are plott
 - **Frontend**: Next.js (App Router), React, Mapbox GL via `react-map-gl`, Framer Motion
 - **Database**: Neon (PostgreSQL) via Drizzle ORM
 - **Storage**: Cloudflare R2 (thumbnails + full-size images)
-- **Photo processing**: Python scripts (`Pillow`, `boto3`)
+- **Photo processing**: Next.js API route (`sharp`, `exifr`), with an optional Rust/Cloudflare Worker processor
 - **Deployment**: Vercel
 
 ## Prerequisites
 
 - Node.js and npm
-- Python 3 with a virtual environment at `./venv`
-- `exiftool` (for EXIF extraction during ingestion)
 - A Neon database, Cloudflare R2 bucket, and Mapbox token
 
 ## Environment Variables
@@ -41,27 +39,9 @@ npm run dev
 
 ## Photo Workflow
 
-Raw photos (HEIC, DNG, JPG) go in `photos/` at the repo root — this directory is git-ignored.
+A password-protected admin panel at `/admin` handles the full intake flow: upload photos, then process them.
 
-### 1. Ingest
-
-Reviews each photo interactively and lets you add a caption. Displays a thumbnail in the terminal if iTerm2 is running.
-
-```bash
-npm run ingest
-```
-
-### 2. Process
-
-Reads EXIF data, generates a thumbnail and an optimized large image, uploads both to R2, and writes a record to the database.
-
-```bash
-npm run process
-```
-
-### 3. Admin
-
-A password-protected admin panel is available at `/admin` for reviewing, rotating, and approving or rejecting processed photos before they appear on the map.
+Uploading sends the raw file to R2 via `/api/upload`. Processing (`/api/admin/process`) reads EXIF data, generates a thumbnail and an optimized large image, uploads both to R2, and writes a record to the database — either inline (`sharp` + `exifr`) or via a Rust/Cloudflare Worker processor when `PROCESSOR_URL` is set. From `/admin` you can also review, rotate, and approve or reject processed photos before they appear on the map.
 
 ## Database Migrations
 
