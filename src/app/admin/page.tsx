@@ -2,6 +2,10 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useTheme } from "../hooks/useTheme";
+import { colors, type Theme } from "./theme";
+import { Hint, Kbd, useModKey } from "./Kbd";
+import LocationSection from "./LocationSection";
+import { EXIF_PARSE_OPTIONS, extractGps, formatCoord, parseLat, parseLon } from "@/lib/gps";
 
 interface AdminPhoto {
   id: string;
@@ -14,61 +18,18 @@ interface AdminPhoto {
   lon: number | null;
 }
 
-type Theme = "light" | "dark";
-
-function colors(theme: Theme) {
-  return theme === "dark"
-    ? {
-        bg: "#0a0a0a",
-        surface: "#1a1a1a",
-        border: "#333",
-        text: "#f0f0f0",
-        muted: "#888",
-        input: "#111",
-        inputBorder: "#444",
-        dropBg: "#111",
-        dropBgActive: "#0d2d1a",
-        btn: "#fff",
-        btnText: "#000",
-        cardBg: "#1e1e1e",
-        captionText: "#aaa",
-        progressBg: "#333",
-        progressFill: "#fff",
-        tabActive: "#fff",
-        tabBorder: "#444",
-        overlay: "rgba(0,0,0,0.75)",
-        modalBg: "#1a1a1a",
-        danger: "#e55",
-      }
-    : {
-        bg: "#fff",
-        surface: "#fff",
-        border: "#eee",
-        text: "#111",
-        muted: "#999",
-        input: "#fff",
-        inputBorder: "#ddd",
-        dropBg: "#fafafa",
-        dropBgActive: "#f0fff4",
-        btn: "#000",
-        btnText: "#fff",
-        cardBg: "#f5f5f5",
-        captionText: "#666",
-        progressBg: "#eee",
-        progressFill: "#000",
-        tabActive: "#000",
-        tabBorder: "#eee",
-        overlay: "rgba(0,0,0,0.5)",
-        modalBg: "#fff",
-        danger: "#c00",
-      };
-}
-
 function UploadTab({ theme }: { theme: Theme }) {
   const c = colors(theme);
+  const mod = useModKey();
   const [file, setFile] = useState<File | null>(null);
   const [friendlyName, setFriendlyName] = useState("");
   const [caption, setCaption] = useState("");
+  const [lat, setLat] = useState("");
+  const [lon, setLon] = useState("");
+  // Remembers that the picked file carried GPS, so clearing the boxes reads as
+  // "no location" rather than "the client failed to parse EXIF".
+  const [exifGps, setExifGps] = useState(false);
+  const [gpsSource, setGpsSource] = useState<"exif" | "manual" | null>(null);
   const [statusMsg, setStatusMsg] = useState("");
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -84,6 +45,30 @@ function UploadTab({ theme }: { theme: Theme }) {
   const handleFile = (f: File) => {
     setFile(f);
     setFriendlyName(slugify(f.name));
+    setLat("");
+    setLon("");
+    setExifGps(false);
+    setGpsSource(null);
+    // Read the photo's own GPS with the same rules the processor uses, so the
+    // map opens on the existing location when the file has one. exifr is
+    // imported lazily to keep it out of the initial admin bundle.
+    import("exifr")
+      .then(({ default: exifr }) => exifr.parse(f, EXIF_PARSE_OPTIONS))
+      .then((data) => {
+        const gps = extractGps(data as Record<string, unknown> | null);
+        if (!gps) return;
+        setLat(formatCoord(gps.latitude));
+        setLon(formatCoord(gps.longitude));
+        setExifGps(true);
+        setGpsSource("exif");
+      })
+      .catch((e) => console.warn("[exif] could not read GPS", e));
+  };
+
+  const handleLocationChange = (nextLat: string, nextLon: string) => {
+    setLat(nextLat);
+    setLon(nextLon);
+    setGpsSource(nextLat === "" && nextLon === "" ? null : "manual");
   };
 
   const handleUpload = useCallback(async () => {
@@ -114,6 +99,8 @@ function UploadTab({ theme }: { theme: Theme }) {
 
       setStatusMsg("Processing image…");
       setProgress(70);
+      const latNum = parseLat(lat);
+      const lonNum = parseLon(lon);
       const processRes = await fetch("/api/admin/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -122,6 +109,11 @@ function UploadTab({ theme }: { theme: Theme }) {
           friendly_name: friendlyName,
           original_name: file.name,
           caption,
+          lat: latNum,
+          lon: lonNum,
+          // The photo had GPS and the operator removed it: don't let the
+          // server put the EXIF coordinates back.
+          gps_cleared: exifGps && (latNum === null || lonNum === null),
         }),
       });
       if (!processRes.ok) {
@@ -134,6 +126,10 @@ function UploadTab({ theme }: { theme: Theme }) {
       setFile(null);
       setFriendlyName("");
       setCaption("");
+      setLat("");
+      setLon("");
+      setExifGps(false);
+      setGpsSource(null);
       if (inputRef.current) inputRef.current.value = "";
     } catch (err: unknown) {
       setStatusMsg(
@@ -142,7 +138,7 @@ function UploadTab({ theme }: { theme: Theme }) {
     } finally {
       setUploading(false);
     }
-  }, [file, friendlyName, caption]);
+  }, [file, friendlyName, caption, lat, lon, exifGps]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -236,8 +232,24 @@ function UploadTab({ theme }: { theme: Theme }) {
         onChange={(e) => setCaption(e.target.value)}
         placeholder="Optional caption"
         rows={3}
-        style={{ ...inputStyle, marginBottom: 24, resize: "vertical" }}
+        style={{ ...inputStyle, marginBottom: 16, resize: "vertical" }}
       />
+
+      <div style={{ marginBottom: 8 }}>
+        <LocationSection
+          theme={theme}
+          lat={lat}
+          lon={lon}
+          onChange={handleLocationChange}
+          badge={
+            gpsSource === "exif"
+              ? "From photo EXIF"
+              : gpsSource === "manual"
+                ? "Set manually"
+                : null
+          }
+        />
+      </div>
 
       <button
         onClick={handleUpload}
@@ -257,6 +269,13 @@ function UploadTab({ theme }: { theme: Theme }) {
       >
         {uploading ? "Uploading…" : "Upload"}
       </button>
+
+      <Hint theme={theme} style={{ marginTop: 8, justifyContent: "center" }}>
+        <span>Press</span>
+        <Kbd theme={theme}>{mod}</Kbd>
+        <Kbd theme={theme}>↵</Kbd>
+        <span>to upload from anywhere on this tab.</span>
+      </Hint>
 
       {uploading && (
         <div
@@ -302,9 +321,12 @@ interface EditModalProps {
 
 function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
   const c = colors(theme);
+  const mod = useModKey();
   const [caption, setCaption] = useState(photo.caption ?? "");
-  const [lat, setLat] = useState(photo.lat != null ? String(photo.lat) : "");
-  const [lon, setLon] = useState(photo.lon != null ? String(photo.lon) : "");
+  const savedLat = photo.lat != null ? formatCoord(photo.lat) : "";
+  const savedLon = photo.lon != null ? formatCoord(photo.lon) : "";
+  const [lat, setLat] = useState(savedLat);
+  const [lon, setLon] = useState(savedLon);
   const [date, setDate] = useState(
     photo.date ? new Date(photo.date).toISOString().slice(0, 16) : ""
   );
@@ -332,14 +354,28 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
     color: c.text,
   };
 
-  const handleSave = async () => {
+  const latNum = parseLat(lat);
+  const lonNum = parseLon(lon);
+  // Half a coordinate can't be plotted, so treat it as unsaveable.
+  const coordsInvalid =
+    (lat.trim() !== "" && latNum === null) ||
+    (lon.trim() !== "" && lonNum === null) ||
+    (latNum === null) !== (lonNum === null);
+
+  const handleSave = useCallback(async () => {
+    if (coordsInvalid) {
+      setStatusMsg(
+        "Error: enter a valid latitude and longitude, or clear both.",
+      );
+      return;
+    }
     setSaving(true);
     setStatusMsg("");
     try {
       const body: Record<string, unknown> = {
         caption: caption || null,
-        lat: lat !== "" ? parseFloat(lat) : null,
-        lon: lon !== "" ? parseFloat(lon) : null,
+        lat: latNum,
+        lon: lonNum,
         date: date || null,
       };
       const res = await fetch(`/api/admin/photos/${photo.id}`, {
@@ -354,8 +390,8 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
       onSaved({
         ...photo,
         caption: caption || null,
-        lat: lat !== "" ? parseFloat(lat) : null,
-        lon: lon !== "" ? parseFloat(lon) : null,
+        lat: latNum,
+        lon: lonNum,
         date: date || null,
       });
       onClose();
@@ -364,7 +400,23 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
     } finally {
       setSaving(false);
     }
-  };
+  }, [caption, coordsInvalid, date, latNum, lonNum, onClose, onSaved, photo]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleSave, onClose]);
 
   const handleRotate = async (degrees: number) => {
     setRotating(true);
@@ -474,30 +526,23 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
           style={{ ...inputStyle, marginBottom: 16, resize: "vertical" }}
         />
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
-          <div>
-            <label style={labelStyle}>Latitude</label>
-            <input
-              value={lat}
-              onChange={(e) => setLat(e.target.value)}
-              placeholder="e.g. 40.71280"
-              type="number"
-              step="any"
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>Longitude</label>
-            <input
-              value={lon}
-              onChange={(e) => setLon(e.target.value)}
-              placeholder="e.g. -74.00600"
-              type="number"
-              step="any"
-              style={inputStyle}
-            />
-          </div>
-        </div>
+        <LocationSection
+          theme={theme}
+          lat={lat}
+          lon={lon}
+          onChange={(nextLat, nextLon) => {
+            setLat(nextLat);
+            setLon(nextLon);
+          }}
+          badge={
+            lat !== savedLat || lon !== savedLon
+              ? "Edited — not saved yet"
+              : savedLat !== ""
+                ? "Saved location"
+                : null
+          }
+          height={200}
+        />
 
         <label style={labelStyle}>Date &amp; Time</label>
         <input
@@ -547,6 +592,15 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
             {saving ? "Saving…" : "Save"}
           </button>
         </div>
+
+        <Hint theme={theme} style={{ marginTop: 10, justifyContent: "center" }}>
+          <Kbd theme={theme}>{mod}</Kbd>
+          <Kbd theme={theme}>↵</Kbd>
+          <span>save</span>
+          <span style={{ opacity: 0.5 }}>·</span>
+          <Kbd theme={theme}>Esc</Kbd>
+          <span>close</span>
+        </Hint>
       </div>
     </div>
   );
@@ -554,6 +608,7 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
 
 function ManageTab({ theme }: { theme: Theme }) {
   const c = colors(theme);
+  const mod = useModKey();
   const [photos, setPhotos] = useState<AdminPhoto[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -594,6 +649,14 @@ function ManageTab({ theme }: { theme: Theme }) {
           onSaved={handleSaved}
         />
       )}
+      <Hint theme={theme} style={{ marginBottom: 12 }}>
+        <span>Open ✎ to edit a photo&apos;s location —</span>
+        <Kbd theme={theme}>{mod}</Kbd>
+        <Kbd theme={theme}>↵</Kbd>
+        <span>saves,</span>
+        <Kbd theme={theme}>Esc</Kbd>
+        <span>closes.</span>
+      </Hint>
       <div
         style={{
           display: "grid",
