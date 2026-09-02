@@ -33,6 +33,8 @@ export interface LocationSectionProps {
   onChange: (lat: string, lon: string) => void;
   /** Short note about where the current coordinates came from. */
   badge?: string | null;
+  /** Undo back to the coordinates the photo arrived with, when they differ. */
+  revert?: { label: string; title?: string; onRevert: () => void } | null;
   height?: number;
 }
 
@@ -42,6 +44,7 @@ export default function LocationSection({
   lon,
   onChange,
   badge,
+  revert,
   height = 220,
 }: LocationSectionProps) {
   const c = colors(theme);
@@ -58,6 +61,16 @@ export default function LocationSection({
     fontWeight: 500,
     marginBottom: 4,
     color: c.text,
+  };
+
+  const linkButtonStyle: React.CSSProperties = {
+    background: "none",
+    border: "none",
+    padding: 0,
+    fontSize: 12,
+    color: c.muted,
+    cursor: "pointer",
+    textDecoration: "underline",
   };
 
   const inputStyle = (invalid: boolean): React.CSSProperties => ({
@@ -108,19 +121,21 @@ export default function LocationSection({
               {badge}
             </span>
           )}
+          {revert && (
+            <button
+              type="button"
+              onClick={revert.onRevert}
+              title={revert.title}
+              style={linkButtonStyle}
+            >
+              {revert.label}
+            </button>
+          )}
           {(lat !== "" || lon !== "") && (
             <button
               type="button"
               onClick={() => onChange("", "")}
-              style={{
-                background: "none",
-                border: "none",
-                padding: 0,
-                fontSize: 12,
-                color: c.muted,
-                cursor: "pointer",
-                textDecoration: "underline",
-              }}
+              style={linkButtonStyle}
             >
               Clear
             </button>

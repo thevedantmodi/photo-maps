@@ -26,9 +26,13 @@ function UploadTab({ theme }: { theme: Theme }) {
   const [caption, setCaption] = useState("");
   const [lat, setLat] = useState("");
   const [lon, setLon] = useState("");
-  // Remembers that the picked file carried GPS, so clearing the boxes reads as
+  // The coordinates the picked file arrived with. Kept for the whole upload so
+  // a stray click on the map can be undone, and so clearing the boxes reads as
   // "no location" rather than "the client failed to parse EXIF".
-  const [exifGps, setExifGps] = useState(false);
+  const [exifCoords, setExifCoords] = useState<{
+    lat: string;
+    lon: string;
+  } | null>(null);
   const [gpsSource, setGpsSource] = useState<"exif" | "manual" | null>(null);
   const [statusMsg, setStatusMsg] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -47,7 +51,7 @@ function UploadTab({ theme }: { theme: Theme }) {
     setFriendlyName(slugify(f.name));
     setLat("");
     setLon("");
-    setExifGps(false);
+    setExifCoords(null);
     setGpsSource(null);
     // Read the photo's own GPS with the same rules the processor uses, so the
     // map opens on the existing location when the file has one. exifr is
@@ -57,9 +61,13 @@ function UploadTab({ theme }: { theme: Theme }) {
       .then((data) => {
         const gps = extractGps(data as Record<string, unknown> | null);
         if (!gps) return;
-        setLat(formatCoord(gps.latitude));
-        setLon(formatCoord(gps.longitude));
-        setExifGps(true);
+        const coords = {
+          lat: formatCoord(gps.latitude),
+          lon: formatCoord(gps.longitude),
+        };
+        setLat(coords.lat);
+        setLon(coords.lon);
+        setExifCoords(coords);
         setGpsSource("exif");
       })
       .catch((e) => console.warn("[exif] could not read GPS", e));
@@ -68,7 +76,20 @@ function UploadTab({ theme }: { theme: Theme }) {
   const handleLocationChange = (nextLat: string, nextLon: string) => {
     setLat(nextLat);
     setLon(nextLon);
-    setGpsSource(nextLat === "" && nextLon === "" ? null : "manual");
+    const backToExif =
+      exifCoords != null &&
+      nextLat === exifCoords.lat &&
+      nextLon === exifCoords.lon;
+    setGpsSource(
+      backToExif ? "exif" : nextLat === "" && nextLon === "" ? null : "manual",
+    );
+  };
+
+  const revertToExif = () => {
+    if (!exifCoords) return;
+    setLat(exifCoords.lat);
+    setLon(exifCoords.lon);
+    setGpsSource("exif");
   };
 
   const handleUpload = useCallback(async () => {
@@ -113,7 +134,8 @@ function UploadTab({ theme }: { theme: Theme }) {
           lon: lonNum,
           // The photo had GPS and the operator removed it: don't let the
           // server put the EXIF coordinates back.
-          gps_cleared: exifGps && (latNum === null || lonNum === null),
+          gps_cleared:
+            exifCoords !== null && (latNum === null || lonNum === null),
         }),
       });
       if (!processRes.ok) {
@@ -128,7 +150,7 @@ function UploadTab({ theme }: { theme: Theme }) {
       setCaption("");
       setLat("");
       setLon("");
-      setExifGps(false);
+      setExifCoords(null);
       setGpsSource(null);
       if (inputRef.current) inputRef.current.value = "";
     } catch (err: unknown) {
@@ -138,7 +160,7 @@ function UploadTab({ theme }: { theme: Theme }) {
     } finally {
       setUploading(false);
     }
-  }, [file, friendlyName, caption, lat, lon, exifGps]);
+  }, [file, friendlyName, caption, lat, lon, exifCoords]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -247,6 +269,15 @@ function UploadTab({ theme }: { theme: Theme }) {
               : gpsSource === "manual"
                 ? "Set manually"
                 : null
+          }
+          revert={
+            exifCoords && (lat !== exifCoords.lat || lon !== exifCoords.lon)
+              ? {
+                  label: "Revert to EXIF",
+                  title: `Back to the photo's own coordinates (${exifCoords.lat}, ${exifCoords.lon})`,
+                  onRevert: revertToExif,
+                }
+              : null
           }
         />
       </div>
@@ -540,6 +571,18 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
               : savedLat !== ""
                 ? "Saved location"
                 : null
+          }
+          revert={
+            savedLat !== "" && (lat !== savedLat || lon !== savedLon)
+              ? {
+                  label: "Revert",
+                  title: `Back to the saved coordinates (${savedLat}, ${savedLon})`,
+                  onRevert: () => {
+                    setLat(savedLat);
+                    setLon(savedLon);
+                  },
+                }
+              : null
           }
           height={200}
         />

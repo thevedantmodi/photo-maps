@@ -8,14 +8,8 @@ import type {
   MarkerDragEvent,
 } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { MAP_STYLES } from "@/lib/mapStyles";
 import { colors, PIN_COLOR, type Theme } from "./theme";
-
-const MAP_STYLES: Record<Theme, string> = {
-  // The public map uses outdoors for light; dark-v11 keeps labels legible while
-  // still matching the dark UI.
-  light: "mapbox://styles/mapbox/outdoors-v12",
-  dark: "mapbox://styles/mapbox/dark-v11",
-};
 
 /** Zoom to settle on when a pin first appears (EXIF prefill or typed coords). */
 const FOCUS_ZOOM = 9;
@@ -162,6 +156,9 @@ export default function MapPicker({
         mapStyle={MAP_STYLES[theme]}
         mapboxAccessToken={token}
         cursor="crosshair"
+        // The public map renders as a globe; a flat projection is easier to
+        // pin a point on in a box this size.
+        projection="mercator"
         minZoom={0.5}
         attributionControl={false}
         style={{ width: "100%", height: "100%" }}
