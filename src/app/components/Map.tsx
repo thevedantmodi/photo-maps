@@ -7,6 +7,7 @@ import useSupercluster from "use-supercluster";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../hooks/useTheme";
+import { MAP_STYLES } from "@/lib/mapStyles";
 
 import DateFilter from "./DateFilter";
 import ThemeToggle from "./ThemeToggle";
@@ -133,10 +134,7 @@ const MapComponent = ({ photos }: MapProps) => {
   });
 
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-  const mapStyle =
-    theme === "dark"
-      ? "mapbox://styles/legoironman1234/cmoqnuxjt006f01s4e6lc071y"
-      : "mapbox://styles/mapbox/outdoors-v12";
+  const mapStyle = MAP_STYLES[theme];
 
   return (
     <>
