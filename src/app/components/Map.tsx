@@ -11,6 +11,7 @@ import { MAP_STYLES } from "@/lib/mapStyles";
 
 import DateFilter from "./DateFilter";
 import ShareButton from "./ShareButton";
+import { shareVersion } from "@/lib/shareVersion";
 import ThemeToggle from "./ThemeToggle";
 import { Photo } from "../types";
 
@@ -336,6 +337,7 @@ const MapComponent = ({ photos }: MapProps) => {
                 key={selectedPhoto.friendly_name}
                 slug={selectedPhoto.friendly_name}
                 caption={selectedPhoto.caption || selectedPhoto.original_name}
+                version={shareVersion(selectedPhoto)}
               />
             </motion.div>
             <motion.div

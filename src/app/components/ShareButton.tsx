@@ -2,9 +2,13 @@
 
 import { useCallback, useRef, useState } from "react";
 
+import { shareCardPath } from "@/lib/shareVersion";
+
 interface ShareButtonProps {
   slug: string;
   caption: string;
+  /** shareVersion() of the photo: a new value means a new card URL, so no stale CDN hit. */
+  version: string;
 }
 
 type Status = "idle" | "building" | "ready" | "shared" | "error";
@@ -17,14 +21,14 @@ const LABEL: Record<Status, string> = {
   error: "Try again",
 };
 
-const ShareButton = ({ slug, caption }: ShareButtonProps) => {
+const ShareButton = ({ slug, caption, version }: ShareButtonProps) => {
   const [status, setStatus] = useState<Status>("idle");
   const fileRef = useRef<File | null>(null);
   const pendingRef = useRef<Promise<File> | null>(null);
 
   const build = useCallback((): Promise<File> => {
     if (pendingRef.current) return pendingRef.current;
-    const p = fetch(`/api/share/${encodeURIComponent(slug)}`)
+    const p = fetch(shareCardPath(slug, version))
       .then(async (res) => {
         if (!res.ok) throw new Error(`share image failed: ${res.status}`);
         const blob = await res.blob();
@@ -38,7 +42,7 @@ const ShareButton = ({ slug, caption }: ShareButtonProps) => {
       });
     pendingRef.current = p;
     return p;
-  }, [slug]);
+  }, [slug, version]);
 
   // Desktop gets the card built before the click ever lands.
   const warm = useCallback(() => {

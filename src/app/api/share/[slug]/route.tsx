@@ -27,7 +27,8 @@ export const maxDuration = 30;
 
 /**
  * The ambient layer is blurred beyond recognition, so it is rendered small and upscaled by
- * satori. Blurring a 1080x1920 buffer directly costs ~20x more for an identical result.
+ * satori. Measured on a 287 KB source: 10 ms this way against 61 ms blurring the full
+ * 1080x1920 buffer, for an identical result. Both are noise next to satori's ~2.6 s.
  */
 const AMBIENT_DIVISOR = 4;
 
