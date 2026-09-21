@@ -1,0 +1,79 @@
+.page {
+  min-height: 100dvh;
+  background: var(--background);
+  color: var(--foreground);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.photo {
+  max-width: min(calc(100vw - 40px), 800px);
+  max-height: 65dvh;
+  width: auto;
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+.caption {
+  font-family: sans-serif;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 24px;
+  padding: 16px 32px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  color: var(--modal-text);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .caption {
+    background: rgba(30, 30, 30, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+  }
+}
+
+html[data-theme='dark'] .caption {
+  background: rgba(30, 30, 30, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+html[data-theme='light'] .caption {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.date {
+  font-size: 0.8em;
+  opacity: 0.8;
+}
+
+.mapLink {
+  color: var(--foreground);
+  font-family: sans-serif;
+  font-size: 14px;
+  text-decoration: none;
+  padding: 10px 20px;
+  border-radius: 30px;
+  background: var(--glass-bg, rgba(0, 0, 0, 0.6));
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease;
+}
+
+.mapLink:hover {
+  transform: scale(1.04);
+}
+
+.mapLink:focus-visible {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}

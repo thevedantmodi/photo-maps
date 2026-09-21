@@ -22,6 +22,7 @@
     "heic2any": "^0.0.4",
     "mapbox-gl": "^3.23.0",
     "next": "^16.1.6",
+    "qrcode": "^1.5.4",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-map-gl": "^8.1.1",
@@ -31,6 +32,7 @@
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/sharp": "^0.31.1",
