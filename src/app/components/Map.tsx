@@ -325,7 +325,9 @@ const MapComponent = ({ photos }: MapProps) => {
               >
                 &times;
               </button>
+              {/* Keyed by slug so a new photo remounts with a fresh, uncached card. */}
               <ShareButton
+                key={selectedPhoto.friendly_name}
                 slug={selectedPhoto.friendly_name}
                 caption={selectedPhoto.caption || selectedPhoto.original_name}
               />

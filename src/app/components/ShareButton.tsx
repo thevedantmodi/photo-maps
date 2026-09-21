@@ -1,73 +1,113 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 interface ShareButtonProps {
   slug: string;
   caption: string;
 }
 
-type Status = "idle" | "working" | "copied" | "error";
+type Status = "idle" | "building" | "ready" | "shared" | "error";
 
 const LABEL: Record<Status, string> = {
   idle: "Share",
-  working: "Building…",
-  copied: "Link copied",
+  building: "Building…",
+  ready: "Share card",
+  shared: "Link copied",
   error: "Try again",
 };
 
 const ShareButton = ({ slug, caption }: ShareButtonProps) => {
   const [status, setStatus] = useState<Status>("idle");
+  const fileRef = useRef<File | null>(null);
+  const pendingRef = useRef<Promise<File> | null>(null);
 
-  const share = useCallback(
-    async (e: React.MouseEvent) => {
-      e.stopPropagation();
-      if (status === "working") return;
-      setStatus("working");
-
-      const permalink = `${window.location.origin}/p/${encodeURIComponent(slug)}`;
-
-      // The link sticker is what converts on a Story, and only the poster can add it —
-      // so the URL goes to the clipboard whichever way the image is delivered.
-      const copy = navigator.clipboard
-        ?.writeText(permalink)
-        .catch(() => {});
-
-      try {
-        const res = await fetch(`/api/share/${encodeURIComponent(slug)}`);
+  const build = useCallback((): Promise<File> => {
+    if (pendingRef.current) return pendingRef.current;
+    const p = fetch(`/api/share/${encodeURIComponent(slug)}`)
+      .then(async (res) => {
         if (!res.ok) throw new Error(`share image failed: ${res.status}`);
         const blob = await res.blob();
         const file = new File([blob], `${slug}.png`, { type: "image/png" });
+        fileRef.current = file;
+        return file;
+      })
+      .catch((err) => {
+        pendingRef.current = null;
+        throw err;
+      });
+    pendingRef.current = p;
+    return p;
+  }, [slug]);
 
-        if (navigator.canShare?.({ files: [file] })) {
-          await navigator.share({ files: [file], text: caption });
-        } else {
-          window.open(URL.createObjectURL(blob), "_blank", "noopener");
-        }
+  // Desktop gets the card built before the click ever lands.
+  const warm = useCallback(() => {
+    if (!fileRef.current && !pendingRef.current) build().catch(() => {});
+  }, [build]);
 
-        await copy;
-        setStatus("copied");
-      } catch (err) {
-        // A cancelled share sheet rejects with AbortError; that is not a failure.
-        if (err instanceof DOMException && err.name === "AbortError") {
-          setStatus("idle");
-          return;
-        }
-        console.error(err);
-        setStatus("error");
+  const deliver = useCallback(
+    (file: File) => {
+      // navigator.share needs transient user activation, so this must run in the click
+      // handler without an await in front of it — hence the two-phase flow above.
+      if (navigator.canShare?.({ files: [file] })) {
+        navigator
+          .share({ files: [file], text: caption })
+          .then(() => setStatus("shared"))
+          .catch((err: unknown) => {
+            if (err instanceof DOMException && err.name === "AbortError") {
+              setStatus("ready");
+              return;
+            }
+            // Activation expired or the sheet is unavailable: fall back to a plain tab.
+            window.open(URL.createObjectURL(file), "_blank", "noopener");
+            setStatus("shared");
+          });
+        return;
+      }
+      window.open(URL.createObjectURL(file), "_blank", "noopener");
+      setStatus("shared");
+    },
+    [caption],
+  );
+
+  const onClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (status === "building") return;
+
+      // The link sticker is what converts on a Story, and only the poster can add it — so
+      // the URL goes to the clipboard on the first tap, while activation is still fresh.
+      const permalink = `${window.location.origin}/p/${encodeURIComponent(slug)}`;
+      navigator.clipboard?.writeText(permalink).catch(() => {});
+
+      const ready = fileRef.current;
+      if (ready) {
+        deliver(ready);
+        return;
       }
 
-      setTimeout(() => setStatus("idle"), 2500);
+      setStatus("building");
+      build()
+        .then(() => setStatus("ready"))
+        .catch((err) => {
+          console.error(err);
+          setStatus("error");
+          setTimeout(() => setStatus("idle"), 2500);
+        });
     },
-    [slug, caption, status],
+    [build, deliver, slug, status],
   );
 
   return (
     <button
       className="modal-share-btn"
-      onClick={share}
-      disabled={status === "working"}
-      aria-label="Share this photo"
+      onClick={onClick}
+      onPointerEnter={warm}
+      onFocus={warm}
+      disabled={status === "building"}
+      aria-label={
+        status === "ready" ? "Share the story card" : "Copy link and build a story card"
+      }
     >
       {LABEL[status]}
     </button>
