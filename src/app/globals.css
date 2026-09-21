@@ -176,9 +176,10 @@ body {
   position: absolute;
   top: -20px;
   right: -20px;
-  background: var(--modal-close-bg);
+  /* badge-scrim: these straddle the photo edge, so they must read over map and photo alike */
+  background: rgba(0, 0, 0, 0.6);
   border: none;
-  color: var(--modal-close-text);
+  color: #ffffff;
   font-size: 24px;
   cursor: pointer;
   width: 40px;
@@ -188,7 +189,7 @@ body {
   align-items: center;
   justify-content: center;
   transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(10px);
 }
 
 .modal-close-btn:hover {
@@ -202,9 +203,6 @@ body {
   .modal-close-btn {
     top: 10px;
     right: 10px;
-    background: rgba(0, 0, 0, 0.5);
-    color: white;
-    backdrop-filter: blur(10px);
   }
 }
 
@@ -212,9 +210,10 @@ body {
   position: absolute;
   top: -20px;
   left: -20px;
-  background: var(--modal-close-bg);
+  /* badge-scrim: these straddle the photo edge, so they must read over map and photo alike */
+  background: rgba(0, 0, 0, 0.6);
   border: none;
-  color: var(--modal-close-text);
+  color: #ffffff;
   font-family: sans-serif;
   font-size: 13px;
   font-weight: 500;
@@ -225,7 +224,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(10px);
   transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
   white-space: nowrap;
 }
@@ -251,9 +250,6 @@ body {
   .modal-share-btn {
     top: 10px;
     left: 10px;
-    background: rgba(0, 0, 0, 0.5);
-    color: white;
-    backdrop-filter: blur(10px);
   }
 }
 
