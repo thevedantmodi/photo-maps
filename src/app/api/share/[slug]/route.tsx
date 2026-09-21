@@ -190,11 +190,13 @@ export async function GET(
           padding: `${CARD.safeInset}px ${CARD.sidePadding}px`,
         }}
       >
+        {/* Bottom-anchored so the gap to the plate is always PLATE_GAP: the plate's height
+            varies with the text it holds, and centring here would move the photo with it. */}
         <div
           style={{
             flex: 1,
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-end',
             justifyContent: 'center',
             minHeight: 0,
           }}
