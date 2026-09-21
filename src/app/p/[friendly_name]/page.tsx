@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { getBaseUrl } from '@/lib/baseUrl';
 import { getPhotoBySlug } from '@/lib/photos';
 import { CARD } from '@/lib/shareTokens';
+import { shareCardPath, shareVersion } from '@/lib/shareVersion';
 import styles from './photo.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -24,6 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = photo.caption || photo.original_name;
   const base = await getBaseUrl();
+  const card = shareCardPath(friendly_name, shareVersion(photo));
 
   return {
     metadataBase: new URL(base),
@@ -35,7 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: 'article',
       images: [
         {
-          url: `/api/share/${friendly_name}`,
+          url: card,
           width: CARD.width,
           height: CARD.height,
           alt: title,
@@ -45,7 +47,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     twitter: {
       card: 'summary_large_image',
       title,
-      images: [`/api/share/${friendly_name}`],
+      images: [card],
     },
   };
 }
