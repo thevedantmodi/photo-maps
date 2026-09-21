@@ -10,6 +10,7 @@ import { useTheme } from "../hooks/useTheme";
 import { MAP_STYLES } from "@/lib/mapStyles";
 
 import DateFilter from "./DateFilter";
+import ShareButton from "./ShareButton";
 import ThemeToggle from "./ThemeToggle";
 import { Photo } from "../types";
 
@@ -324,6 +325,10 @@ const MapComponent = ({ photos }: MapProps) => {
               >
                 &times;
               </button>
+              <ShareButton
+                slug={selectedPhoto.friendly_name}
+                caption={selectedPhoto.caption || selectedPhoto.original_name}
+              />
             </motion.div>
             <motion.div
               className="modal-caption"
