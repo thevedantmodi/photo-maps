@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
+import { getBaseUrl } from '@/lib/baseUrl';
 import { getPhotoBySlug } from '@/lib/photos';
 import { CARD } from '@/lib/shareTokens';
 import styles from './photo.module.css';
@@ -22,10 +23,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!photo) return { title: 'Photo not found' };
 
   const title = photo.caption || photo.original_name;
-  const base = process.env.NEXT_PUBLIC_BASE_URL;
+  const base = await getBaseUrl();
 
   return {
-    ...(base ? { metadataBase: new URL(base) } : {}),
+    metadataBase: new URL(base),
     title: `${title} — Photos by Vedant Modi`,
     description: 'Photos! Mapped!',
     openGraph: {

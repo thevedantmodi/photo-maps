@@ -8,6 +8,7 @@ import { ImageResponse } from 'next/og';
 import QRCode from 'qrcode';
 import sharp from 'sharp';
 
+import { getBaseUrl } from '@/lib/baseUrl';
 import { getPhotoBySlug } from '@/lib/photos';
 import {
   AMBIENT,
@@ -124,10 +125,11 @@ function formatDate(iso: string | null): string | null {
 }
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
+  const base = await getBaseUrl(req.headers);
   const photo = await getPhotoBySlug(slug);
   if (!photo) return new Response('Not found', { status: 404 });
 
@@ -137,7 +139,8 @@ export async function GET(
 
   const rawCaption = photo.caption || photo.original_name;
   const date = formatDate(photo.date);
-  const { caption, photoMaxHeight } = layout(rawCaption, date !== null, displayUrl(slug));
+  const url = displayUrl(base, slug);
+  const { caption, photoMaxHeight } = layout(rawCaption, date !== null, url);
 
   // One source buffer, two derivatives: the photo itself, and the blurred ground behind it.
   const [fitted, ambient, qr] = await Promise.all([
@@ -151,7 +154,7 @@ export async function GET(
       .modulate({ brightness: AMBIENT.brightness, saturation: AMBIENT.saturation })
       .jpeg({ quality: AMBIENT.quality })
       .toBuffer(),
-    QRCode.toBuffer(permalink(slug), {
+    QRCode.toBuffer(permalink(base, slug), {
       width: QR.renderSize,
       margin: 0,
       errorCorrectionLevel: 'M',
@@ -223,7 +226,7 @@ export async function GET(
             <div style={{ display: 'flex', ...TYPE.caption }}>{caption}</div>
             {date ? <div style={{ display: 'flex', ...TYPE.date }}>{date}</div> : null}
             <div style={{ display: 'flex', fontFamily: FONT.mono, marginTop: 4, ...TYPE.url }}>
-              {displayUrl(slug)}
+              {url}
             </div>
           </div>
 
@@ -254,15 +257,11 @@ export async function GET(
   });
 }
 
-function baseUrl(): string {
-  return (process.env.NEXT_PUBLIC_BASE_URL ?? '').replace(/\/$/, '');
-}
-
-function permalink(slug: string): string {
-  return `${baseUrl()}/p/${slug}`;
+function permalink(base: string, slug: string): string {
+  return `${base}/p/${slug}`;
 }
 
 /** The typeable fallback printed on the card — protocol stripped, since nobody types it. */
-function displayUrl(slug: string): string {
-  return permalink(slug).replace(/^https?:\/\//, '');
+function displayUrl(base: string, slug: string): string {
+  return permalink(base, slug).replace(/^https?:\/\//, '');
 }
