@@ -657,16 +657,20 @@ function ManageTab({ theme }: { theme: Theme }) {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [editing, setEditing] = useState<AdminPhoto | null>(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const res = await fetch("/api/admin/photos");
-    setPhotos(await res.json());
-    setLoading(false);
-  }, []);
-
+  // loading starts true, so there is nothing to set before the fetch resolves.
   useEffect(() => {
-    load();
-  }, [load]);
+    let cancelled = false;
+    (async () => {
+      const res = await fetch("/api/admin/photos");
+      const data = await res.json();
+      if (cancelled) return;
+      setPhotos(data);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleDelete = async (photo: AdminPhoto) => {
     if (!confirm(`Delete "${photo.friendly_name}"?`)) return;
