@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Map, { Marker } from "react-map-gl/mapbox";
 import type { MapRef, ViewStateChangeEvent } from "react-map-gl/mapbox";
 import useSupercluster from "use-supercluster";
@@ -14,13 +14,22 @@ import ShareButton from "./ShareButton";
 import ThemeToggle from "./ThemeToggle";
 import { Photo } from "../types";
 
+/**
+ * supercluster returns either an original point (carrying its photo) or a generated
+ * cluster (carrying a count), sharing one properties bag.
+ */
+type ClusterProps = {
+  cluster: boolean;
+  point_count?: number;
+  photo?: Photo;
+};
+
 interface MapProps {
   photos: Photo[];
 }
 
 const MapComponent = ({ photos }: MapProps) => {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
-  const [filteredPhotos, setFilteredPhotos] = useState<Photo[]>(photos);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [viewState, setViewState] = useState({
     longitude: -96.40442327908295,
@@ -34,18 +43,6 @@ const MapComponent = ({ photos }: MapProps) => {
   const [imgLoaded, setImgLoaded] = useState(false);
   const mapRef = useRef<MapRef>(null);
   const [theme, toggleTheme] = useTheme();
-
-  useEffect(() => {
-    if (selectedYear === null) {
-      setFilteredPhotos(photos);
-      return;
-    }
-    const filtered = photos.filter((photo) => {
-      if (!photo.date) return false;
-      return new Date(photo.date).getFullYear() === selectedYear;
-    });
-    setFilteredPhotos(filtered);
-  }, [selectedYear, photos]);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -116,6 +113,15 @@ const MapComponent = ({ photos }: MapProps) => {
     [updateBounds],
   );
 
+  // Derived, not state: deriving during render drops a re-render per filter change.
+  const filteredPhotos = useMemo(() => {
+    if (selectedYear === null) return photos;
+    return photos.filter((photo) => {
+      if (!photo.date) return false;
+      return new Date(photo.date).getFullYear() === selectedYear;
+    });
+  }, [selectedYear, photos]);
+
   const points = filteredPhotos
     .filter((p) => p.lat != null && p.lon != null)
     .map((photo) => ({
@@ -156,14 +162,14 @@ const MapComponent = ({ photos }: MapProps) => {
       >
         {clusters.map((cluster) => {
           const [longitude, latitude] = cluster.geometry.coordinates;
-          const props = cluster.properties as any;
-          const isCluster: boolean = props.cluster;
-          const pointCount: number = props.point_count;
+          const props = cluster.properties as ClusterProps;
+          const isCluster = props.cluster;
+          const pointCount = props.point_count ?? 0;
 
           if (isCluster) {
             const leaves = supercluster!.getLeaves(cluster.id as number, 3);
             const thumbs = leaves.map(
-              (l: any) => l.properties.photo.thumb_url as string,
+              (l) => (l.properties as ClusterProps).photo!.thumb_url,
             );
 
             return (
@@ -244,7 +250,7 @@ const MapComponent = ({ photos }: MapProps) => {
             );
           }
 
-          const photo: Photo = cluster.properties.photo;
+          const photo = (cluster.properties as ClusterProps).photo!;
           return (
             <Marker
               key={photo.id}
