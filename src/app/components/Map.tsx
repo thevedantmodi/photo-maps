@@ -323,22 +323,28 @@ const MapComponent = ({ photos }: MapProps) => {
                   boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
                 }}
               />
-              <button
-                className="modal-close-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.location.hash = "";
-                }}
-              >
-                &times;
-              </button>
-              {/* Keyed by slug so a new photo remounts with a fresh, uncached card. */}
-              <ShareButton
-                key={selectedPhoto.friendly_name}
-                slug={selectedPhoto.friendly_name}
-                caption={selectedPhoto.caption || selectedPhoto.original_name}
-                version={shareVersion(selectedPhoto)}
-              />
+              <div className="modal-traffic-lights">
+                <button
+                  className="modal-close-btn"
+                  aria-label="Close photo"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.location.hash = "";
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <path d="M18 6L6 18" />
+                    <path d="M6 6l12 12" />
+                  </svg>
+                </button>
+                {/* Keyed by slug so a new photo remounts with a fresh, uncached card. */}
+                <ShareButton
+                  key={selectedPhoto.friendly_name}
+                  slug={selectedPhoto.friendly_name}
+                  caption={selectedPhoto.caption || selectedPhoto.original_name}
+                  version={shareVersion(selectedPhoto)}
+                />
+              </div>
             </motion.div>
             <motion.div
               className="modal-caption"
