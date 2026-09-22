@@ -14,11 +14,47 @@ interface ShareButtonProps {
 type Status = "idle" | "building" | "ready" | "shared" | "error";
 
 const LABEL: Record<Status, string> = {
-  idle: "Share",
-  building: "Building…",
-  ready: "Share card",
+  idle: "Copy link and build a story card",
+  building: "Building the story card…",
+  ready: "Share the story card",
   shared: "Link copied",
-  error: "Try again",
+  error: "Something went wrong, try again",
+};
+
+const ShareIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7" />
+    <path d="M16 6l-4-4-4 4" />
+    <path d="M12 2v14" />
+  </svg>
+);
+
+const SpinnerIcon = () => (
+  <svg className="icon-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <path d="M12 2a10 10 0 0 1 10 10" />
+  </svg>
+);
+
+const CheckIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 6L9 17l-5-5" />
+  </svg>
+);
+
+const ErrorIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 9v4" />
+    <path d="M12 17h.01" />
+    <path d="M10.29 3.86l-8.18 14.18A2 2 0 0 0 3.82 21h16.36a2 2 0 0 0 1.71-3l-8.18-14.14a2 2 0 0 0-3.42 0z" />
+  </svg>
+);
+
+const ICON: Record<Status, () => React.JSX.Element> = {
+  idle: ShareIcon,
+  building: SpinnerIcon,
+  ready: ShareIcon,
+  shared: CheckIcon,
+  error: ErrorIcon,
 };
 
 const ShareButton = ({ slug, caption, version }: ShareButtonProps) => {
@@ -102,6 +138,8 @@ const ShareButton = ({ slug, caption, version }: ShareButtonProps) => {
     [build, deliver, slug, status],
   );
 
+  const Icon = ICON[status];
+
   return (
     <button
       className="modal-share-btn"
@@ -109,11 +147,9 @@ const ShareButton = ({ slug, caption, version }: ShareButtonProps) => {
       onPointerEnter={warm}
       onFocus={warm}
       disabled={status === "building"}
-      aria-label={
-        status === "ready" ? "Share the story card" : "Copy link and build a story card"
-      }
+      aria-label={LABEL[status]}
     >
-      {LABEL[status]}
+      <Icon />
     </button>
   );
 };

@@ -172,24 +172,37 @@ body {
   overflow: hidden;
 }
 
-.modal-close-btn {
+.modal-traffic-lights {
   position: absolute;
   top: -20px;
   right: -20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .modal-traffic-lights {
+    top: 10px;
+    right: 10px;
+  }
+}
+
+.modal-close-btn,
+.modal-share-btn {
   /* badge-scrim: these straddle the photo edge, so they must read over map and photo alike */
   background: rgba(0, 0, 0, 0.6);
   border: none;
   color: #ffffff;
-  font-size: 24px;
   cursor: pointer;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
   backdrop-filter: blur(10px);
+  transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .modal-close-btn:hover {
@@ -199,40 +212,10 @@ body {
   box-shadow: 0 4px 12px rgba(255, 59, 48, 0.4);
 }
 
-@media (max-width: 768px) {
-  .modal-close-btn {
-    top: 10px;
-    right: 10px;
-  }
-}
-
-.modal-share-btn {
-  position: absolute;
-  top: -20px;
-  left: -20px;
-  /* badge-scrim: these straddle the photo edge, so they must read over map and photo alike */
-  background: rgba(0, 0, 0, 0.6);
-  border: none;
-  color: #ffffff;
-  font-family: sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  height: 40px;
-  padding: 0 18px;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(10px);
-  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
-  white-space: nowrap;
-}
-
 .modal-share-btn:hover:not(:disabled) {
   background: #007bff;
   color: white;
-  transform: scale(1.06);
+  transform: scale(1.1);
   box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
 }
 
@@ -246,11 +229,17 @@ body {
   cursor: default;
 }
 
-@media (max-width: 768px) {
-  .modal-share-btn {
-    top: 10px;
-    left: 10px;
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
   }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.icon-spin {
+  animation: spin 0.8s linear infinite;
 }
 
 .modal-caption {
