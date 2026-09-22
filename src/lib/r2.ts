@@ -27,3 +27,9 @@ export function getPublicUrl(key: string): string {
 export async function deleteObject(key: string): Promise<void> {
   await r2.send(new DeleteObjectCommand({ Bucket: process.env.R2_BUCKET!, Key: key }));
 }
+
+export async function putObject(key: string, body: Buffer, contentType: string): Promise<void> {
+  await r2.send(
+    new PutObjectCommand({ Bucket: process.env.R2_BUCKET!, Key: key, Body: body, ContentType: contentType })
+  );
+}

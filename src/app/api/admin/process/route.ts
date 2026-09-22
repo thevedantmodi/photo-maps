@@ -1,11 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { GetObjectCommand, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
-import { r2 } from '@/lib/r2';
+import { r2, getPublicUrl } from '@/lib/r2';
 import { db } from '@/db';
 import { photos } from '@/db/schema';
 import sharp from 'sharp';
 import exifr from 'exifr';
 import { EXIF_PARSE_OPTIONS, coercePair, extractGps } from '@/lib/gps';
+import { getBaseUrl } from '@/lib/baseUrl';
+import { generateAndStoreShareCard } from '@/lib/shareCardStore';
 
 export const maxDuration = 60;
 
@@ -95,6 +97,21 @@ export async function POST(req: NextRequest) {
         status: 'published',
       },
     });
+
+    const base = await getBaseUrl(req.headers);
+    after(() =>
+      generateAndStoreShareCard(
+        {
+          friendly_name,
+          caption: caption || null,
+          original_name: original_name ?? key,
+          date: dateTaken?.toISOString() ?? null,
+          large_name: largeName,
+          large_url: getPublicUrl(largeName),
+        },
+        base
+      )
+    );
 
     return NextResponse.json({ ok: true, lat: gps?.latitude ?? null, lon: gps?.longitude ?? null });
   } catch (e) {

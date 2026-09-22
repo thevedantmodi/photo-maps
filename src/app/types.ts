@@ -11,6 +11,7 @@ export interface Photo {
   date: string | null;
   status: string;
   created_at: string | null;
+  share_card_version: string | null;
   thumb_url: string;
   large_url: string;
 }
