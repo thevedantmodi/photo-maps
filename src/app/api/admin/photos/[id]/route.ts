@@ -1,9 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { photos } from '@/db/schema';
-import { deleteObject } from '@/lib/r2';
+import { deleteObject, getPublicUrl } from '@/lib/r2';
 import { isValidLat, isValidLon } from '@/lib/gps';
+import { getBaseUrl } from '@/lib/baseUrl';
+import { generateAndStoreShareCard, shareCardKey } from '@/lib/shareCardStore';
+
+export const maxDuration = 30;
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -44,6 +48,27 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   await db.update(photos).set(update).where(eq(photos.id, id));
 
+  // Only caption/date feed shareVersion() — lat/lon edits don't change what the card shows,
+  // so skip the wasted render/upload for those.
+  if ('caption' in update || 'date' in update) {
+    const base = await getBaseUrl(req.headers);
+    const caption = 'caption' in update ? (update.caption as string | null) : row.caption;
+    const date = 'date' in update ? (update.date as Date | null) : row.date;
+    after(() =>
+      generateAndStoreShareCard(
+        {
+          friendly_name: row.friendly_name,
+          caption,
+          original_name: row.original_name,
+          date: date?.toISOString() ?? null,
+          large_name: row.large_name,
+          large_url: getPublicUrl(row.large_name),
+        },
+        base
+      )
+    );
+  }
+
   return NextResponse.json({ ok: true });
 }
 
@@ -56,6 +81,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   await Promise.all([
     deleteObject(row.thumb_name),
     deleteObject(row.large_name),
+    deleteObject(shareCardKey(row.friendly_name)),
   ]);
 
   await db.delete(photos).where(eq(photos.id, id));

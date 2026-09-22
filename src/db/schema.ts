@@ -14,6 +14,10 @@ export const photos = pgTable(
     caption: text('caption'),
     date: timestamp('date', { withTimezone: true }),
     status: text('status').notNull().default('pending'),
+    // shareVersion() value baked into the precomputed share card currently in R2, so the
+    // read path can tell a fresh card from a stale/never-generated one. Null means "not
+    // generated yet" — the share route falls back to a live render in that case.
+    share_card_version: text('share_card_version'),
     created_at: timestamp('created_at', { withTimezone: true }).default(sql`now()`),
   },
   (table) => ({
