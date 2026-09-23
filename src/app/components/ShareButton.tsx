@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { shareCardPath } from "@/lib/shareVersion";
 
@@ -80,10 +80,13 @@ const ShareButton = ({ slug, caption, version }: ShareButtonProps) => {
     return p;
   }, [slug, version]);
 
-  // Desktop gets the card built before the click ever lands.
   const warm = useCallback(() => {
     if (!fileRef.current && !pendingRef.current) build().catch(() => {});
   }, [build]);
+
+  // Touch devices never hover, so build the card as soon as the photo opens — otherwise
+  // the first tap only builds it and a second tap is needed to actually share.
+  useEffect(warm, [warm]);
 
   const deliver = useCallback(
     (file: File) => {
@@ -98,7 +101,12 @@ const ShareButton = ({ slug, caption, version }: ShareButtonProps) => {
               setStatus("ready");
               return;
             }
-            // Activation expired or the sheet is unavailable: fall back to a plain tab.
+            // Activation lapsed while the card was still building: the next tap shares instantly.
+            if (err instanceof DOMException && err.name === "NotAllowedError") {
+              setStatus("ready");
+              return;
+            }
+            // Share sheet unavailable: fall back to a plain tab.
             window.open(URL.createObjectURL(file), "_blank", "noopener");
             setStatus("shared");
           });
@@ -126,9 +134,11 @@ const ShareButton = ({ slug, caption, version }: ShareButtonProps) => {
         return;
       }
 
+      // Card still in flight: share the moment it lands. Activation usually outlives a
+      // short wait; if it doesn't, deliver() drops back to "ready" for one more tap.
       setStatus("building");
       build()
-        .then(() => setStatus("ready"))
+        .then(deliver)
         .catch((err) => {
           console.error(err);
           setStatus("error");
