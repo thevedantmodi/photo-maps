@@ -14,10 +14,15 @@ interface LocationSidebarProps {
   photos: Photo[];
   mapboxToken?: string;
   onSelect: (group: { longitude: number; latitude: number; count: number }) => void;
+  hideToggle?: boolean;
 }
 
-const LocationSidebar = ({ photos, mapboxToken, onSelect }: LocationSidebarProps) => {
+const LocationSidebar = ({ photos, mapboxToken, onSelect, hideToggle }: LocationSidebarProps) => {
   const [open, setOpen] = useState(false);
+  // Derived, not synced via effect: the panel can't be left open and
+  // orphaned behind the expanded search bar without a cascading setState.
+  const panelOpen = open && !hideToggle;
+
   // Recomputed from photos, not stored in state — the effect below only
   // owns the async name lookups, so it never sets state synchronously.
   const rawGroups = useMemo(() => getLocationGroups(photos), [photos]);
@@ -51,12 +56,14 @@ const LocationSidebar = ({ photos, mapboxToken, onSelect }: LocationSidebarProps
   return (
     <>
       <button
-        className="sidebar-toggle-btn"
+        className={`sidebar-toggle-btn${hideToggle ? " icon-btn-hidden" : ""}`}
         onClick={() => setOpen((v) => !v)}
-        aria-label={open ? "Close location list" : "Open location list"}
-        aria-expanded={open}
+        aria-label={panelOpen ? "Close location list" : "Open location list"}
+        aria-expanded={panelOpen}
+        aria-hidden={hideToggle}
+        tabIndex={hideToggle ? -1 : 0}
       >
-        {open ? (
+        {panelOpen ? (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <path d="M18 6L6 18" />
             <path d="M6 6l12 12" />
@@ -69,7 +76,7 @@ const LocationSidebar = ({ photos, mapboxToken, onSelect }: LocationSidebarProps
       </button>
 
       <AnimatePresence>
-        {open && (
+        {panelOpen && (
           <motion.div
             className="location-sidebar"
             initial={{ x: -300, opacity: 0 }}

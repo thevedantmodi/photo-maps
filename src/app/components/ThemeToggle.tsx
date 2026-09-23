@@ -3,11 +3,18 @@
 interface ThemeToggleProps {
     theme: 'light' | 'dark';
     onToggle: () => void;
+    hidden?: boolean;
 }
 
-export default function ThemeToggle({ theme, onToggle }: ThemeToggleProps) {
+export default function ThemeToggle({ theme, onToggle, hidden }: ThemeToggleProps) {
     return (
-        <button className="theme-toggle" onClick={onToggle} aria-label="Toggle theme">
+        <button
+            className={`theme-toggle${hidden ? ' icon-btn-hidden' : ''}`}
+            onClick={onToggle}
+            aria-label="Toggle theme"
+            aria-hidden={hidden}
+            tabIndex={hidden ? -1 : 0}
+        >
             {theme === 'dark' ? (
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
                     <circle cx="12" cy="12" r="5" />

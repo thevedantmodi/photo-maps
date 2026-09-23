@@ -47,6 +47,7 @@ const MapComponent = ({ photos }: MapProps) => {
   const [imgLoaded, setImgLoaded] = useState(false);
   const mapRef = useRef<MapRef>(null);
   const [theme, toggleTheme] = useTheme();
+  const [searchExpanded, setSearchExpanded] = useState(false);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -302,16 +303,19 @@ const MapComponent = ({ photos }: MapProps) => {
         onYearChange={setSelectedYear}
       />
 
-      <ThemeToggle theme={theme} onToggle={toggleTheme} />
+      <ThemeToggle theme={theme} onToggle={toggleTheme} hidden={searchExpanded} />
 
       <LocationSidebar
         photos={filteredPhotos}
         mapboxToken={mapboxToken}
         onSelect={(g) => flyTo(g.longitude, g.latitude, g.count > 1 ? 9 : 12)}
+        hideToggle={searchExpanded}
       />
 
       <SearchBox
         mapboxToken={mapboxToken}
+        expanded={searchExpanded}
+        onExpandedChange={setSearchExpanded}
         onSelect={(p: PlaceSuggestion) => {
           if (p.bbox) flyToBounds(p.bbox);
           else flyTo(p.longitude, p.latitude, 8);
