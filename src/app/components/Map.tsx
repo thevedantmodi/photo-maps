@@ -13,6 +13,9 @@ import DateFilter from "./DateFilter";
 import ShareButton from "./ShareButton";
 import { shareVersion } from "@/lib/shareVersion";
 import ThemeToggle from "./ThemeToggle";
+import LocationSidebar from "./LocationSidebar";
+import SearchBox from "./SearchBox";
+import { PlaceSuggestion } from "@/lib/mapboxGeocode";
 import { Photo } from "../types";
 
 /**
@@ -112,6 +115,27 @@ const MapComponent = ({ photos }: MapProps) => {
       updateBounds();
     },
     [updateBounds],
+  );
+
+  // Shared navigation used by both the location sidebar and the search box.
+  const flyTo = useCallback(
+    (longitude: number, latitude: number, zoom = 11) => {
+      mapRef.current?.flyTo({ center: [longitude, latitude], zoom, duration: 1200 });
+    },
+    [],
+  );
+
+  const flyToBounds = useCallback(
+    (bbox: [number, number, number, number]) => {
+      mapRef.current?.fitBounds(
+        [
+          [bbox[0], bbox[1]],
+          [bbox[2], bbox[3]],
+        ],
+        { padding: 60, duration: 1200 },
+      );
+    },
+    [],
   );
 
   // Derived, not state: deriving during render drops a re-render per filter change.
@@ -279,6 +303,20 @@ const MapComponent = ({ photos }: MapProps) => {
       />
 
       <ThemeToggle theme={theme} onToggle={toggleTheme} />
+
+      <LocationSidebar
+        photos={filteredPhotos}
+        mapboxToken={mapboxToken}
+        onSelect={(g) => flyTo(g.longitude, g.latitude, g.count > 1 ? 11 : 14)}
+      />
+
+      <SearchBox
+        mapboxToken={mapboxToken}
+        onSelect={(p: PlaceSuggestion) => {
+          if (p.bbox) flyToBounds(p.bbox);
+          else flyTo(p.longitude, p.latitude, 10);
+        }}
+      />
 
       <AnimatePresence>
         {selectedPhoto && (
