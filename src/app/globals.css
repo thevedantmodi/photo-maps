@@ -821,6 +821,20 @@ html[data-theme="dark"] .search-shape {
   width: 100%;
 }
 
+/* Wide screens (see useMediaQuery in Map.tsx): a permanent bar in the gap
+   between the hamburger and theme toggle, no grow/shrink. */
+.search-track--inline {
+  left: 76px;
+  right: auto;
+  width: min(320px, calc(100vw - 152px));
+}
+
+.search-shape--inline {
+  left: 0;
+  width: 100%;
+}
+
+.search-shape-icon,
 .search-shape-btn,
 .search-back-btn {
   width: 44px;
@@ -833,6 +847,10 @@ html[data-theme="dark"] .search-shape {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.search-shape-icon {
+  cursor: default;
 }
 
 .search-shape-content {
