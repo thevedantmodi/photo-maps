@@ -307,14 +307,14 @@ const MapComponent = ({ photos }: MapProps) => {
       <LocationSidebar
         photos={filteredPhotos}
         mapboxToken={mapboxToken}
-        onSelect={(g) => flyTo(g.longitude, g.latitude, g.count > 1 ? 11 : 14)}
+        onSelect={(g) => flyTo(g.longitude, g.latitude, g.count > 1 ? 9 : 12)}
       />
 
       <SearchBox
         mapboxToken={mapboxToken}
         onSelect={(p: PlaceSuggestion) => {
           if (p.bbox) flyToBounds(p.bbox);
-          else flyTo(p.longitude, p.latitude, 10);
+          else flyTo(p.longitude, p.latitude, 8);
         }}
       />
 
