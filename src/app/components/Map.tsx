@@ -7,6 +7,7 @@ import useSupercluster from "use-supercluster";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../hooks/useTheme";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import { MAP_STYLES } from "@/lib/mapStyles";
 
 import DateFilter from "./DateFilter";
@@ -48,6 +49,11 @@ const MapComponent = ({ photos }: MapProps) => {
   const mapRef = useRef<MapRef>(null);
   const [theme, toggleTheme] = useTheme();
   const [searchExpanded, setSearchExpanded] = useState(false);
+  // Only narrow screens use the icon that grows into the full bar; wider
+  // ones have room for a permanent inline bar. Derived so a resize to wide
+  // can't leave the other icons hidden behind a stale expanded flag.
+  const inlineSearch = useMediaQuery("(min-width: 641px)");
+  const searchOpen = searchExpanded && !inlineSearch;
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -303,18 +309,19 @@ const MapComponent = ({ photos }: MapProps) => {
         onYearChange={setSelectedYear}
       />
 
-      <ThemeToggle theme={theme} onToggle={toggleTheme} hidden={searchExpanded} />
+      <ThemeToggle theme={theme} onToggle={toggleTheme} hidden={searchOpen} />
 
       <LocationSidebar
         photos={filteredPhotos}
         mapboxToken={mapboxToken}
         onSelect={(g) => flyTo(g.longitude, g.latitude, g.count > 1 ? 9 : 12)}
-        hideToggle={searchExpanded}
+        hideToggle={searchOpen}
       />
 
       <SearchBox
         mapboxToken={mapboxToken}
-        expanded={searchExpanded}
+        inline={inlineSearch}
+        expanded={searchOpen}
         onExpandedChange={setSearchExpanded}
         onSelect={(p: PlaceSuggestion) => {
           if (p.bbox) flyToBounds(p.bbox);
