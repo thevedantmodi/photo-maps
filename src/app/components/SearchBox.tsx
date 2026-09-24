@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PlaceSuggestion, searchPlaces } from "@/lib/mapboxGeocode";
+import type { CustomPlace } from "@/lib/customPlaces";
 
 interface SearchBoxProps {
   mapboxToken?: string;
+  places: CustomPlace[];
   onSelect: (place: PlaceSuggestion) => void;
   // Wide screens: a permanent bar between the hamburger and theme toggle,
   // with no grow/shrink. `expanded` only applies when this is false.
@@ -14,7 +16,7 @@ interface SearchBoxProps {
   onExpandedChange: (expanded: boolean) => void;
 }
 
-const SearchBox = ({ mapboxToken, onSelect, inline, expanded, onExpandedChange }: SearchBoxProps) => {
+const SearchBox = ({ mapboxToken, places, onSelect, inline, expanded, onExpandedChange }: SearchBoxProps) => {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
@@ -26,11 +28,11 @@ const SearchBox = ({ mapboxToken, onSelect, inline, expanded, onExpandedChange }
     (value: string) => {
       if (!mapboxToken) return;
       setLoading(true);
-      searchPlaces(value, mapboxToken)
+      searchPlaces(value, mapboxToken, places)
         .then(setSuggestions)
         .finally(() => setLoading(false));
     },
-    [mapboxToken],
+    [mapboxToken, places],
   );
 
   const handleChange = (value: string) => {

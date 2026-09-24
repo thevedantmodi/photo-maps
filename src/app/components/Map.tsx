@@ -17,6 +17,7 @@ import ThemeToggle from "./ThemeToggle";
 import LocationSidebar from "./LocationSidebar";
 import SearchBox from "./SearchBox";
 import { PlaceSuggestion } from "@/lib/mapboxGeocode";
+import type { CustomPlace } from "@/lib/customPlaces";
 import { Photo } from "../types";
 
 /**
@@ -31,9 +32,13 @@ type ClusterProps = {
 
 interface MapProps {
   photos: Photo[];
+  places: CustomPlace[];
 }
 
-const MapComponent = ({ photos }: MapProps) => {
+// Screen-pixel shift for flyTo/fitBounds; positive y lands the target below center.
+const FLY_OFFSET: [number, number] = [0, 60];
+
+const MapComponent = ({ photos, places }: MapProps) => {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [viewState, setViewState] = useState({
@@ -125,9 +130,10 @@ const MapComponent = ({ photos }: MapProps) => {
   );
 
   // Shared navigation used by both the location sidebar and the search box.
+  // Lands the place a little below center, clear of the search bar and top buttons.
   const flyTo = useCallback(
     (longitude: number, latitude: number, zoom = 11) => {
-      mapRef.current?.flyTo({ center: [longitude, latitude], zoom, duration: 1200 });
+      mapRef.current?.flyTo({ center: [longitude, latitude], zoom, offset: FLY_OFFSET, duration: 1200 });
     },
     [],
   );
@@ -139,7 +145,7 @@ const MapComponent = ({ photos }: MapProps) => {
           [bbox[0], bbox[1]],
           [bbox[2], bbox[3]],
         ],
-        { padding: 60, duration: 1200 },
+        { padding: 60, offset: FLY_OFFSET, duration: 1200 },
       );
     },
     [],
@@ -313,6 +319,7 @@ const MapComponent = ({ photos }: MapProps) => {
 
       <LocationSidebar
         photos={filteredPhotos}
+        places={places}
         mapboxToken={mapboxToken}
         onSelect={(g) => flyTo(g.longitude, g.latitude, g.count > 1 ? 9 : 12)}
         hideToggle={searchOpen}
@@ -320,6 +327,7 @@ const MapComponent = ({ photos }: MapProps) => {
 
       <SearchBox
         mapboxToken={mapboxToken}
+        places={places}
         inline={inlineSearch}
         expanded={searchOpen}
         onExpandedChange={setSearchExpanded}

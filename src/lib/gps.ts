@@ -96,3 +96,30 @@ export const EXIF_PARSE_OPTIONS = {
   tiff: true,
   translateValues: false,
 } as const;
+
+const EARTH_RADIUS_KM = 6371;
+const toRad = (deg: number) => (deg * Math.PI) / 180;
+const toDeg = (rad: number) => (rad * 180) / Math.PI;
+
+/** Great-circle (haversine) distance between two points, in km. */
+export function distanceKm(a: Coordinates, b: Coordinates): number {
+  const dLat = toRad(b.latitude - a.latitude);
+  const dLon = toRad(b.longitude - a.longitude);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.latitude)) * Math.cos(toRad(b.latitude)) * Math.sin(dLon / 2) ** 2;
+  return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(h));
+}
+
+/** The point `km` away from `from` along compass bearing `bearingDeg` (0 = north). */
+export function offsetPoint(from: Coordinates, km: number, bearingDeg: number): Coordinates {
+  const d = km / EARTH_RADIUS_KM;
+  const b = toRad(bearingDeg);
+  const lat1 = toRad(from.latitude);
+  const lon1 = toRad(from.longitude);
+  const lat2 = Math.asin(Math.sin(lat1) * Math.cos(d) + Math.cos(lat1) * Math.sin(d) * Math.cos(b));
+  const lon2 =
+    lon1 + Math.atan2(Math.sin(b) * Math.sin(d) * Math.cos(lat1), Math.cos(d) - Math.sin(lat1) * Math.sin(lat2));
+  // Normalize to [-180, 180) so points across the antimeridian stay valid.
+  return { latitude: toDeg(lat2), longitude: ((toDeg(lon2) + 540) % 360) - 180 };
+}
