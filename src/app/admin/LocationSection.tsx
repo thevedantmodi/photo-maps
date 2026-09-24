@@ -36,6 +36,8 @@ export interface LocationSectionProps {
   /** Undo back to the coordinates the photo arrived with, when they differ. */
   revert?: { label: string; title?: string; onRevert: () => void } | null;
   height?: number;
+  /** Forwarded to MapPicker to draw a radius around the pin. */
+  radiusKm?: number | null;
 }
 
 export default function LocationSection({
@@ -46,6 +48,7 @@ export default function LocationSection({
   badge,
   revert,
   height = 220,
+  radiusKm,
 }: LocationSectionProps) {
   const c = colors(theme);
 
@@ -149,6 +152,7 @@ export default function LocationSection({
           lat={latNum}
           lon={lonNum}
           height={height}
+          radiusKm={radiusKm}
           onPick={(nextLat, nextLon) =>
             onChange(formatCoord(nextLat), formatCoord(nextLon))
           }

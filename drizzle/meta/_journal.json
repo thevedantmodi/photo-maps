@@ -8,6 +8,13 @@
       "when": 1790045805755,
       "tag": "0000_sad_kabuki",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790220264645,
+      "tag": "0001_custom_places",
+      "breakpoints": true
     }
   ]
 }

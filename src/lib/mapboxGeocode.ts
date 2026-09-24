@@ -1,4 +1,4 @@
-import { findCustomPlace, searchCustomPlaces } from "./customPlaces";
+import { CustomPlace, findCustomPlace, searchCustomPlaces } from "./customPlaces";
 import { offsetPoint } from "./gps";
 
 const CACHE_KEY = "photo-maps:geocode-cache:v1";
@@ -85,9 +85,10 @@ export async function reverseGeocode(
   lon: number,
   lat: number,
   token: string,
+  places: CustomPlace[],
 ): Promise<string> {
-  // Before the cache, so editing CUSTOM_PLACES takes effect immediately.
-  const custom = findCustomPlace(lon, lat);
+  // Before the cache, so an edited place takes effect on the next page load.
+  const custom = findCustomPlace(places, lon, lat);
   if (custom) return custom.name;
 
   const cache = loadCache();
@@ -122,10 +123,11 @@ export interface PlaceSuggestion {
 export async function searchPlaces(
   query: string,
   token: string,
+  places: CustomPlace[],
 ): Promise<PlaceSuggestion[]> {
   if (!query.trim()) return [];
 
-  const custom: PlaceSuggestion[] = searchCustomPlaces(query).map((p) => ({
+  const custom: PlaceSuggestion[] = searchCustomPlaces(places, query).map((p) => ({
     name: p.name,
     longitude: p.longitude,
     latitude: p.latitude,

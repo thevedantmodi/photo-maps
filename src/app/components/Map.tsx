@@ -17,6 +17,7 @@ import ThemeToggle from "./ThemeToggle";
 import LocationSidebar from "./LocationSidebar";
 import SearchBox from "./SearchBox";
 import { PlaceSuggestion } from "@/lib/mapboxGeocode";
+import type { CustomPlace } from "@/lib/customPlaces";
 import { Photo } from "../types";
 
 /**
@@ -31,12 +32,13 @@ type ClusterProps = {
 
 interface MapProps {
   photos: Photo[];
+  places: CustomPlace[];
 }
 
 // Screen-pixel shift for flyTo/fitBounds; positive y lands the target below center.
 const FLY_OFFSET: [number, number] = [0, 60];
 
-const MapComponent = ({ photos }: MapProps) => {
+const MapComponent = ({ photos, places }: MapProps) => {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [viewState, setViewState] = useState({
@@ -317,6 +319,7 @@ const MapComponent = ({ photos }: MapProps) => {
 
       <LocationSidebar
         photos={filteredPhotos}
+        places={places}
         mapboxToken={mapboxToken}
         onSelect={(g) => flyTo(g.longitude, g.latitude, g.count > 1 ? 9 : 12)}
         hideToggle={searchOpen}
@@ -324,6 +327,7 @@ const MapComponent = ({ photos }: MapProps) => {
 
       <SearchBox
         mapboxToken={mapboxToken}
+        places={places}
         inline={inlineSearch}
         expanded={searchOpen}
         onExpandedChange={setSearchExpanded}

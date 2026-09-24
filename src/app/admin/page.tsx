@@ -5,6 +5,7 @@ import { useTheme } from "../hooks/useTheme";
 import { colors, type Theme } from "./theme";
 import { Hint, Kbd, useModKey } from "./Kbd";
 import LocationSection from "./LocationSection";
+import PlacesTab from "./PlacesTab";
 import { EXIF_PARSE_OPTIONS, extractGps, formatCoord, parseLat, parseLon } from "@/lib/gps";
 
 interface AdminPhoto {
@@ -817,7 +818,7 @@ function ManageTab({ theme }: { theme: Theme }) {
 
 export default function AdminPage() {
   const [theme, toggleTheme] = useTheme();
-  const [tab, setTab] = useState<"upload" | "manage">("upload");
+  const [tab, setTab] = useState<"upload" | "manage" | "places">("upload");
 
   const c = colors(theme);
 
@@ -864,7 +865,7 @@ export default function AdminPage() {
             borderBottom: `1px solid ${c.tabBorder}`,
           }}
         >
-          {(["upload", "manage"] as const).map((t) => (
+          {(["upload", "manage", "places"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -883,16 +884,14 @@ export default function AdminPage() {
                 borderRadius: 0,
               }}
             >
-              {t === "upload" ? "Upload" : "Manage"}
+              {t === "upload" ? "Upload" : t === "manage" ? "Manage" : "Places"}
             </button>
           ))}
         </div>
 
-        {tab === "upload" ? (
-          <UploadTab theme={theme} />
-        ) : (
-          <ManageTab theme={theme} />
-        )}
+        {tab === "upload" && <UploadTab theme={theme} />}
+        {tab === "manage" && <ManageTab theme={theme} />}
+        {tab === "places" && <PlacesTab theme={theme} />}
       </div>
     </main>
   );

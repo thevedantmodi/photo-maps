@@ -28,3 +28,16 @@ export const photos = pgTable(
 
 export type Photo = typeof photos.$inferSelect;
 export type NewPhoto = typeof photos.$inferInsert;
+
+// Hand-named spots Mapbox has no label for (open ocean, reefs, remote parks).
+// Edited from the admin Places tab; see src/lib/customPlaces.ts for matching.
+export const places = pgTable('places', {
+  id: uuid('id').primaryKey().default(sql`uuid_generate_v4()`),
+  name: text('name').notNull(),
+  lat: doublePrecision('lat').notNull(),
+  lon: doublePrecision('lon').notNull(),
+  radius_km: doublePrecision('radius_km').notNull(),
+  created_at: timestamp('created_at', { withTimezone: true }).default(sql`now()`),
+});
+
+export type PlaceRow = typeof places.$inferSelect;

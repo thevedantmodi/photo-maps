@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
-import Map, { Marker, NavigationControl } from "react-map-gl/mapbox";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import Map, { Layer, Marker, NavigationControl, Source } from "react-map-gl/mapbox";
 import type {
   MapRef,
   MapMouseEvent,
@@ -9,12 +9,25 @@ import type {
 } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { MAP_STYLES } from "@/lib/mapStyles";
+import { offsetPoint } from "@/lib/gps";
 import { colors, PIN_COLOR, type Theme } from "./theme";
 
 /** Zoom to settle on when a pin first appears (EXIF prefill or typed coords). */
 const FOCUS_ZOOM = 9;
 /** Wait this long after a keystroke before moving the camera. */
 const FOCUS_DEBOUNCE_MS = 400;
+/** Vertices in the radius polygon; enough to read as a circle at any zoom. */
+const CIRCLE_STEPS = 64;
+
+/** A geodesic circle around a point, as a closed GeoJSON polygon ring. */
+function circlePolygon(lat: number, lon: number, km: number): GeoJSON.Feature<GeoJSON.Polygon> {
+  const ring: [number, number][] = [];
+  for (let i = 0; i <= CIRCLE_STEPS; i++) {
+    const p = offsetPoint({ latitude: lat, longitude: lon }, km, (i / CIRCLE_STEPS) * 360);
+    ring.push([p.longitude, p.latitude]);
+  }
+  return { type: "Feature", properties: {}, geometry: { type: "Polygon", coordinates: [ring] } };
+}
 
 export interface MapPickerProps {
   theme: Theme;
@@ -22,6 +35,8 @@ export interface MapPickerProps {
   lon: number | null;
   onPick: (lat: number, lon: number) => void;
   height?: number;
+  /** Draw a circle of this radius around the pin (custom places). */
+  radiusKm?: number | null;
 }
 
 export default function MapPicker({
@@ -30,6 +45,7 @@ export default function MapPicker({
   lon,
   onPick,
   height = 220,
+  radiusKm,
 }: MapPickerProps) {
   const c = colors(theme);
   const mapRef = useRef<MapRef>(null);
@@ -40,6 +56,13 @@ export default function MapPicker({
 
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
   const pin = lat != null && lon != null ? { lat, lon } : null;
+  const circle = useMemo(
+    () =>
+      lat != null && lon != null && radiusKm != null && radiusKm > 0
+        ? circlePolygon(lat, lon, radiusKm)
+        : null,
+    [lat, lon, radiusKm],
+  );
 
   const pick = useCallback(
     (nextLat: number, nextLon: number) => {
@@ -164,6 +187,20 @@ export default function MapPicker({
         style={{ width: "100%", height: "100%" }}
       >
         <NavigationControl position="top-right" showCompass={false} />
+        {circle && (
+          <Source id="radius" type="geojson" data={circle}>
+            <Layer
+              id="radius-fill"
+              type="fill"
+              paint={{ "fill-color": PIN_COLOR, "fill-opacity": 0.12 }}
+            />
+            <Layer
+              id="radius-line"
+              type="line"
+              paint={{ "line-color": PIN_COLOR, "line-width": 1.5 }}
+            />
+          </Source>
+        )}
         {pin && (
           <Marker
             longitude={pin.lon}

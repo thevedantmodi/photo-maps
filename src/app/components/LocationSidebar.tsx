@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Photo } from "../types";
 import { getLocationGroups, LocationGroup } from "@/lib/locationGroups";
 import { reverseGeocode } from "@/lib/mapboxGeocode";
+import type { CustomPlace } from "@/lib/customPlaces";
 
 interface NamedGroup extends LocationGroup {
   name: string | null; // null while the geocode lookup is still in flight
@@ -12,12 +13,13 @@ interface NamedGroup extends LocationGroup {
 
 interface LocationSidebarProps {
   photos: Photo[];
+  places: CustomPlace[];
   mapboxToken?: string;
   onSelect: (group: { longitude: number; latitude: number; count: number }) => void;
   hideToggle?: boolean;
 }
 
-const LocationSidebar = ({ photos, mapboxToken, onSelect, hideToggle }: LocationSidebarProps) => {
+const LocationSidebar = ({ photos, places, mapboxToken, onSelect, hideToggle }: LocationSidebarProps) => {
   const [open, setOpen] = useState(false);
   // Derived, not synced via effect: the panel can't be left open and
   // orphaned behind the expanded search bar without a cascading setState.
@@ -37,7 +39,7 @@ const LocationSidebar = ({ photos, mapboxToken, onSelect, hideToggle }: Location
       // time and lets cached (instant) lookups resolve before slower ones.
       for (const group of rawGroups) {
         if (cancelled) return;
-        const name = await reverseGeocode(group.longitude, group.latitude, mapboxToken);
+        const name = await reverseGeocode(group.longitude, group.latitude, mapboxToken, places);
         if (cancelled) return;
         setNames((prev) => ({ ...prev, [group.id]: name }));
       }
@@ -46,7 +48,7 @@ const LocationSidebar = ({ photos, mapboxToken, onSelect, hideToggle }: Location
     return () => {
       cancelled = true;
     };
-  }, [rawGroups, mapboxToken]);
+  }, [rawGroups, mapboxToken, places]);
 
   const groups: NamedGroup[] = useMemo(
     () => rawGroups.map((g) => ({ ...g, name: names[g.id] ?? null })),
