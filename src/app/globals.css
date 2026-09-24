@@ -877,6 +877,20 @@ html[data-theme="dark"] .search-shape {
   opacity: 0.5;
 }
 
+@media (prefers-color-scheme: dark) {
+  .search-shape-input::placeholder {
+    opacity: 0.85;
+  }
+}
+
+html[data-theme="dark"] .search-shape-input::placeholder {
+  opacity: 0.85;
+}
+
+html[data-theme="light"] .search-shape-input::placeholder {
+  opacity: 0.5;
+}
+
 .search-box-suggestions {
   position: absolute;
   top: 52px;
