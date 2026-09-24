@@ -33,6 +33,9 @@ interface MapProps {
   photos: Photo[];
 }
 
+// Screen-pixel shift for flyTo/fitBounds; positive y lands the target below center.
+const FLY_OFFSET: [number, number] = [0, 60];
+
 const MapComponent = ({ photos }: MapProps) => {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
@@ -125,9 +128,10 @@ const MapComponent = ({ photos }: MapProps) => {
   );
 
   // Shared navigation used by both the location sidebar and the search box.
+  // Lands the place a little below center, clear of the search bar and top buttons.
   const flyTo = useCallback(
     (longitude: number, latitude: number, zoom = 11) => {
-      mapRef.current?.flyTo({ center: [longitude, latitude], zoom, duration: 1200 });
+      mapRef.current?.flyTo({ center: [longitude, latitude], zoom, offset: FLY_OFFSET, duration: 1200 });
     },
     [],
   );
@@ -139,7 +143,7 @@ const MapComponent = ({ photos }: MapProps) => {
           [bbox[0], bbox[1]],
           [bbox[2], bbox[3]],
         ],
-        { padding: 60, duration: 1200 },
+        { padding: 60, offset: FLY_OFFSET, duration: 1200 },
       );
     },
     [],
