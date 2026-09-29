@@ -6,7 +6,25 @@ import { colors, type Theme } from "./theme";
 import { Hint, Kbd, useModKey } from "./Kbd";
 import LocationSection from "./LocationSection";
 import PlacesTab from "./PlacesTab";
-import { EXIF_PARSE_OPTIONS, extractGps, formatCoord, parseLat, parseLon } from "@/lib/gps";
+import {
+  EXIF_PARSE_OPTIONS,
+  extractExifDate,
+  extractGps,
+  formatCoord,
+  parseLat,
+  parseLon,
+  type ExifDate,
+} from "@/lib/gps";
+
+// The datetime-local value the server will end up storing for an EXIF date.
+// Camera dates are wall-clock times that exifr revives in the browser's zone
+// but the server reads as UTC, so the local reading is what gets saved; the
+// GPS stamp is true UTC either way.
+function exifDateInputValue({ date, utc }: ExifDate): string {
+  if (utc) return date.toISOString().slice(0, 16);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
 
 interface AdminPhoto {
   id: string;
@@ -35,6 +53,10 @@ function UploadTab({ theme }: { theme: Theme }) {
     lon: string;
   } | null>(null);
   const [gpsSource, setGpsSource] = useState<"exif" | "manual" | null>(null);
+  // Manual date, only sent when the photo has none. EXIF always wins on the
+  // server, so when the file has a date the field just shows it.
+  const [date, setDate] = useState("");
+  const [exifDate, setExifDate] = useState<string | null>(null);
   const [statusMsg, setStatusMsg] = useState("");
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -54,13 +76,18 @@ function UploadTab({ theme }: { theme: Theme }) {
     setLon("");
     setExifCoords(null);
     setGpsSource(null);
+    setDate("");
+    setExifDate(null);
     // Read the photo's own GPS with the same rules the processor uses, so the
     // map opens on the existing location when the file has one. exifr is
     // imported lazily to keep it out of the initial admin bundle.
     import("exifr")
       .then(({ default: exifr }) => exifr.parse(f, EXIF_PARSE_OPTIONS))
       .then((data) => {
-        const gps = extractGps(data as Record<string, unknown> | null);
+        const exif = data as Record<string, unknown> | null;
+        const taken = extractExifDate(exif);
+        if (taken) setExifDate(exifDateInputValue(taken));
+        const gps = extractGps(exif);
         if (!gps) return;
         const coords = {
           lat: formatCoord(gps.latitude),
@@ -71,7 +98,7 @@ function UploadTab({ theme }: { theme: Theme }) {
         setExifCoords(coords);
         setGpsSource("exif");
       })
-      .catch((e) => console.warn("[exif] could not read GPS", e));
+      .catch((e) => console.warn("[exif] could not read metadata", e));
   };
 
   const handleLocationChange = (nextLat: string, nextLon: string) => {
@@ -137,6 +164,7 @@ function UploadTab({ theme }: { theme: Theme }) {
           // server put the EXIF coordinates back.
           gps_cleared:
             exifCoords !== null && (latNum === null || lonNum === null),
+          date: exifDate ? null : date || null,
         }),
       });
       if (!processRes.ok) {
@@ -153,6 +181,8 @@ function UploadTab({ theme }: { theme: Theme }) {
       setLon("");
       setExifCoords(null);
       setGpsSource(null);
+      setDate("");
+      setExifDate(null);
       if (inputRef.current) inputRef.current.value = "";
     } catch (err: unknown) {
       setStatusMsg(
@@ -161,7 +191,7 @@ function UploadTab({ theme }: { theme: Theme }) {
     } finally {
       setUploading(false);
     }
-  }, [file, friendlyName, caption, lat, lon, exifCoords]);
+  }, [file, friendlyName, caption, lat, lon, exifCoords, date, exifDate]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -282,6 +312,51 @@ function UploadTab({ theme }: { theme: Theme }) {
           }
         />
       </div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+          marginBottom: 4,
+        }}
+      >
+        <label
+          style={{ fontSize: 13, fontWeight: 500, color: c.text }}
+        >
+          Date &amp; Time
+        </label>
+        {exifDate && (
+          <span
+            style={{
+              fontSize: 11,
+              padding: "2px 7px",
+              borderRadius: 10,
+              background: c.chipBg,
+              color: c.chipText,
+            }}
+          >
+            From photo EXIF
+          </span>
+        )}
+      </div>
+      <input
+        value={exifDate ?? date}
+        onChange={(e) => setDate(e.target.value)}
+        disabled={exifDate !== null}
+        title={
+          exifDate
+            ? "The photo's own date is used. Change it after upload from the Manage tab."
+            : undefined
+        }
+        type="datetime-local"
+        style={{
+          ...inputStyle,
+          marginBottom: 16,
+          opacity: exifDate ? 0.6 : 1,
+        }}
+      />
 
       <button
         onClick={handleUpload}

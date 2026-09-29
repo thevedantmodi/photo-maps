@@ -5,29 +5,15 @@ import { db } from '@/db';
 import { photos } from '@/db/schema';
 import sharp from 'sharp';
 import exifr from 'exifr';
-import { EXIF_PARSE_OPTIONS, coercePair, extractGps } from '@/lib/gps';
+import { EXIF_PARSE_OPTIONS, coercePair, extractExifDate, extractGps } from '@/lib/gps';
 import { getBaseUrl } from '@/lib/baseUrl';
 import { generateAndStoreShareCard } from '@/lib/shareCardStore';
 import { toSharpInput } from '@/lib/heic';
 
 export const maxDuration = 60;
 
-// GPS timestamps are UTC; used as last-resort fallback when EXIF/XMP dates are stripped (e.g. by Photoshop).
-function extractGpsDate(exifData: Record<string, unknown> | null): Date | null {
-  if (!exifData) return null;
-  const stamp = exifData.GPSDateStamp;
-  if (typeof stamp !== 'string') return null;
-  const datePart = stamp.replace(/:/g, '-');
-  const time = exifData.GPSTimeStamp;
-  if (Array.isArray(time) && time.length === 3) {
-    const [h, m, s] = time as number[];
-    return new Date(`${datePart}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(Math.floor(s)).padStart(2, '0')}Z`);
-  }
-  return new Date(`${datePart}T00:00:00Z`);
-}
-
 export async function POST(req: NextRequest) {
-  const { key, friendly_name, original_name, caption, lat, lon, gps_cleared } = await req.json();
+  const { key, friendly_name, original_name, caption, lat, lon, gps_cleared, date } = await req.json();
 
   if (!key || !friendly_name) {
     return NextResponse.json({ error: 'key and friendly_name required' }, { status: 400 });
@@ -42,6 +28,12 @@ export async function POST(req: NextRequest) {
       { error: 'lat and lon must both be given, with lat in [-90, 90] and lon in [-180, 180]' },
       { status: 400 },
     );
+  }
+
+  // Typed in the admin UI; only used when the photo carries no date of its own.
+  const manualDate = date ? new Date(date) : null;
+  if (manualDate && Number.isNaN(manualDate.getTime())) {
+    return NextResponse.json({ error: 'date must be a valid date' }, { status: 400 });
   }
 
   const BUCKET = process.env.R2_BUCKET!;
@@ -64,10 +56,7 @@ export async function POST(req: NextRequest) {
     ]);
 
     const gps = pinnedGps ?? (gps_cleared ? null : extractGps(exifData));
-    const dateTaken: Date | null =
-      exifData?.DateTimeOriginal instanceof Date ? exifData.DateTimeOriginal
-      : exifData?.CreateDate instanceof Date ? exifData.CreateDate
-      : extractGpsDate(exifData);
+    const dateTaken = extractExifDate(exifData)?.date ?? manualDate;
 
     console.log(`[process] key=${key} gps=${JSON.stringify(gps)} date=${dateTaken} bufLen=${buffer.length}`);
 
