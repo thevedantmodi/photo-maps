@@ -1,4 +1,4 @@
-// Shared GPS helpers used by the photo processor (server) and the admin UI (client).
+// Shared GPS/EXIF helpers used by the photo processor (server) and the admin UI (client).
 
 export interface Coordinates {
   latitude: number;
@@ -86,6 +86,34 @@ export function extractGps(exifData: Record<string, unknown> | null | undefined)
   const longitude = dmsRationalToDecimal(rawLon, lonRef);
   if (latitude === null || longitude === null) return null;
   return { latitude, longitude };
+}
+
+// GPS timestamps are UTC; used as last-resort fallback when EXIF/XMP dates are stripped (e.g. by Photoshop).
+function extractGpsDate(exifData: Record<string, unknown>): Date | null {
+  const stamp = exifData.GPSDateStamp;
+  if (typeof stamp !== 'string') return null;
+  const datePart = stamp.replace(/:/g, '-');
+  const time = exifData.GPSTimeStamp;
+  if (Array.isArray(time) && time.length === 3) {
+    const [h, m, s] = time as number[];
+    return new Date(`${datePart}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(Math.floor(s)).padStart(2, '0')}Z`);
+  }
+  return new Date(`${datePart}T00:00:00Z`);
+}
+
+export interface ExifDate {
+  date: Date;
+  /** True for the GPS stamp (real UTC); false for camera dates, which exifr reads as local wall-clock time. */
+  utc: boolean;
+}
+
+/** When the photo was taken, per its own metadata: DateTimeOriginal, then CreateDate, then the GPS stamp. */
+export function extractExifDate(exifData: Record<string, unknown> | null | undefined): ExifDate | null {
+  if (!exifData) return null;
+  if (exifData.DateTimeOriginal instanceof Date) return { date: exifData.DateTimeOriginal, utc: false };
+  if (exifData.CreateDate instanceof Date) return { date: exifData.CreateDate, utc: false };
+  const gps = extractGpsDate(exifData);
+  return gps ? { date: gps, utc: true } : null;
 }
 
 /** exifr options that match what the server reads, so client and server agree. */
