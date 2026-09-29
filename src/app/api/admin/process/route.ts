@@ -8,6 +8,7 @@ import exifr from 'exifr';
 import { EXIF_PARSE_OPTIONS, coercePair, extractGps } from '@/lib/gps';
 import { getBaseUrl } from '@/lib/baseUrl';
 import { generateAndStoreShareCard } from '@/lib/shareCardStore';
+import { toSharpInput } from '@/lib/heic';
 
 export const maxDuration = 60;
 
@@ -54,9 +55,10 @@ export async function POST(req: NextRequest) {
     const thumbName = `${friendly_name}_thumb.jpg`;
     const largeName = `${friendly_name}_large.jpg`;
 
+    const imageBuf = await toSharpInput(buffer);
     const [thumbBuf, largeBuf, exifData] = await Promise.all([
-      sharp(buffer).rotate().resize(300, 300, { fit: 'inside' }).jpeg({ quality: 80 }).toBuffer(),
-      sharp(buffer).rotate().resize(1600, 1600, { fit: 'inside' }).jpeg({ quality: 85 }).toBuffer(),
+      sharp(imageBuf).rotate().resize(300, 300, { fit: 'inside' }).jpeg({ quality: 80 }).toBuffer(),
+      sharp(imageBuf).rotate().resize(1600, 1600, { fit: 'inside' }).jpeg({ quality: 85 }).toBuffer(),
       exifr.parse(buffer, EXIF_PARSE_OPTIONS)
         .catch((e) => { console.error('[exifr error]', e); return null; }),
     ]);
