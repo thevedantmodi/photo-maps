@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Map, { Marker } from "react-map-gl/mapbox";
 import type { MapRef, ViewStateChangeEvent } from "react-map-gl/mapbox";
-import useSupercluster from "use-supercluster";
+import Supercluster from "supercluster";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../hooks/useTheme";
@@ -198,23 +198,35 @@ const MapComponent = ({ photos, places }: MapProps) => {
     });
   }, [selectedYear, photos]);
 
-  const points = filteredPhotos
-    .filter((p) => p.lat != null && p.lon != null)
-    .map((photo) => ({
-      type: "Feature" as const,
-      properties: { cluster: false, photo },
-      geometry: {
-        type: "Point" as const,
-        coordinates: [photo.lon!, photo.lat!],
-      },
-    }));
+  // Rebuilt only when the photo set changes, not on every camera move.
+  const supercluster = useMemo(() => {
+    const index = new Supercluster<ClusterProps>({
+      radius: 60,
+      maxZoom: MAX_CLUSTER_ZOOM,
+    });
+    index.load(
+      filteredPhotos
+        .filter((p) => p.lat != null && p.lon != null)
+        .map((photo) => ({
+          type: "Feature" as const,
+          properties: { cluster: false, photo },
+          geometry: {
+            type: "Point" as const,
+            coordinates: [photo.lon!, photo.lat!],
+          },
+        })),
+    );
+    return index;
+  }, [filteredPhotos]);
 
-  const { clusters, supercluster } = useSupercluster({
-    points,
-    bounds,
-    zoom: viewState.zoom,
-    options: { radius: 60, maxZoom: MAX_CLUSTER_ZOOM },
-  });
+  // Computed during render rather than in an effect (as use-supercluster
+  // did): an effect's setState added a second render on every move frame,
+  // and a long flyTo tripped React's dev "Maximum update depth" warning.
+  const roundedZoom = Math.round(viewState.zoom);
+  const clusters = useMemo(
+    () => supercluster.getClusters(bounds, roundedZoom),
+    [supercluster, bounds, roundedZoom],
+  );
 
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
   const mapStyle = MAP_STYLES[theme];
@@ -261,7 +273,7 @@ const MapComponent = ({ photos, places }: MapProps) => {
             const clusterId = cluster.id as number;
             // The open stack draws its own fan at this spot.
             if (openStack?.clusterId === clusterId) return null;
-            const leaves = supercluster!.getLeaves(clusterId, 3);
+            const leaves = supercluster.getLeaves(clusterId, 3);
             const thumbs = leaves.map(
               (l) => (l.properties as ClusterProps).photo!.thumb_url,
             );
@@ -274,7 +286,7 @@ const MapComponent = ({ photos, places }: MapProps) => {
                 anchor="center"
                 onClick={() => {
                   const expansionZoom =
-                    supercluster!.getClusterExpansionZoom(clusterId);
+                    supercluster.getClusterExpansionZoom(clusterId);
                   if (expansionZoom > MAX_CLUSTER_ZOOM) {
                     const stacked = supercluster!
                       .getLeaves(clusterId, Infinity)
