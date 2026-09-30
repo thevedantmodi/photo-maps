@@ -15,6 +15,7 @@ import ShareButton from "./ShareButton";
 import { shareVersion } from "@/lib/shareVersion";
 import ThemeToggle from "./ThemeToggle";
 import LocationSidebar from "./LocationSidebar";
+import PhotoStack, { fanExtent } from "./PhotoStack";
 import SearchBox from "./SearchBox";
 import { PlaceSuggestion } from "@/lib/mapboxGeocode";
 import type { CustomPlace } from "@/lib/customPlaces";
@@ -38,9 +39,26 @@ interface MapProps {
 // Screen-pixel shift for flyTo/fitBounds; positive y lands the target below center.
 const FLY_OFFSET: [number, number] = [0, 60];
 
+// Deepest zoom clusters split at. A cluster that still wouldn't split past it
+// is a stack of photos on (near enough) the same spot, so it fans out instead.
+const MAX_CLUSTER_ZOOM = 20;
+
+// Room kept between an open stack's fan and the viewport edge.
+const STACK_EDGE_MARGIN = 16;
+
+interface OpenStack {
+  clusterId: number;
+  longitude: number;
+  latitude: number;
+  photos: Photo[];
+}
+
 const MapComponent = ({ photos, places }: MapProps) => {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  // Cluster ids are only stable within one zoom level, so anything that
+  // changes zoom or the point set closes the stack.
+  const [openStack, setOpenStack] = useState<OpenStack | null>(null);
   const [viewState, setViewState] = useState({
     longitude: -96.40442327908295,
     latitude: 39.206117736168125,
@@ -86,7 +104,10 @@ const MapComponent = ({ photos, places }: MapProps) => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") window.location.hash = "";
+      if (e.key !== "Escape") return;
+      // Close the lightbox first; a second Escape folds the stack back up.
+      if (window.location.hash) window.location.hash = "";
+      else setOpenStack(null);
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -151,6 +172,23 @@ const MapComponent = ({ photos, places }: MapProps) => {
     [],
   );
 
+  const openStackAt = useCallback(
+    (clusterId: number, longitude: number, latitude: number, photos: Photo[]) => {
+      setOpenStack({ clusterId, longitude, latitude, photos });
+      const map = mapRef.current?.getMap();
+      if (!map) return;
+      // Pan only when the fan would spill off screen; zoom stays put so the
+      // stack isn't closed by its own move.
+      const reach = fanExtent(photos.length) + STACK_EDGE_MARGIN;
+      const { x, y } = map.project([longitude, latitude]);
+      const { clientWidth: w, clientHeight: h } = map.getContainer();
+      if (x < reach || x > w - reach || y < reach || y > h - reach) {
+        map.easeTo({ center: [longitude, latitude], offset: FLY_OFFSET, duration: 400 });
+      }
+    },
+    [],
+  );
+
   // Derived, not state: deriving during render drops a re-render per filter change.
   const filteredPhotos = useMemo(() => {
     if (selectedYear === null) return photos;
@@ -175,7 +213,7 @@ const MapComponent = ({ photos, places }: MapProps) => {
     points,
     bounds,
     zoom: viewState.zoom,
-    options: { radius: 60, maxZoom: 20 },
+    options: { radius: 60, maxZoom: MAX_CLUSTER_ZOOM },
   });
 
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -187,6 +225,21 @@ const MapComponent = ({ photos, places }: MapProps) => {
         ref={mapRef}
         {...viewState}
         onMove={onMove}
+        onZoomStart={() => {
+          if (openStack) setOpenStack(null);
+        }}
+        onClick={(e) => {
+          // Marker clicks bubble up as map clicks too; only bare map closes.
+          // composedPath, not target.closest: opening a stack unmounts the
+          // clicked cluster before this runs, detaching the target.
+          const onMarker = e.originalEvent
+            .composedPath()
+            .some(
+              (n) =>
+                n instanceof Element && n.classList.contains("mapboxgl-marker"),
+            );
+          if (!onMarker) setOpenStack(null);
+        }}
         onLoad={() => {
           updateBounds();
           setMapLoaded(true);
@@ -205,7 +258,10 @@ const MapComponent = ({ photos, places }: MapProps) => {
           const pointCount = props.point_count ?? 0;
 
           if (isCluster) {
-            const leaves = supercluster!.getLeaves(cluster.id as number, 3);
+            const clusterId = cluster.id as number;
+            // The open stack draws its own fan at this spot.
+            if (openStack?.clusterId === clusterId) return null;
+            const leaves = supercluster!.getLeaves(clusterId, 3);
             const thumbs = leaves.map(
               (l) => (l.properties as ClusterProps).photo!.thumb_url,
             );
@@ -217,11 +273,21 @@ const MapComponent = ({ photos, places }: MapProps) => {
                 latitude={latitude}
                 anchor="center"
                 onClick={() => {
-                  const zoom = Math.min(
-                    supercluster!.getClusterExpansionZoom(cluster.id as number),
-                    20,
-                  );
-                  setViewState((v) => ({ ...v, longitude, latitude, zoom }));
+                  const expansionZoom =
+                    supercluster!.getClusterExpansionZoom(clusterId);
+                  if (expansionZoom > MAX_CLUSTER_ZOOM) {
+                    const stacked = supercluster!
+                      .getLeaves(clusterId, Infinity)
+                      .map((l) => (l.properties as ClusterProps).photo!);
+                    openStackAt(clusterId, longitude, latitude, stacked);
+                    return;
+                  }
+                  setViewState((v) => ({
+                    ...v,
+                    longitude,
+                    latitude,
+                    zoom: expansionZoom,
+                  }));
                 }}
               >
                 <div className="cluster-marker-container">
@@ -307,12 +373,32 @@ const MapComponent = ({ photos, places }: MapProps) => {
             </Marker>
           );
         })}
+
+        {openStack && (
+          <Marker
+            longitude={openStack.longitude}
+            latitude={openStack.latitude}
+            anchor="center"
+            style={{ zIndex: 1 }}
+          >
+            <PhotoStack
+              photos={openStack.photos}
+              onSelect={(photo) => {
+                setImgLoaded(false);
+                window.location.hash = photo.friendly_name;
+              }}
+            />
+          </Marker>
+        )}
       </Map>
 
       <DateFilter
         photos={photos}
         selectedYear={selectedYear}
-        onYearChange={setSelectedYear}
+        onYearChange={(year) => {
+          setSelectedYear(year);
+          setOpenStack(null);
+        }}
       />
 
       <ThemeToggle theme={theme} onToggle={toggleTheme} hidden={searchOpen} />
