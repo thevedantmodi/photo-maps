@@ -894,8 +894,30 @@ function ManageTab({ theme }: { theme: Theme }) {
 export default function AdminPage() {
   const [theme, toggleTheme] = useTheme();
   const [tab, setTab] = useState<"upload" | "manage" | "places">("upload");
+  const [clearing, setClearing] = useState(false);
+  const [cacheMsg, setCacheMsg] = useState("");
 
   const c = colors(theme);
+
+  // Purges Cloudflare's edge cache for the R2 image host, so rotated or
+  // replaced images show up without waiting for the cache to expire.
+  const handleClearCache = async () => {
+    if (!confirm("Clear the R2 image cache? Images will reload from R2 on next view.")) return;
+    setClearing(true);
+    setCacheMsg("");
+    try {
+      const res = await fetch("/api/admin/cache", { method: "DELETE" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Clear failed");
+      }
+      setCacheMsg("Cache cleared.");
+    } catch (err: unknown) {
+      setCacheMsg(`Error: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setClearing(false);
+    }
+  };
 
   return (
     <main
@@ -916,21 +938,52 @@ export default function AdminPage() {
           }}
         >
           <h1 style={{ fontSize: 20, fontWeight: 600, margin: 0 }}>Admin</h1>
-          <button
-            onClick={toggleTheme}
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={handleClearCache}
+              disabled={clearing}
+              style={{
+                background: "none",
+                border: `1px solid ${c.inputBorder}`,
+                borderRadius: 6,
+                padding: "6px 12px",
+                cursor: clearing ? "default" : "pointer",
+                fontSize: 13,
+                color: c.text,
+                opacity: clearing ? 0.5 : 1,
+              }}
+            >
+              {clearing ? "Clearing…" : "Clear cache"}
+            </button>
+            <button
+              onClick={toggleTheme}
+              style={{
+                background: "none",
+                border: `1px solid ${c.inputBorder}`,
+                borderRadius: 6,
+                padding: "6px 12px",
+                cursor: "pointer",
+                fontSize: 13,
+                color: c.text,
+              }}
+            >
+              {theme === "dark" ? "☀ Light" : "☾ Dark"}
+            </button>
+          </div>
+        </div>
+
+        {cacheMsg && (
+          <p
             style={{
-              background: "none",
-              border: `1px solid ${c.inputBorder}`,
-              borderRadius: 6,
-              padding: "6px 12px",
-              cursor: "pointer",
               fontSize: 13,
-              color: c.text,
+              marginTop: -12,
+              marginBottom: 16,
+              color: cacheMsg.startsWith("Error") ? c.danger : c.muted,
             }}
           >
-            {theme === "dark" ? "☀ Light" : "☾ Dark"}
-          </button>
-        </div>
+            {cacheMsg}
+          </p>
+        )}
 
         <div
           style={{
