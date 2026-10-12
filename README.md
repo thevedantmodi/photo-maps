@@ -1,35 +1,78 @@
 # Photo Maps
 
-An interactive map application for displaying geotagged photos. Photos are plotted on a Mapbox map with clustering, filterable by date, and viewable in a full-size lightbox.
+An interactive map of geotagged travel photos. Photos are plotted on a Mapbox map, clustered by zoom, and open in a full-size lightbox. Each photo has its own shareable page with a generated story-style share card.
+
+## Features
+
+- **Map** — Mapbox GL map with Supercluster clustering; photos taken at the same spot fan out into a stack instead of overlapping.
+- **Browse** — date filter, a location sidebar that groups photos into places, and a search box that flies the map to a place.
+- **Place names** — sidebar groups are named by Mapbox reverse geocoding, with hand-named custom places (reefs, open ocean, remote parks) taking precedence.
+- **Sharing** — every photo lives at `/p/<friendly_name>` with OG tags. `/api/share/<slug>` serves a 1080×1920 share card (rendered with `next/og`, precomputed into R2 at upload/edit time, falling back to a live render).
+- **Light/dark theme** toggle.
+- **Admin** at `/admin` (HTTP Basic Auth) with three tabs:
+  - **Upload** — upload photos (including HEIC) with caption, location, and date.
+  - **Manage** — edit, rotate, and delete photos; clear the Cloudflare cache in front of R2.
+  - **Places** — add, edit, and remove custom place labels without a redeploy.
 
 ## Stack
 
-- **Frontend**: Next.js (App Router), React, Mapbox GL via `react-map-gl`, Framer Motion
+- **App**: Next.js 16 (App Router), React 19, `react-map-gl` / Mapbox GL, Framer Motion
 - **Database**: Neon (PostgreSQL) via Drizzle ORM
-- **Storage**: Cloudflare R2 (thumbnails + full-size images)
-- **Photo processing**: Next.js API route (`sharp`, `exifr`), with an optional Rust/Cloudflare Worker processor
-- **Deployment**: Vercel
+- **Storage**: Cloudflare R2 (originals, thumbnails, large images, share cards)
+- **Image processing**: `sharp`, `exifr`, and `heic-convert` inside a Next.js API route
+- **Deployment**: Vercel (with Vercel Analytics)
 
-## Prerequisites
-
-- Node.js and npm
-- A Neon database, Cloudflare R2 bucket, and Mapbox token
-
-## Environment Variables
-
-Create a `.env.local` file with:
+## Project layout
 
 ```
-DATABASE_URL=...
-DATABASE_URL_UNPOOLED=...
-R2_ACCOUNT_ID=...
+src/
+  app/
+    page.tsx                 public map (server component, loads published photos)
+    p/[friendly_name]/       per-photo page
+    admin/                   admin UI (Upload / Manage / Places)
+    api/
+      upload/                presigned R2 upload URL
+      admin/process/         EXIF + resize + DB insert for an uploaded original
+      admin/photos/          list / edit / rotate / delete photos
+      admin/places/          CRUD for custom places
+      admin/cache/           purge the Cloudflare cache for the R2 domain
+      share/[slug]/          share card image
+    components/              map, sidebar, search, lightbox pieces
+  db/                        Drizzle schema + client
+  lib/                       R2, GPS/EXIF, geocoding, share card helpers
+  proxy.ts                   Basic Auth for /admin and admin APIs
+drizzle/                     SQL migrations
+```
+
+## Environment variables
+
+Create `.env.local`:
+
+```
+# Database (Neon)
+DATABASE_URL=...              # pooled, used by the app
+DATABASE_URL_UNPOOLED=...     # direct, used by drizzle-kit
+
+# Cloudflare R2
+R2_ENDPOINT=...               # https://<account_id>.r2.cloudflarestorage.com
+R2_BUCKET=...
 R2_ACCESS_KEY_ID=...
 R2_SECRET_ACCESS_KEY=...
-R2_BUCKET_NAME=...
-R2_PUBLIC_URL=...
+NEXT_PUBLIC_R2_PUBLIC_URL=... # public base URL of the bucket
+
+# Cloudflare cache purge (admin "Clear cache")
+CLOUDFLARE_ZONE_ID=...        # zone serving the R2 custom domain
+CLOUDFLARE_API_TOKEN=...      # needs Zone > Cache Purge
+
+# Mapbox
 NEXT_PUBLIC_MAPBOX_TOKEN=...
-CLOUDFLARE_ZONE_ID=...      # zone serving the R2 custom domain (admin "Clear cache")
-CLOUDFLARE_API_TOKEN=...    # needs Zone > Cache Purge
+
+# Admin Basic Auth
+ADMIN_USER=...
+ADMIN_PASS=...
+
+# Optional: canonical origin for share links/QR codes in production
+NEXT_PUBLIC_BASE_URL=...
 ```
 
 ## Development
@@ -39,19 +82,27 @@ npm install
 npm run dev
 ```
 
-## Photo Workflow
+## Photo workflow
 
-A password-protected admin panel at `/admin` handles the full intake flow: upload photos, then process them.
+Everything happens in `/admin`; there are no local scripts.
 
-Uploading sends the raw file to R2 via `/api/upload`. Processing (`/api/admin/process`) reads EXIF data, generates a thumbnail and an optimized large image, uploads both to R2, and writes a record to the database — either inline (`sharp` + `exifr`) or via a Rust/Cloudflare Worker processor when `PROCESSOR_URL` is set. From `/admin` you can also review, rotate, and approve or reject processed photos before they appear on the map.
+1. **Upload.** The browser asks `/api/upload` for a presigned URL and PUTs the original straight to R2.
+2. **Process.** `/api/admin/process` downloads the original, decodes HEIC if needed, generates a 300px thumbnail and a 1600px large JPEG, reads EXIF (GPS and date), uploads both images to R2, writes the row to Postgres as `published`, and precomputes the share card. The photo is live on the map as soon as this finishes.
+3. **Touch up.** In the Manage tab, edit captions/location/date, rotate, or delete.
 
 ### Setting a photo's location
 
-Both the Upload tab and the edit dialog show a Mapbox picker under the caption field, backed by latitude/longitude textboxes. Selecting a file reads its EXIF GPS in the browser and prefills both the pin and the boxes, so an already-geotagged photo opens on its own location and can just be nudged. Clicking the map or dragging the pin rewrites the boxes; typing or pasting `lat, lon` moves the pin. Coordinates set here are what `lat`/`lon` become in the database, which is what places the photo on the public map.
+Both the Upload tab and the edit dialog show a Mapbox picker under the caption field, backed by latitude/longitude textboxes. Selecting a file reads its EXIF GPS in the browser and prefills both the pin and the boxes, so an already-geotagged photo opens on its own location and can just be nudged. Clicking the map or dragging the pin rewrites the boxes; typing or pasting `lat, lon` moves the pin. Coordinates set here become `lat`/`lon` in the database.
 
 Whatever is in the boxes at upload time wins over the file's EXIF. Clearing a prefilled location publishes the photo without coordinates rather than falling back to EXIF.
 
-## Database Migrations
+### Setting a photo's date
+
+The EXIF capture date is used when present. If the file has none, the date entered on upload is used instead.
+
+## Database migrations
+
+Schema lives in `src/db/schema.ts` (`photos` and `places`). `drizzle-kit` reads `DATABASE_URL_UNPOOLED` from the environment:
 
 ```bash
 npx drizzle-kit generate
