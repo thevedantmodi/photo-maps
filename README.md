@@ -93,7 +93,7 @@ npm run dev
 
 ## Photo workflow
 
-Everything happens in `/admin`; there are no local scripts.
+Everything happens in `/admin`. The one local script regenerates share cards in bulk (below).
 
 1. **Upload.** The browser asks `/api/upload` for a presigned URL and PUTs the original straight to R2.
 2. **Process.** `/api/admin/process` downloads the original, decodes HEIC if needed, generates a 300px thumbnail and a 1600px large JPEG, reads EXIF (GPS and date), uploads both images to R2, writes the row to Postgres as `published`, and precomputes the share card. The photo is live on the map as soon as this finishes.
@@ -108,6 +108,17 @@ Whatever is in the boxes at upload time wins over the file's EXIF. Clearing a pr
 ### Setting a photo's date
 
 The EXIF capture date is used when present. If the file has none, the date entered on upload is used instead.
+
+### Regenerating share cards
+
+Share cards are re-rendered automatically when a photo is uploaded, edited, or rotated. After a card design change (bump `DESIGN` in `src/lib/shareVersion.ts`), re-render every stale card so photos stop falling back to a slow live render:
+
+```bash
+npm run share-cards -- --base https://photos.example.com --dry-run   # list stale photos
+npm run share-cards -- --base https://photos.example.com             # re-render them
+```
+
+It reads `.env.local`, and `--base` defaults to `NEXT_PUBLIC_BASE_URL`. `--all` re-renders every published photo, e.g. after renaming a custom place. Failures are listed at the end; running it again retries only those.
 
 ## Database migrations
 

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "share-cards": "tsx scripts/regenerate-share-cards.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",

@@ -29,8 +29,10 @@ export type StorableSharePhoto = ShareCardPhoto & { large_name: string };
  * failures here must never throw: they're logged and left for the live-render fallback to
  * paper over. The R2 write happens before the DB version update, so a crash between the two
  * leaves share_card_version stale/null rather than pointing at a half-written object.
+ *
+ * Resolves to whether the cards were stored, for callers that keep count.
  */
-export async function generateAndStoreShareCard(photo: StorableSharePhoto, base: string): Promise<void> {
+export async function generateAndStoreShareCard(photo: StorableSharePhoto, base: string): Promise<boolean> {
   try {
     const cards = await renderAllShareCards(photo, base);
     await Promise.all(
@@ -42,7 +44,9 @@ export async function generateAndStoreShareCard(photo: StorableSharePhoto, base:
       .update(photos)
       .set({ share_card_version: shareVersion(photo) })
       .where(eq(photos.friendly_name, photo.friendly_name));
+    return true;
   } catch (e) {
     console.error('[share-card] generation failed', photo.friendly_name, e);
+    return false;
   }
 }
