@@ -14,6 +14,7 @@ import DateFilter from "./DateFilter";
 import ShareButton from "./ShareButton";
 import { shareVersion } from "@/lib/shareVersion";
 import ThemeToggle from "./ThemeToggle";
+import SubscribeButton from "./SubscribeButton";
 import LocationSidebar from "./LocationSidebar";
 import PhotoStack, { fanExtent } from "./PhotoStack";
 import SearchBox from "./SearchBox";
@@ -414,6 +415,8 @@ const MapComponent = ({ photos, places }: MapProps) => {
       />
 
       <ThemeToggle theme={theme} onToggle={toggleTheme} hidden={searchOpen} />
+
+      <SubscribeButton hidden={searchOpen} />
 
       <LocationSidebar
         photos={filteredPhotos}
