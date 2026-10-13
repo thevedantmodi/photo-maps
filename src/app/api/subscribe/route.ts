@@ -20,10 +20,10 @@ export async function POST(req: Request) {
   const base = await getBaseUrl(req.headers);
   const link = `${base}/subscribe/confirm?token=${encodeURIComponent(createConfirmToken(email))}`;
 
-  // At most one confirmation per address per 10 minutes. The token differs on every request, so
+  // At most one confirmation per address per hour. The token differs on every request, so
   // a repeat inside the window is a different payload under the same key and Resend
   // answers 409 without sending, which caps how often anyone can mail a stranger here.
-  const slot = Math.floor(Date.now() / (10 * 60 * 1000));
+  const slot = Math.floor(Date.now() / (60 * 60 * 1000));
   const { error } = await resend.emails.send(
     {
       from: FROM,

@@ -80,7 +80,7 @@ export default function SubscribeButton({ hidden }: SubscribeButtonProps) {
                     {status === 'sent' ? (
                         <p className="subscribe-note">
                             {alreadySent
-                                ? 'We sent a confirmation link to this address in the last 10 minutes. Check your inbox and spam, or try again later.'
+                                ? 'We sent a confirmation link to this address in the last hour. Check your inbox and spam, or try again later.'
                                 : "Check your inbox for a confirmation link. You won't get anything until you click it."}
                         </p>
                     ) : (
