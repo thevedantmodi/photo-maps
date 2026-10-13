@@ -644,7 +644,8 @@ html[data-theme="light"] .filter-chip:hover {
   }
 }
 
-.theme-toggle {
+.theme-toggle,
+.subscribe-btn {
   position: fixed;
   top: max(20px, env(safe-area-inset-top));
   right: 20px;
@@ -665,38 +666,176 @@ html[data-theme="light"] .filter-chip:hover {
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, opacity 0.2s ease;
 }
 
-.theme-toggle:hover {
+.theme-toggle:hover,
+.subscribe-btn:hover {
   transform: scale(1.08);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.5);
   background: rgba(255, 255, 255, 0.35);
 }
 
 @media (prefers-color-scheme: dark) {
-  .theme-toggle {
+  .theme-toggle,
+  .subscribe-btn {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.15);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   }
 
-  .theme-toggle:hover {
+  .theme-toggle:hover,
+  .subscribe-btn:hover {
     background: rgba(255, 255, 255, 0.18);
   }
 }
 
-html[data-theme="dark"] .theme-toggle {
+html[data-theme="dark"] .theme-toggle,
+html[data-theme="dark"] .subscribe-btn {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.15);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
-html[data-theme="dark"] .theme-toggle:hover {
+html[data-theme="dark"] .theme-toggle:hover,
+html[data-theme="dark"] .subscribe-btn:hover {
   background: rgba(255, 255, 255, 0.18);
 }
 
-html[data-theme="light"] .theme-toggle {
+html[data-theme="light"] .theme-toggle,
+html[data-theme="light"] .subscribe-btn {
   background: rgba(255, 255, 255, 0.25);
   border-color: rgba(255, 255, 255, 0.3);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+/* Subscribe: a glass disc under the theme toggle that opens a small glass panel. */
+.subscribe-btn {
+  top: calc(max(20px, env(safe-area-inset-top)) + 56px);
+}
+
+.subscribe-popover {
+  position: fixed;
+  top: calc(max(20px, env(safe-area-inset-top)) + 112px);
+  right: 20px;
+  z-index: 1000;
+  width: min(320px, calc(100vw - 40px));
+  box-sizing: border-box;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  color: var(--modal-text);
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+.subscribe-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.subscribe-form {
+  display: flex;
+  gap: 8px;
+}
+
+.subscribe-input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--modal-text);
+}
+
+.subscribe-submit {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: none;
+  background: var(--foreground);
+  color: var(--background);
+  cursor: pointer;
+}
+
+.subscribe-submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.subscribe-honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.subscribe-note,
+.subscribe-error {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0.75;
+}
+
+.subscribe-error {
+  color: #e55;
+  opacity: 1;
+}
+
+.subscribe-rss {
+  font-size: 12px;
+  color: var(--modal-text);
+}
+
+.subscribe-input:focus-visible,
+.subscribe-submit:focus-visible,
+.subscribe-rss:focus-visible,
+.subscribe-btn:focus-visible {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .subscribe-popover {
+    background: rgba(30, 30, 30, 0.85);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
+  .subscribe-input {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+}
+
+html[data-theme="dark"] .subscribe-popover {
+  background: rgba(30, 30, 30, 0.85);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+html[data-theme="dark"] .subscribe-input {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+html[data-theme="light"] .subscribe-popover {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+html[data-theme="light"] .subscribe-input {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(0, 0, 0, 0.15);
 }
 
 /* Location Sidebar */

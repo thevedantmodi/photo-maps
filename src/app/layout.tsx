@@ -16,6 +16,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Photos by Vedant Modi",
   description: "Photos! Mapped!",
+  alternates: {
+    types: {
+      "application/rss+xml": [{ url: "/feed.xml", title: "Photos by Vedant Modi" }],
+    },
+  },
 };
 
 export default function RootLayout({

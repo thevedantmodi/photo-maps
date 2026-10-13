@@ -9,6 +9,7 @@ An interactive map of geotagged travel photos. Photos are plotted on a Mapbox ma
 - **Place names** — sidebar groups are named by Mapbox reverse geocoding, with hand-named custom places (reefs, open ocean, remote parks) taking precedence.
 - **Sharing** — every photo lives at `/p/<friendly_name>` with OG tags. `/api/share/<slug>` serves a 1080×1920 share card (rendered with `next/og`, precomputed into R2 at upload/edit time, falling back to a live render).
 - **Light/dark theme** toggle.
+- **Follow** — `/feed.xml` RSS feed of recent photos, and an email signup on the map (double opt-in through Resend) with a weekly digest that only goes out when there are new photos.
 - **Admin** at `/admin` (HTTP Basic Auth) with three tabs:
   - **Upload** — upload photos (including HEIC) with caption, location, and date.
   - **Manage** — edit, rotate, and delete photos; clear the Cloudflare cache in front of R2.
@@ -70,6 +71,14 @@ NEXT_PUBLIC_MAPBOX_TOKEN=...
 # Admin Basic Auth
 ADMIN_USER=...
 ADMIN_PASS=...
+
+# Resend (Vercel Marketplace integration; RESEND_API_KEY and RESEND_EMAIL_DOMAIN are provisioned)
+RESEND_API_KEY=...
+RESEND_EMAIL_DOMAIN=...       # verified sending domain, e.g. photos.vedantmodi.com
+RESEND_SEGMENT_ID=...         # segment confirmed subscribers join; the digest broadcasts to it
+
+# Weekly digest cron (Vercel sends it as a bearer token)
+CRON_SECRET=...
 
 # Optional: canonical origin for share links/QR codes in production
 NEXT_PUBLIC_BASE_URL=...
