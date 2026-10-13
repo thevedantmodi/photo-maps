@@ -1,14 +1,14 @@
 import { headers } from 'next/headers';
 
 /**
- * The origin a share card's QR and a page's OG tags should point at.
+ * The origin a share card's printed URL and a page's OG tags should point at.
  *
  * Preview deployments and tunnels each get a different hostname, so no fixed env value is
  * right for them — the incoming request is. Production is the exception: a card reached
  * through a *.vercel.app alias should still advertise the canonical domain, so an explicit
  * NEXT_PUBLIC_BASE_URL wins there.
  *
- * Deriving from Host means a spoofed header changes what the QR encodes. That only affects
+ * Deriving from Host means a spoofed header changes the URL printed on the card. That only affects
  * the response to that same request, so it is not a route to poisoning anyone else's card.
  */
 function fromHost(h: Headers): string | null {

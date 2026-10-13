@@ -5,7 +5,7 @@ import { photos } from '@/db/schema';
 import { deleteObject, getPublicUrl } from '@/lib/r2';
 import { isValidLat, isValidLon } from '@/lib/gps';
 import { getBaseUrl } from '@/lib/baseUrl';
-import { generateAndStoreShareCard, shareCardKey } from '@/lib/shareCardStore';
+import { generateAndStoreShareCard, shareCardKeys } from '@/lib/shareCardStore';
 
 export const maxDuration = 30;
 
@@ -48,26 +48,28 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   await db.update(photos).set(update).where(eq(photos.id, id));
 
-  // Only caption/date feed shareVersion() — lat/lon edits don't change what the card shows,
-  // so skip the wasted render/upload for those.
-  if ('caption' in update || 'date' in update) {
-    const base = await getBaseUrl(req.headers);
-    const caption = 'caption' in update ? (update.caption as string | null) : row.caption;
-    const date = 'date' in update ? (update.date as Date | null) : row.date;
-    after(() =>
-      generateAndStoreShareCard(
-        {
-          friendly_name: row.friendly_name,
-          caption,
-          original_name: row.original_name,
-          date: date?.toISOString() ?? null,
-          large_name: row.large_name,
-          large_url: getPublicUrl(row.large_name),
-        },
-        base
-      )
-    );
-  }
+  // Every field here feeds shareVersion(): caption and date are printed on the card, and
+  // lat/lon place its map and name its place.
+  const base = await getBaseUrl(req.headers);
+  const caption = 'caption' in update ? (update.caption as string | null) : row.caption;
+  const date = 'date' in update ? (update.date as Date | null) : row.date;
+  const lat = 'lat' in update ? (update.lat as number | null) : row.lat;
+  const lon = 'lon' in update ? (update.lon as number | null) : row.lon;
+  after(() =>
+    generateAndStoreShareCard(
+      {
+        friendly_name: row.friendly_name,
+        caption,
+        original_name: row.original_name,
+        date: date?.toISOString() ?? null,
+        lat,
+        lon,
+        large_name: row.large_name,
+        large_url: getPublicUrl(row.large_name),
+      },
+      base
+    )
+  );
 
   return NextResponse.json({ ok: true });
 }
@@ -81,7 +83,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   await Promise.all([
     deleteObject(row.thumb_name),
     deleteObject(row.large_name),
-    deleteObject(shareCardKey(row.friendly_name)),
+    ...shareCardKeys(row.friendly_name).map(deleteObject),
   ]);
 
   await db.delete(photos).where(eq(photos.id, id));

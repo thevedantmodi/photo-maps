@@ -1,5 +1,5 @@
 /**
- * Values for the 1080x1920 share card.
+ * Values for the share cards: the 1080x1920 story card, and the 1200x630 link preview (OG).
  *
  * Satori (which backs next/og) has no CSS custom properties, so the card cannot read
  * globals.css. These literals mirror the Photo Maps design system — the source of truth is
@@ -61,20 +61,61 @@ export const GLASS = {
   text: '#ffffff',
 } as const;
 
-export const QR = {
-  /** rendered size on the card */
-  size: 216,
-  /** generated larger, so downsampling stays crisp */
-  renderSize: 648,
-  padding: 20,
+/**
+ * The mini map that sits beside the caption, in the slot a QR code used to fill. On a story
+ * the viewer is already on their phone, so a QR is unscannable; a map says where the photo
+ * was taken, which is the point of the site.
+ */
+export const MAP = {
+  size: 256,
   radius: 28,
+  /** frame width in px; drawn in GLASS's border colour */
+  frame: 3,
+  frameColor: 'rgba(255, 255, 255, 0.18)',
   shadow: '0 14px 40px rgba(0, 0, 0, 0.3)',
+} as const;
+
+/**
+ * The pin on the mini map: the photo itself in a white ring, like a marker on the live map
+ * (.photo-marker). Larger than 48px scaled would suggest, so it reads on a small tile.
+ */
+export const PIN = {
+  size: 76,
+  /** white ring width in px */
+  ring: 5,
+  shadow: '0 6px 16px rgba(0, 0, 0, 0.5)',
 } as const;
 
 export const TYPE = {
   caption: { fontSize: 50, fontWeight: 600, letterSpacing: -1, lineHeight: 1.15 },
+  place: { fontSize: 34, fontWeight: 400, opacity: 0.92 },
   date: { fontSize: 32, fontWeight: 400, opacity: 0.82 },
   url: { fontSize: 26, fontWeight: 400, opacity: 0.72 },
+} as const;
+
+/**
+ * The 1200x630 link preview used for og:image. Chat apps and X show a 1.91:1 image; the
+ * 9:16 story card cropped to that is a strip from its middle. X crops to 2:1, trimming 15px
+ * top and bottom, which the padding absorbs.
+ */
+export const OG = {
+  width: 1200,
+  height: 630,
+  padding: 56,
+  gap: 48,
+  photoMaxWidth: 520,
+  photoRadius: 8,
+  photoShadow: '0 24px 60px rgba(0, 0, 0, 0.5)',
+  plateRadius: 40,
+  platePadding: 40,
+  mapSize: 120,
+  mapRadius: 16,
+  mapFrame: 2,
+  pinSize: 40,
+  pinRing: 3,
+  caption: { fontSize: 40, fontWeight: 600, letterSpacing: -0.8, lineHeight: 1.15 },
+  place: { fontSize: 26, fontWeight: 400, opacity: 0.92 },
+  date: { fontSize: 24, fontWeight: 400, opacity: 0.82 },
 } as const;
 
 export const FONT = {

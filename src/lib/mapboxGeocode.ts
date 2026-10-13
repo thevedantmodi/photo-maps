@@ -35,10 +35,16 @@ interface Lookup {
 }
 
 /** One Mapbox reverse lookup; null when Mapbox has nothing at the point. */
-async function lookup(lon: number, lat: number, token: string): Promise<Lookup | null> {
+async function lookup(
+  lon: number,
+  lat: number,
+  token: string,
+  init?: RequestInit,
+): Promise<Lookup | null> {
   const res = await fetch(
     `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json` +
       `?types=place,region,country&access_token=${token}`,
+    init,
   );
   if (!res.ok) return null;
   const data = await res.json();
@@ -60,13 +66,18 @@ const RING_BEARINGS = [0, 45, 90, 135, 180, 225, 270, 315];
  * around them and return "Near <closest town>". Rings run nearest-first and
  * stop at the first one that finds a town, so most lookups cost one ring.
  */
-async function nearestPlace(lon: number, lat: number, token: string): Promise<string | null> {
+async function nearestPlace(
+  lon: number,
+  lat: number,
+  token: string,
+  init?: RequestInit,
+): Promise<string | null> {
   let broadest: string | null = null;
   for (const km of RING_KM) {
     const hits = await Promise.all(
       RING_BEARINGS.map((bearing) => {
         const p = offsetPoint({ latitude: lat, longitude: lon }, km, bearing);
-        return lookup(p.longitude, p.latitude, token).catch(() => null);
+        return lookup(p.longitude, p.latitude, token, init).catch(() => null);
       }),
     );
     const town = hits.find((h) => h?.isPlace);
@@ -74,6 +85,19 @@ async function nearestPlace(lon: number, lat: number, token: string): Promise<st
     broadest ??= hits.find((h) => h)?.name ?? null;
   }
   return broadest && `Near ${broadest}`;
+}
+
+/**
+ * Mapbox's name for a point ("New York, NY"), else "Near <closest town>", else null.
+ * Uncached; `init` lets server callers send a Referer for URL-restricted tokens.
+ */
+export async function mapboxPlaceName(
+  lon: number,
+  lat: number,
+  token: string,
+  init?: RequestInit,
+): Promise<string | null> {
+  return (await lookup(lon, lat, token, init))?.name ?? (await nearestPlace(lon, lat, token, init));
 }
 
 /**
@@ -98,7 +122,7 @@ export async function reverseGeocode(
   const fallback = `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
 
   try {
-    const name = (await lookup(lon, lat, token))?.name ?? (await nearestPlace(lon, lat, token));
+    const name = await mapboxPlaceName(lon, lat, token);
     if (!name) return fallback;
 
     cache[key] = name;

@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 
 import { getBaseUrl } from '@/lib/baseUrl';
 import { getPhotoBySlug } from '@/lib/photos';
-import { CARD } from '@/lib/shareTokens';
+import { OG } from '@/lib/shareTokens';
 import { shareCardPath, shareVersion } from '@/lib/shareVersion';
 import styles from './photo.module.css';
 
@@ -25,7 +25,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = photo.caption || photo.original_name;
   const base = await getBaseUrl();
-  const card = shareCardPath(friendly_name, shareVersion(photo));
+  // The wide card, not the 9:16 story card: link previews are ~1.91:1 and would crop it.
+  const card = shareCardPath(friendly_name, shareVersion(photo), 'og');
 
   return {
     metadataBase: new URL(base),
@@ -38,8 +39,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: [
         {
           url: card,
-          width: CARD.width,
-          height: CARD.height,
+          width: OG.width,
+          height: OG.height,
           alt: title,
         },
       ],

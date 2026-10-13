@@ -16,6 +16,7 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
+  const format = new URL(req.url).searchParams.get('format') === 'og' ? 'og' : 'story';
   const base = await getBaseUrl(req.headers);
   const photo = await getPhotoBySlug(slug);
   if (!photo) return new Response('Not found', { status: 404 });
@@ -26,7 +27,7 @@ export async function GET(
   // render again. Proxied (not redirected) so link-preview crawlers that don't follow
   // redirects on og:image still get bytes directly at this URL.
   if (photo.share_card_version === version) {
-    const stored = await fetch(getPublicUrl(shareCardKey(slug)));
+    const stored = await fetch(getPublicUrl(shareCardKey(slug, format)));
     if (stored.ok) {
       return new Response(stored.body, {
         headers: { 'Content-Type': 'image/png', 'Cache-Control': CACHE_CONTROL },
@@ -36,12 +37,12 @@ export async function GET(
   }
 
   try {
-    const png = await renderShareCardPng(photo, base);
+    const png = await renderShareCardPng(photo, base, format);
     return new Response(new Uint8Array(png), {
       headers: { 'Content-Type': 'image/png', 'Cache-Control': CACHE_CONTROL },
     });
   } catch (e) {
-    console.error('[share] live render failed', slug, e);
+    console.error('[share] live render failed', slug, format, e);
     return new Response('Photo unavailable', { status: 502 });
   }
 }

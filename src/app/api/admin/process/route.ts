@@ -97,6 +97,8 @@ export async function POST(req: NextRequest) {
           caption: caption || null,
           original_name: original_name ?? key,
           date: dateTaken?.toISOString() ?? null,
+          lat: gps?.latitude ?? null,
+          lon: gps?.longitude ?? null,
           large_name: largeName,
           large_url: getPublicUrl(largeName),
         },

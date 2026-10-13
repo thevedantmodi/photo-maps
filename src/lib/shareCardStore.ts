@@ -3,12 +3,17 @@ import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { photos } from '@/db/schema';
 import { putObject } from '@/lib/r2';
-import { renderShareCardPng, type ShareCardPhoto } from '@/lib/shareCard';
+import { renderAllShareCards, type CardFormat, type ShareCardPhoto } from '@/lib/shareCard';
 import { shareVersion } from '@/lib/shareVersion';
 
-/** R2 key for a photo's precomputed share card, matching the _thumb.jpg/_large.jpg convention. */
-export function shareCardKey(friendly_name: string): string {
-  return `${friendly_name}_share.png`;
+/** R2 key for a photo's precomputed card, matching the _thumb.jpg/_large.jpg convention. */
+export function shareCardKey(friendly_name: string, format: CardFormat = 'story'): string {
+  return format === 'og' ? `${friendly_name}_og.png` : `${friendly_name}_share.png`;
+}
+
+/** Every card key for a photo, for cleanup on delete. */
+export function shareCardKeys(friendly_name: string): string[] {
+  return [shareCardKey(friendly_name, 'story'), shareCardKey(friendly_name, 'og')];
 }
 
 // shareVersion() hashes large_name (the R2 object key), not large_url, so callers need to
@@ -16,8 +21,8 @@ export function shareCardKey(friendly_name: string): string {
 export type StorableSharePhoto = ShareCardPhoto & { large_name: string };
 
 /**
- * Renders a photo's share card and stores it in R2, then records the version baked into it
- * so /api/share/[slug] can tell a fresh card from a stale one.
+ * Renders a photo's cards (story and link preview) and stores them in R2, then records the
+ * version baked into them so /api/share/[slug] can tell a fresh card from a stale one.
  *
  * Called fire-and-forget from after() in the routes that change card-relevant content
  * (upload, caption/date edit, rotate) — never awaited by the request that triggers it, so
@@ -27,8 +32,12 @@ export type StorableSharePhoto = ShareCardPhoto & { large_name: string };
  */
 export async function generateAndStoreShareCard(photo: StorableSharePhoto, base: string): Promise<void> {
   try {
-    const png = await renderShareCardPng(photo, base);
-    await putObject(shareCardKey(photo.friendly_name), png, 'image/png');
+    const cards = await renderAllShareCards(photo, base);
+    await Promise.all(
+      (Object.keys(cards) as CardFormat[]).map((format) =>
+        putObject(shareCardKey(photo.friendly_name, format), cards[format], 'image/png')
+      )
+    );
     await db
       .update(photos)
       .set({ share_card_version: shareVersion(photo) })

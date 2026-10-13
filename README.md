@@ -7,7 +7,7 @@ An interactive map of geotagged travel photos. Photos are plotted on a Mapbox ma
 - **Map** — Mapbox GL map with Supercluster clustering; photos taken at the same spot fan out into a stack instead of overlapping.
 - **Browse** — date filter, a location sidebar that groups photos into places, and a search box that flies the map to a place.
 - **Place names** — sidebar groups are named by Mapbox reverse geocoding, with hand-named custom places (reefs, open ocean, remote parks) taking precedence.
-- **Sharing** — every photo lives at `/p/<friendly_name>` with OG tags. `/api/share/<slug>` serves a 1080×1920 share card (rendered with `next/og`, precomputed into R2 at upload/edit time, falling back to a live render).
+- **Sharing** — every photo lives at `/p/<friendly_name>` with OG tags. `/api/share/<slug>` serves a 1080×1920 story card with the photo's place name and a mini map pinned with the photo; `?format=og` serves the 1200×630 link preview used for `og:image`. Both are rendered with `next/og`, precomputed into R2 at upload/edit time, and fall back to a live render.
 - **Light/dark theme** toggle.
 - **Follow** — `/feed.xml` RSS feed of recent photos, and an email signup on the map (double opt-in through Resend) with a weekly digest that only goes out when there are new photos.
 - **Admin** at `/admin` (HTTP Basic Auth) with three tabs:
@@ -37,7 +37,7 @@ src/
       admin/photos/          list / edit / rotate / delete photos
       admin/places/          CRUD for custom places
       admin/cache/           purge the Cloudflare cache for the R2 domain
-      share/[slug]/          share card image
+      share/[slug]/          story card and link-preview images
     components/              map, sidebar, search, lightbox pieces
   db/                        Drizzle schema + client
   lib/                       R2, GPS/EXIF, geocoding, share card helpers
@@ -80,7 +80,7 @@ RESEND_SEGMENT_ID=...         # segment confirmed subscribers join; the digest b
 # Weekly digest cron (Vercel sends it as a bearer token)
 CRON_SECRET=...
 
-# Optional: canonical origin for share links/QR codes in production
+# Optional: canonical origin for share links in production
 NEXT_PUBLIC_BASE_URL=...
 ```
 
