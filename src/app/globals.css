@@ -5,8 +5,7 @@
   --map-background: #e5e5e5;
   --modal-background: rgba(255, 255, 255, 0.6);
   --modal-text: #171717;
-  --modal-close-bg: rgba(0, 0, 0, 0.1);
-  --modal-close-text: #171717;
+  --glass-bg: rgba(255, 255, 255, 0.8);
 
   --cluster-bg: rgba(255, 255, 255, 0.9);
   --cluster-border: rgba(0, 0, 0, 0.2);
@@ -27,8 +26,7 @@
     --map-background: #111111;
     --modal-background: rgba(0, 0, 0, 0.6);
     --modal-text: #ededed;
-    --modal-close-bg: rgba(255, 255, 255, 0.2);
-    --modal-close-text: #ffffff;
+    --glass-bg: rgba(0, 0, 0, 0.6);
     --cluster-bg: rgba(30, 30, 30, 0.8);
     --cluster-border: rgba(255, 255, 255, 0.8);
     --cluster-text: #ffffff;
@@ -46,8 +44,7 @@ html[data-theme="dark"] {
   --map-background: #111111;
   --modal-background: rgba(0, 0, 0, 0.6);
   --modal-text: #ededed;
-  --modal-close-bg: rgba(255, 255, 255, 0.2);
-  --modal-close-text: #ffffff;
+  --glass-bg: rgba(0, 0, 0, 0.6);
   --cluster-bg: rgba(30, 30, 30, 0.8);
   --cluster-border: rgba(255, 255, 255, 0.8);
   --cluster-text: #ffffff;
@@ -64,8 +61,7 @@ html[data-theme="light"] {
   --map-background: #e5e5e5;
   --modal-background: rgba(255, 255, 255, 0.6);
   --modal-text: #171717;
-  --modal-close-bg: rgba(0, 0, 0, 0.1);
-  --modal-close-text: #171717;
+  --glass-bg: rgba(255, 255, 255, 0.8);
   --cluster-bg: rgba(255, 255, 255, 0.9);
   --cluster-border: rgba(0, 0, 0, 0.2);
   --cluster-text: #171717;
@@ -391,174 +387,6 @@ html[data-theme="light"] .modal-caption {
   border-radius: 8px;
 }
 
-/* Time Slider Styles */
-.slider-container {
-  position: absolute;
-  bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 85%;
-  max-width: 600px;
-  height: 60px;
-  /* Increased height for better touch target */
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  padding: 10px 20px;
-  border-radius: 30px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s ease;
-}
-
-@media (max-width: 768px) {
-  .slider-container {
-    bottom: 80px;
-    /* Move up slightly on mobile to avoid bottom bar/gestures */
-    width: 90%;
-    padding: 10px 15px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  .slider-container {
-    background: rgba(0, 0, 0, 0.6);
-  }
-}
-
-html[data-theme="dark"] .slider-container {
-  background: rgba(0, 0, 0, 0.6);
-}
-
-html[data-theme="light"] .slider-container {
-  background: rgba(255, 255, 255, 0.8);
-}
-
-.slider {
-  position: relative;
-  width: 100%;
-}
-
-.slider__track,
-.slider__range {
-  position: absolute;
-  border-radius: 3px;
-  height: 6px;
-  /* Slightly thicker */
-}
-
-.slider__track {
-  background-color: #ced4da;
-  width: 100%;
-  z-index: 1;
-}
-
-.slider__range {
-  background-color: #007bff;
-  z-index: 2;
-  transition: left 0.1s ease, width 0.1s ease;
-  /* Smooth track movement */
-}
-
-.thumb,
-.thumb::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.thumb {
-  pointer-events: none;
-  position: absolute;
-  height: 0;
-  /* Fix alignment: thumb width is 24px.
-     We make input wider so thumb center travels 0 to 100% of parent */
-  width: calc(100% + 24px);
-  left: -12px;
-  outline: none;
-  z-index: 3;
-}
-
-.thumb--left {
-  z-index: 4;
-}
-
-.thumb--right {
-  z-index: 5;
-}
-
-/* For Chrome browsers */
-.thumb::-webkit-slider-thumb {
-  background-color: #f1f5f7;
-  border: none;
-  border-radius: 50%;
-  box-shadow: 0 0 1px 1px #ced4da;
-  cursor: pointer;
-  height: 24px;
-  /* Larger thumb */
-  width: 24px;
-  margin-top: 4px;
-  pointer-events: all;
-  position: relative;
-  transition: transform 0.1s ease;
-}
-
-.thumb::-webkit-slider-thumb:hover {
-  transform: scale(1.1);
-  background-color: #fff;
-}
-
-.thumb::-webkit-slider-thumb:active {
-  transform: scale(1.2);
-  cursor: grabbing;
-}
-
-/* For Firefox */
-.thumb::-moz-range-thumb {
-  background-color: #f1f5f7;
-  border: none;
-  border-radius: 50%;
-  box-shadow: 0 0 1px 1px #ced4da;
-  cursor: pointer;
-  height: 24px;
-  width: 24px;
-  margin-top: 4px;
-  pointer-events: all;
-  position: relative;
-  transition: transform 0.1s ease;
-}
-
-.thumb::-moz-range-thumb:hover {
-  transform: scale(1.1);
-  background-color: #fff;
-}
-
-.thumb::-moz-range-thumb:active {
-  transform: scale(1.2);
-  cursor: grabbing;
-}
-
-.slider__left-value,
-.slider__right-value {
-  color: var(--foreground);
-  font-size: 12px;
-  margin-top: 24px;
-  position: absolute;
-  top: 10px;
-  font-weight: 500;
-  pointer-events: none;
-  /* Prevent blocking clicks */
-}
-
-.slider__left-value {
-  left: 0;
-}
-
-.slider__right-value {
-  right: 0;
-}
-
 /* Date Filter Chips */
 .date-filter-container {
   position: absolute;
@@ -789,7 +617,7 @@ html[data-theme="light"] .subscribe-btn {
 }
 
 .subscribe-error {
-  color: #e55;
+  color: #c00;
   opacity: 1;
 }
 
@@ -807,6 +635,10 @@ html[data-theme="light"] .subscribe-btn {
 }
 
 @media (prefers-color-scheme: dark) {
+  .subscribe-error {
+    color: #e55;
+  }
+
   .subscribe-popover {
     background: rgba(30, 30, 30, 0.85);
     border-color: rgba(255, 255, 255, 0.15);
@@ -816,6 +648,14 @@ html[data-theme="light"] .subscribe-btn {
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.2);
   }
+}
+
+html[data-theme="dark"] .subscribe-error {
+  color: #e55;
+}
+
+html[data-theme="light"] .subscribe-error {
+  color: #c00;
 }
 
 html[data-theme="dark"] .subscribe-popover {
@@ -950,7 +790,7 @@ html[data-theme="dark"] .location-sidebar-item:hover {
   flex-shrink: 0;
   font-size: 12px;
   font-weight: 600;
-  opacity: 0.55;
+  opacity: 0.7;
 }
 
 .location-sidebar-empty {
@@ -1058,7 +898,7 @@ html[data-theme="dark"] .search-shape {
 
 .search-shape-input::placeholder {
   color: var(--foreground);
-  opacity: 0.5;
+  opacity: 0.65;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1072,7 +912,7 @@ html[data-theme="dark"] .search-shape-input::placeholder {
 }
 
 html[data-theme="light"] .search-shape-input::placeholder {
-  opacity: 0.5;
+  opacity: 0.65;
 }
 
 .search-box-suggestions {
