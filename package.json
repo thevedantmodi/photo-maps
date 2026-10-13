@@ -24,6 +24,7 @@
     "qrcode": "^1.5.4",
     "react": "19.2.0",
     "react-dom": "19.2.0",
+    "react-email": "^6.11.1",
     "react-map-gl": "^8.1.1",
     "resend": "^6.32.1",
     "sharp": "^0.34.5",
