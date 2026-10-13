@@ -1,11 +1,8 @@
 import { NextResponse } from 'next/server';
 
+import { renderConfirmEmail } from '@/emails/render';
 import { getBaseUrl } from '@/lib/baseUrl';
 import { createConfirmToken, FROM, hashEmail, normalizeEmail, resend } from '@/lib/subscribe';
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
 
 export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
@@ -19,6 +16,7 @@ export async function POST(req: Request) {
 
   const base = await getBaseUrl(req.headers);
   const link = `${base}/subscribe/confirm?token=${encodeURIComponent(createConfirmToken(email))}`;
+  const { html, text } = await renderConfirmEmail({ confirmUrl: link });
 
   // At most one confirmation per address per hour. The token differs on every request, so
   // a repeat inside the window is a different payload under the same key and Resend
@@ -29,14 +27,8 @@ export async function POST(req: Request) {
       from: FROM,
       to: [email],
       subject: 'Confirm your subscription to Photos by Vedant Modi',
-      html:
-        `<p>Someone (hopefully you) asked to get new photos from Photos by Vedant Modi by email.</p>` +
-        `<p><a href="${escapeHtml(link)}">Confirm your subscription</a></p>` +
-        `<p>The link works for 48 hours. If this wasn't you, ignore this email and nothing will be sent.</p>`,
-      text:
-        `Someone (hopefully you) asked to get new photos from Photos by Vedant Modi by email.\n\n` +
-        `Confirm your subscription: ${link}\n\n` +
-        `The link works for 48 hours. If this wasn't you, ignore this email and nothing will be sent.`,
+      html,
+      text,
     },
     { idempotencyKey: `subscribe-confirm/${hashEmail(email)}/${slot}` },
   );
