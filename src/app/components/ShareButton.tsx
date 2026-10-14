@@ -23,8 +23,9 @@ const LABEL: Record<Status, string> = {
   error: "Something went wrong, try again",
 };
 
-// Which line of the reel each status shows: Share, Building card…, Link copied, Try again.
-const REEL: Record<Status, number> = { idle: 0, ready: 0, building: 1, shared: 2, error: 3 };
+// Which line of the reel each status shows: Share, Building card…, Link copied, Try again,
+// Card ready (the card landed after the phone stopped honouring the tap).
+const REEL: Record<Status, number> = { idle: 0, building: 1, shared: 2, error: 3, ready: 4 };
 
 const ShareButton = ({ slug, caption, version, className }: ShareButtonProps) => {
   const [theme] = useTheme();
@@ -88,8 +89,9 @@ const ShareButton = ({ slug, caption, version, className }: ShareButtonProps) =>
             settle("idle", 2000);
           })
           .catch((err: unknown) => {
+            // Share sheet dismissed.
             if (err instanceof DOMException && err.name === "AbortError") {
-              setStatus("ready");
+              setStatus("idle");
               return;
             }
             // Activation lapsed while the card was still building: the next tap shares instantly.
@@ -157,6 +159,7 @@ const ShareButton = ({ slug, caption, version, className }: ShareButtonProps) =>
           <span>Building card…</span>
           <span>Link copied</span>
           <span>Try again</span>
+          <span>Card ready</span>
         </span>
       </span>
     </button>
