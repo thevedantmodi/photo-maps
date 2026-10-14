@@ -2,24 +2,18 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import SubscribeForm from './SubscribeForm';
+
 interface SubscribeButtonProps {
     hidden?: boolean;
 }
 
-type Status = 'idle' | 'sending' | 'sent' | 'error';
-
 export default function SubscribeButton({ hidden }: SubscribeButtonProps) {
     const [open, setOpen] = useState(false);
-    const [email, setEmail] = useState('');
-    const [status, setStatus] = useState<Status>('idle');
-    const [error, setError] = useState('');
-    const [alreadySent, setAlreadySent] = useState(false);
     const rootRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (!open) return;
-        inputRef.current?.focus();
         const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
         const onPointer = (e: PointerEvent) => {
             if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
@@ -35,27 +29,6 @@ export default function SubscribeButton({ hidden }: SubscribeButtonProps) {
     useEffect(() => {
         if (hidden) setOpen(false);
     }, [hidden]);
-
-    const submit = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        setStatus('sending');
-        setError('');
-        const website = new FormData(e.currentTarget).get('website');
-        try {
-            const res = await fetch('/api/subscribe', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, website }),
-            });
-            const body = await res.json().catch(() => null);
-            if (!res.ok) throw new Error(body?.error ?? 'Something went wrong, try again');
-            setAlreadySent(Boolean(body?.alreadySent));
-            setStatus('sent');
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Something went wrong, try again');
-            setStatus('error');
-        }
-    };
 
     return (
         <div ref={rootRef}>
@@ -77,44 +50,7 @@ export default function SubscribeButton({ hidden }: SubscribeButtonProps) {
             {open && (
                 <div id="subscribe-popover" className="subscribe-popover" role="dialog" aria-label="Subscribe">
                     <p className="subscribe-title">Get new photos by email</p>
-                    {status === 'sent' ? (
-                        <p className="subscribe-note">
-                            {alreadySent
-                                ? 'We sent a confirmation link to this address in the last hour. Check your inbox and spam, or try again later.'
-                                : "Check your inbox for a confirmation link. You won't get anything until you click it."}
-                        </p>
-                    ) : (
-                        <form className="subscribe-form" onSubmit={submit}>
-                            <input
-                                ref={inputRef}
-                                className="subscribe-input"
-                                type="email"
-                                required
-                                autoComplete="email"
-                                placeholder="you@example.com"
-                                aria-label="Email address"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
-                            {/* Honeypot, hidden from people and screen readers. */}
-                            <input
-                                type="text"
-                                name="website"
-                                tabIndex={-1}
-                                autoComplete="off"
-                                aria-hidden="true"
-                                className="subscribe-honeypot"
-                            />
-                            <button className="subscribe-submit" type="submit" disabled={status === 'sending'}>
-                                {status === 'sending' ? 'Sending…' : 'Subscribe'}
-                            </button>
-                        </form>
-                    )}
-                    {status === 'error' && (
-                        <p className="subscribe-error" role="alert">
-                            {error}
-                        </p>
-                    )}
+                    <SubscribeForm autoFocus />
                     <p className="subscribe-note">
                         A weekly email, only when there are new photos. Your address is stored with Resend and used
                         for nothing else. Unsubscribe from any email.
