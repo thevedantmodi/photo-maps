@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
  * True once the element has scrolled into view (and stays true), for scroll-in
  * animations. The CSS does the moving; see "Scroll reveals" in globals.css.
  */
-export function useInView<T extends Element>(rootMargin = '0px 0px -12% 0px') {
+export function useInView<T extends Element>(rootMargin = '0px 0px -5% 0px') {
   const ref = useRef<T>(null);
   const [inView, setInView] = useState(false);
 
@@ -20,7 +20,7 @@ export function useInView<T extends Element>(rootMargin = '0px 0px -12% 0px') {
           io.disconnect();
         }
       },
-      { rootMargin, threshold: 0.12 },
+      { rootMargin, threshold: 0.05 },
     );
     io.observe(el);
     return () => io.disconnect();

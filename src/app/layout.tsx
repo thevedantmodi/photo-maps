@@ -42,7 +42,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
         {/* Without JavaScript nothing scrolls into view, so show everything as is. */}
         <noscript>
-          <style>{`.reveal,.dir-row{opacity:1!important;transform:none!important;clip-path:none!important}.dir-item::after{transform:none!important}`}</style>
+          <style>{`.reveal,.dir-row{opacity:1!important;transform:none!important;clip-path:none!important}.dir-item::after{transform:none!important}.reveal>*{clip-path:none!important}`}</style>
         </noscript>
       </head>
       <body>

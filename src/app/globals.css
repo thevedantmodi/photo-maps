@@ -828,7 +828,8 @@ a:hover > .arrow {
   transition: opacity 400ms ease var(--delay, 0ms), transform 600ms var(--ease) var(--delay, 0ms);
 }
 
-.reveal[data-reveal="develop"] {
+/* The clip goes on the child: a fully clipped element never counts as in view. */
+.reveal[data-reveal="develop"] > * {
   clip-path: inset(0 0 100% 0);
   transition: clip-path 700ms var(--ease) var(--delay, 0ms);
 }
@@ -857,20 +858,12 @@ a:hover > .arrow {
   transform: none;
 }
 
-.reveal[data-reveal="develop"][data-in="true"] {
+.reveal[data-reveal="develop"][data-in="true"] > * {
   clip-path: inset(0 0 0 0);
 }
 
 .reveal[data-in="true"]::after {
   transform: scaleX(1);
-}
-
-/* Phones zoom the page in on any text field set smaller than 16px. */
-@media (max-width: 767px), (pointer: coarse) {
-  .search-input,
-  .sub-input {
-    font-size: 16px;
-  }
 }
 
 /* ── Map page ──────────────────────────────────────────────────────────── */
@@ -1734,6 +1727,15 @@ a:hover > .arrow {
 @keyframes hang {
   from { opacity: 0; transform: translateY(-8px) scale(0.96); }
   to { opacity: 1; transform: none; }
+}
+
+/* Phones zoom the page in on any text field set smaller than 16px. Last in the file so
+   it wins over each field's own size. */
+@media (max-width: 767px), (pointer: coarse) {
+  .search-input,
+  .sub-input {
+    font-size: 16px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
