@@ -1458,16 +1458,17 @@ a:hover > .arrow {
 
 .share-reel {
   display: block;
-  /* The reel is as wide as its longest line; keep each line beside the light. */
-  text-align: left;
   height: 1.35em;
   line-height: 1.35;
   overflow: hidden;
+  /* ShareButton sets the width to the line showing. */
+  transition: width 220ms var(--ease);
 }
 
 .share-reel > span {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   transition: transform 220ms var(--ease);
 }
 

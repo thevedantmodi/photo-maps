@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { useTheme, type Theme } from "../hooks/useTheme";
 import { shareCardPath } from "@/lib/shareVersion";
@@ -36,6 +36,19 @@ const ShareButton = ({ slug, caption, version, className }: ShareButtonProps) =>
   const files = useRef<Partial<Record<Theme, File>>>({});
   const pending = useRef<Partial<Record<Theme, Promise<File>>>>({});
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reelRef = useRef<HTMLSpanElement>(null);
+
+  // The reel is only as wide as the line showing, so the light and label stay centred
+  // together on the wide phone button. Re-measured once the web font has loaded.
+  useLayoutEffect(() => {
+    const reel = reelRef.current;
+    const fit = () => {
+      const line = reel?.firstElementChild?.children[REEL[status]] as HTMLElement | undefined;
+      if (reel && line) reel.style.width = `${line.offsetWidth}px`;
+    };
+    fit();
+    document.fonts?.ready.then(fit);
+  }, [status]);
 
   useEffect(
     () => () => {
@@ -159,7 +172,7 @@ const ShareButton = ({ slug, caption, version, className }: ShareButtonProps) =>
       <span className="share-label" aria-hidden="true">
         {/* Glows green once the card is on the device and one tap will share it. */}
         <span className="share-dot" data-ready={held[theme] === true} />
-        <span className="share-reel">
+        <span className="share-reel" ref={reelRef}>
           <span style={{ transform: `translateY(${-1.35 * REEL[status]}em)` }}>
             <span>Share</span>
             <span>Building card…</span>
