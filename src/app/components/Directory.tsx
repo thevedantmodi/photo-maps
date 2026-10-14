@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { useInView } from "./Reveal";
 import SiteHeader from "./SiteHeader";
 import { getLocationGroups } from "@/lib/locationGroups";
 import { reverseGeocode } from "@/lib/mapboxGeocode";
@@ -38,6 +39,30 @@ function newest(photos: Photo[]): Photo {
   return [...photos].sort((a, b) =>
     (b.date ?? b.created_at ?? "").localeCompare(a.date ?? a.created_at ?? ""),
   )[0];
+}
+
+/** A row that rules itself in when it scrolls into view; rows arriving together stagger. */
+function DirItem({
+  index,
+  hovered,
+  children,
+}: {
+  index: number;
+  hovered: boolean;
+  children: React.ReactNode;
+}) {
+  const [ref, inView] = useInView<HTMLLIElement>("0px 0px -6% 0px");
+  return (
+    <li
+      ref={ref}
+      className="dir-item"
+      data-hover={hovered}
+      data-in={inView}
+      style={{ "--i": index % 8 } as React.CSSProperties}
+    >
+      {children}
+    </li>
+  );
 }
 
 /**
@@ -126,12 +151,7 @@ export default function Directory({ photos, places }: DirectoryProps) {
               const name = names[row.id];
               const zoom = row.count > 1 ? 9 : 12;
               return (
-                <li
-                  key={row.id}
-                  className="dir-item"
-                  data-hover={hover === i}
-                  style={{ "--i": Math.min(i, 12) } as React.CSSProperties}
-                >
+                <DirItem key={row.id} index={i} hovered={hover === i}>
                   <Link
                     className="dir-row"
                     href={`/map?lon=${row.longitude}&lat=${row.latitude}&z=${zoom}`}
@@ -150,7 +170,7 @@ export default function Directory({ photos, places }: DirectoryProps) {
                       {row.latest.caption || row.latest.original_name}
                     </span>
                   </Link>
-                </li>
+                </DirItem>
               );
             })}
           </ol>

@@ -23,7 +23,7 @@ import YearFilter from "./YearFilter";
 import TerrainToggle from "./TerrainToggle";
 import PhotoStack, { fanExtent } from "./PhotoStack";
 import SearchBox from "./SearchBox";
-import VMark from "./VMark";
+import Mark from "./Mark";
 import { PlaceSuggestion } from "@/lib/mapboxGeocode";
 import type { CustomPlace } from "@/lib/customPlaces";
 import { Photo } from "../types";
@@ -49,6 +49,9 @@ const FLY_OFFSET: [number, number] = [0, 40];
 // Deepest zoom clusters split at. A cluster that still wouldn't split past it
 // is a stack of photos on (near enough) the same spot, so it fans out instead.
 const MAX_CLUSTER_ZOOM = 20;
+
+// A group this small opens as a wheel of its photos instead of zooming in.
+const WHEEL_MAX = 12;
 
 // Room kept between an open stack's fan and the viewport edge.
 const STACK_EDGE_MARGIN = 16;
@@ -470,11 +473,17 @@ const MapComponent = ({ photos, places }: MapProps) => {
                       type="button"
                       className="mk-thumb"
                       style={{ width: CLUSTER_SIZE, height: CLUSTER_SIZE }}
-                      aria-label={`${pointCount} photos here`}
+                      aria-label={
+                        pointCount <= WHEEL_MAX
+                          ? `${pointCount} photos here. Show them all`
+                          : `${pointCount} photos here. Zoom in`
+                      }
                       onClick={() => {
                         const expansionZoom =
                           supercluster.getClusterExpansionZoom(clusterId);
-                        if (expansionZoom > MAX_CLUSTER_ZOOM) {
+                        // Photos on one spot, or a small group: fan them out in a wheel
+                        // around the group. Bigger groups zoom in to split apart.
+                        if (expansionZoom > MAX_CLUSTER_ZOOM || pointCount <= WHEEL_MAX) {
                           const stacked = supercluster
                             .getLeaves(clusterId, Infinity)
                             .map((l) => (l.properties as ClusterProps).photo!);
@@ -547,7 +556,7 @@ const MapComponent = ({ photos, places }: MapProps) => {
         </p>
 
         <div className="map-loader" data-done={mapLoaded} aria-hidden={mapLoaded}>
-          <VMark width={96} strokeWidth={0.8} />
+          <Mark size={72} strokeWidth={0.6} />
           <span className="sr-only">Loading the map</span>
         </div>
       </div>

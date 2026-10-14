@@ -177,17 +177,26 @@ button {
   letter-spacing: 0.02em;
 }
 
-/* ── The V ─────────────────────────────────────────────────────────────── */
+/* ── The mark: a registration mark ─────────────────────────────────────── */
 
-.vmark {
+.mark {
   flex: none;
   display: block;
   overflow: visible;
 }
 
-.vmark polyline {
+.mark circle,
+.mark line {
   fill: none;
   stroke: currentColor;
+}
+
+.sh-logo .mark {
+  transition: transform 400ms var(--ease);
+}
+
+.sh-logo:hover .mark {
+  transform: rotate(90deg);
 }
 
 /* ── Gallery lights: the whole page dims while the theme changes ──────── */
@@ -460,12 +469,15 @@ button {
 /* ── Landing ───────────────────────────────────────────────────────────── */
 
 .landing {
+  padding: 0 var(--gutter);
+  overflow-x: clip;
+}
+
+.landing-first {
   height: 100dvh;
   min-height: 560px;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  padding: 0 var(--gutter);
-  overflow: hidden;
 }
 
 .landing-hero {
@@ -477,27 +489,35 @@ button {
   min-height: 0;
 }
 
-.landing-v {
+/* Crop marks: a small cross at each corner of the first screen, ruled in on load. */
+.crop-marks {
   position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: calc(100% - 24px);
-  overflow: visible;
+  inset: 0 0 24px;
   pointer-events: none;
 }
 
-.landing-v line {
+.crop {
+  position: absolute;
+  overflow: visible;
+}
+
+.crop line {
   stroke: var(--muted);
   stroke-width: 1;
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
-  animation: v-draw 350ms ease-in 50ms forwards;
+  animation: v-draw 400ms var(--ease) forwards;
 }
 
-.landing-v line + line {
-  animation: v-draw 350ms var(--ease) 400ms forwards;
-}
+.crop-tl { left: -10px; top: -10px; }
+.crop-tr { left: calc(100% - 10px); top: -10px; }
+.crop-bl { left: -10px; top: calc(100% - 10px); }
+.crop-br { left: calc(100% - 10px); top: calc(100% - 10px); }
+
+.crop-tl line { animation-delay: 100ms; }
+.crop-tr line { animation-delay: 180ms; }
+.crop-br line { animation-delay: 260ms; }
+.crop-bl line { animation-delay: 340ms; }
 
 .landing-rows {
   position: relative;
@@ -542,17 +562,14 @@ button {
   animation: row-in 450ms var(--ease) 420ms both;
 }
 
-.landing-enter .arrow {
-  font-weight: 400;
-}
-
-.landing-enter:hover .arrow {
-  transform: translateX(0.12em);
-}
-
-.landing-enter .arrow {
+.arrow {
   display: inline-block;
+  font-weight: 400;
   transition: transform var(--dur-fast) var(--ease);
+}
+
+a:hover > .arrow {
+  transform: translateX(0.12em);
 }
 
 .landing-photo {
@@ -594,6 +611,124 @@ button {
   animation: fade 250ms ease both;
 }
 
+/* Below the first screen: the newest photographs, the years, and Enter again. */
+.landing-recent {
+  padding: 96px 0 0;
+}
+
+.landing-section-head {
+  padding-bottom: 12px;
+  margin-bottom: 24px;
+}
+
+.recent-grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 48px var(--col-gap);
+}
+
+.recent-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.recent-item img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  background: var(--map);
+  filter: grayscale(1);
+  transition: filter var(--dur) ease;
+}
+
+.recent-item:hover img,
+.recent-item:focus-visible img {
+  filter: none;
+}
+
+.recent-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ink);
+}
+
+.recent-title {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-year {
+  flex: none;
+  color: var(--muted);
+}
+
+.landing-years {
+  padding: 120px 0 0;
+}
+
+.years-span {
+  display: flex;
+  align-items: center;
+  gap: var(--col-gap);
+}
+
+.year-big {
+  flex: none;
+  font-size: clamp(72px, 14vw, 220px);
+  line-height: 0.9;
+  font-weight: 500;
+  letter-spacing: -0.05em;
+  color: var(--echo-3);
+}
+
+.year-line {
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--echo-3);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 900ms var(--ease) calc(var(--delay, 0ms) + 200ms);
+}
+
+.years-span[data-in="true"] .year-line {
+  transform: scaleX(1);
+}
+
+.landing-cta {
+  padding: 120px 0 max(64px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cta-enter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28em;
+  padding-bottom: 12px;
+  font-size: clamp(40px, 6vw, 96px);
+  line-height: 0.95;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.cta-also {
+  margin: 0;
+  font-size: 15px;
+}
+
 /* Enter: the rows slide off to the right in turn, then the map takes over. */
 .landing[data-leaving="true"] .landing-row {
   animation: row-out 400ms var(--ease) calc(var(--i) * 40ms) both;
@@ -607,15 +742,12 @@ button {
   animation: undevelop 300ms var(--ease) 50ms both;
 }
 
-.landing[data-leaving="true"] .landing-v line {
-  stroke-dashoffset: 0;
-  animation: none;
-  opacity: 0;
-  transition: opacity 150ms ease;
-}
-
-.landing[data-leaving="true"] .landing-foot {
-  animation: fade-out 150ms ease both;
+.landing[data-leaving="true"] .crop-marks,
+.landing[data-leaving="true"] .landing-foot,
+.landing[data-leaving="true"] .landing-recent,
+.landing[data-leaving="true"] .landing-years,
+.landing[data-leaving="true"] .landing-cta {
+  animation: fade-out 200ms ease both;
 }
 
 @media (max-width: 767px) {
@@ -624,7 +756,7 @@ button {
     padding: 20px 0 20px;
   }
 
-  .landing-v {
+  .crop-marks {
     display: none;
   }
 
@@ -672,6 +804,73 @@ button {
   .landing-foot .k {
     margin-right: 6px;
   }
+
+  .landing-recent {
+    padding-top: 64px;
+  }
+
+  .recent-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px var(--col-gap);
+  }
+
+  .landing-years,
+  .landing-cta {
+    padding-top: 80px;
+  }
+}
+
+/* ── Scroll reveals (see Reveal.tsx) ───────────────────────────────────── */
+
+.reveal[data-reveal="rise"] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 400ms ease var(--delay, 0ms), transform 600ms var(--ease) var(--delay, 0ms);
+}
+
+.reveal[data-reveal="develop"] {
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 700ms var(--ease) var(--delay, 0ms);
+}
+
+.reveal[data-reveal="draw"] {
+  position: relative;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 400ms ease var(--delay, 0ms), transform 500ms var(--ease) var(--delay, 0ms);
+}
+
+.reveal[data-reveal="draw"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-bottom: 1px solid var(--ink);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 700ms var(--ease) calc(var(--delay, 0ms) + 150ms);
+}
+
+.reveal[data-in="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+.reveal[data-reveal="develop"][data-in="true"] {
+  clip-path: inset(0 0 0 0);
+}
+
+.reveal[data-in="true"]::after {
+  transform: scaleX(1);
+}
+
+/* Phones zoom the page in on any text field set smaller than 16px. */
+@media (max-width: 767px), (pointer: coarse) {
+  .search-input,
+  .sub-input {
+    font-size: 16px;
+  }
 }
 
 /* ── Map page ──────────────────────────────────────────────────────────── */
@@ -713,10 +912,14 @@ button {
   pointer-events: none;
 }
 
-.map-loader polyline {
-  stroke-width: 0.8;
+.map-loader circle,
+.map-loader line {
   stroke-dasharray: 1;
-  animation: v-loop 1100ms var(--ease) infinite;
+  animation: v-loop 1400ms var(--ease) infinite;
+}
+
+.map-loader line {
+  animation-delay: 150ms;
 }
 
 .place-name {
@@ -1360,12 +1563,21 @@ button {
   bottom: 0;
   border-bottom: 1px solid var(--rule);
   transform-origin: left;
-  animation: draw 350ms var(--ease) calc(80ms + var(--i, -1) * 50ms) both;
 }
 
 .dir-cols::after {
   border-bottom-color: var(--ink);
-  animation-delay: 0ms;
+  animation: draw 350ms var(--ease) both;
+}
+
+/* Rows rule themselves in as they scroll into view (Directory.tsx), a few at a time. */
+.dir-item::after {
+  transform: scaleX(0);
+  transition: transform 350ms var(--ease) calc(var(--i) * 50ms);
+}
+
+.dir-item[data-in="true"]::after {
+  transform: scaleX(1);
 }
 
 .dir-list {
@@ -1388,8 +1600,17 @@ button {
   text-align: left;
   text-decoration: none;
   cursor: pointer;
-  animation: rise 300ms var(--ease) calc(140ms + var(--i) * 50ms) both;
-  transition: color var(--dur-fast) ease;
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 300ms ease calc(60ms + var(--i) * 50ms),
+    transform 300ms var(--ease) calc(60ms + var(--i) * 50ms),
+    color var(--dur-fast) ease;
+}
+
+.dir-item[data-in="true"] .dir-row {
+  opacity: 1;
+  transform: none;
 }
 
 .dir-list[data-hovering="true"] .dir-row {
@@ -1526,7 +1747,8 @@ button {
     transition-delay: 0ms !important;
   }
 
-  .map-loader polyline {
+  .map-loader circle,
+  .map-loader line {
     stroke-dashoffset: 0;
   }
 }

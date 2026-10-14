@@ -179,13 +179,10 @@ export async function renderShareCardPng(
           borderBottom: `${RULE}px solid ${colors.ink}`,
         }}
       >
-        <svg width={48} height={33} viewBox="0 0 26 18" style={{ marginRight: 20 }}>
-          <polyline
-            points="0.5,0.5 13,17 25.5,0.5"
-            fill="none"
-            stroke={colors.ink}
-            strokeWidth={1.4}
-          />
+        <svg width={44} height={44} viewBox="0 0 24 24" style={{ marginRight: 20 }}>
+          <circle cx="12" cy="12" r="6.5" fill="none" stroke={colors.ink} strokeWidth={1.2} />
+          <line x1="12" y1="0.5" x2="12" y2="23.5" stroke={colors.ink} strokeWidth={1.2} />
+          <line x1="0.5" y1="12" x2="23.5" y2="12" stroke={colors.ink} strokeWidth={1.2} />
         </svg>
         <div style={{ display: 'flex', fontSize: TYPE.name.fontSize, letterSpacing: TYPE.name.letterSpacing, lineHeight: 1.2 }}>
           Vedant Modi

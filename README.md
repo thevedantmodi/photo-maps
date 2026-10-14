@@ -4,8 +4,8 @@ An interactive map of geotagged travel photos. Photos are hung on a Mapbox map l
 
 ## Features
 
-- **Landing** — `/`: the title set four times over, stepping right and fading like an echo, then Enter. Old `/#<slug>` photo links are forwarded to `/p/<slug>`.
-- **Map** — `/map`: Mapbox GL with monochrome light/dark styles and Supercluster clustering. Photos are black-and-white prints until hovered; on first load they're hung one by one in date order. Photos taken at the same spot fan out into a stack instead of overlapping.
+- **Landing** — `/`: the title set four times over, stepping right and fading like an echo, then Enter. Below the first screen, the newest photographs develop as they scroll into view, the years rule themselves out, and Enter comes round again. Old `/#<slug>` photo links are forwarded to `/p/<slug>`.
+- **Map** — `/map`: Mapbox GL with monochrome light/dark styles and Supercluster clustering. Photos are black-and-white prints until hovered; on first load they're hung one by one in date order. Clicking a small group (up to 12 photos), or photos taken at the same spot, fans them out in a wheel around it; bigger groups zoom in.
 - **Browse** — a year filter whose brackets slide to the chosen year, a search box that flies the map to a place (its name rises in large type), and 3D terrain.
 - **Directory** — `/directory`: every place, numbered, with years, number of photos and the most recent; a row opens the map there (`/map?lon=&lat=&z=`).
 - **Place names** — named by Mapbox reverse geocoding, with hand-named custom places (reefs, open ocean, remote parks) taking precedence.
@@ -22,6 +22,7 @@ An interactive map of geotagged travel photos. Photos are hung on a Mapbox map l
 
 - **Type** — Neue Haas Grotesk where licensed, Helvetica Neue on Apple devices, Geist elsewhere (see `--font-sans` in `globals.css`). The share card renders with the bundled Geist files.
 - **Tokens** — colours, rules and motion live as CSS custom properties at the top of `src/app/globals.css`; the share card mirrors them in `src/lib/shareTokens.ts`, and the emails in `src/emails/theme.ts`.
+- **Mark** — a printer's registration mark (`Mark.tsx`), beside the name, as the map loader and on the share card.
 - **Motion** — one curve (`cubic-bezier(0.2, 0, 0, 1)`) and short durations; everything collapses to instant under `prefers-reduced-motion`.
 
 ## Stack

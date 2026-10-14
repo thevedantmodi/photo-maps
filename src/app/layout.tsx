@@ -40,6 +40,10 @@ export default function RootLayout({
     <html lang="en" className={geistSans.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
+        {/* Without JavaScript nothing scrolls into view, so show everything as is. */}
+        <noscript>
+          <style>{`.reveal,.dir-row{opacity:1!important;transform:none!important;clip-path:none!important}.dir-item::after{transform:none!important}`}</style>
+        </noscript>
       </head>
       <body>
         {children}

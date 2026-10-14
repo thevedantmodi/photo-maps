@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import SubscribePanel from './SubscribePanel';
 import ThemeSwitch from './ThemeSwitch';
-import VMark from './VMark';
+import Mark from './Mark';
 
 export type Section = 'landing' | 'map' | 'directory' | 'photo';
 
@@ -25,7 +25,7 @@ interface SiteHeaderProps {
 }
 
 /**
- * One ruled bar on every page: the V and name, the stacked menu, optional tools, and
+ * One ruled bar on every page: the mark and name, the stacked menu, optional tools, and
  * Light | Dark. On a phone the menu folds behind a Menu button.
  */
 export default function SiteHeader({ current, tools, menuExtra }: SiteHeaderProps) {
@@ -97,7 +97,7 @@ export default function SiteHeader({ current, tools, menuExtra }: SiteHeaderProp
   return (
     <header className="sh" ref={rootRef}>
       <Link href="/" className="sh-logo" aria-label="Vedant Modi, home">
-        <VMark />
+        <Mark />
         <span aria-hidden="true">Vedant Modi</span>
       </Link>
 
