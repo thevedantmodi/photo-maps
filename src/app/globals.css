@@ -15,6 +15,7 @@
   --echo-2: #959593;
   --echo-3: #b4b4b1;
   --shadow: rgba(0, 0, 0, 0.25);
+  --go: #1f9d55;
   color-scheme: light;
 }
 
@@ -29,6 +30,7 @@
   --echo-2: #6e6e6e;
   --echo-3: #4e4e4e;
   --shadow: rgba(0, 0, 0, 0.45);
+  --go: #2fd27a;
   color-scheme: dark;
 }
 
@@ -44,6 +46,7 @@
     --echo-2: #6e6e6e;
     --echo-3: #4e4e4e;
     --shadow: rgba(0, 0, 0, 0.45);
+    --go: #2fd27a;
     color-scheme: dark;
   }
 }
@@ -1422,9 +1425,41 @@ a:hover > .arrow {
   transition: opacity 250ms ease 100ms;
 }
 
-/* Share: the label changes in place, one line at a time. */
+/* Share: a light that turns green and glows once the card is ready, then the label,
+   which changes in place one line at a time. */
+.share-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.share-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.3;
+  transition: background-color var(--dur) ease, opacity var(--dur) ease, box-shadow var(--dur) ease;
+}
+
+.share-dot[data-ready="true"] {
+  background: var(--go);
+  opacity: 1;
+  box-shadow: 0 0 6px 1px color-mix(in srgb, var(--go) 70%, transparent);
+  animation: share-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes share-glow {
+  0%, 100% { box-shadow: 0 0 4px 0 color-mix(in srgb, var(--go) 55%, transparent); }
+  50% { box-shadow: 0 0 10px 3px color-mix(in srgb, var(--go) 80%, transparent); }
+}
+
+
 .share-reel {
   display: block;
+  /* The reel is as wide as its longest line; keep each line beside the light. */
+  text-align: left;
   height: 1.35em;
   line-height: 1.35;
   overflow: hidden;

@@ -30,6 +30,8 @@ const REEL: Record<Status, number> = { idle: 0, building: 1, shared: 2, error: 3
 const ShareButton = ({ slug, caption, version, className }: ShareButtonProps) => {
   const [theme] = useTheme();
   const [status, setStatus] = useState<Status>("idle");
+  // Which themes' cards are already on the device, for the ready light.
+  const [held, setHeld] = useState<Partial<Record<Theme, true>>>({});
   // The card follows the theme on screen, so each theme keeps its own file.
   const files = useRef<Partial<Record<Theme, File>>>({});
   const pending = useRef<Partial<Record<Theme, Promise<File>>>>({});
@@ -57,6 +59,7 @@ const ShareButton = ({ slug, caption, version, className }: ShareButtonProps) =>
           const blob = await res.blob();
           const file = new File([blob], `${slug}.png`, { type: "image/png" });
           files.current[t] = file;
+          setHeld((h) => ({ ...h, [t]: true }));
           return file;
         })
         .catch((err) => {
@@ -153,13 +156,17 @@ const ShareButton = ({ slug, caption, version, className }: ShareButtonProps) =>
       aria-disabled={status === "building"}
       aria-label={LABEL[status]}
     >
-      <span className="share-reel" aria-hidden="true">
-        <span style={{ transform: `translateY(${-1.35 * REEL[status]}em)` }}>
-          <span>Share</span>
-          <span>Building card…</span>
-          <span>Link copied</span>
-          <span>Try again</span>
-          <span>Card ready</span>
+      <span className="share-label" aria-hidden="true">
+        {/* Glows green once the card is on the device and one tap will share it. */}
+        <span className="share-dot" data-ready={held[theme] === true} />
+        <span className="share-reel">
+          <span style={{ transform: `translateY(${-1.35 * REEL[status]}em)` }}>
+            <span>Share</span>
+            <span>Building card…</span>
+            <span>Link copied</span>
+            <span>Try again</span>
+            <span>Card ready</span>
+          </span>
         </span>
       </span>
     </button>
