@@ -95,7 +95,6 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
   const figureRef = useRef<HTMLElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const probeRef = useRef<HTMLImageElement>(null);
-  const closeRef = useRef<HTMLButtonElement>(null);
   const played = useRef(false);
   const closingRef = useRef(false);
   const drag = useRef<{ startY: number; dy: number } | null>(null);
@@ -160,9 +159,11 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
     later(() => setDetails(true), DETAILS_DELAY_MS);
   }, [frame, origin, later]);
 
+  // Over the map, focus moves into the photo page (announced by its title) so the
+  // keyboard and screen readers follow it; Escape or Close returns to the map.
   useEffect(() => {
-    if (mode === "overlay" && details && !closing) closeRef.current?.focus({ preventScroll: true });
-  }, [mode, details, closing]);
+    if (mode === "overlay") rootRef.current?.focus({ preventScroll: true });
+  }, [mode]);
 
   // The place name: a custom place, else Mapbox, cached in this browser.
   useEffect(() => {
@@ -203,6 +204,11 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
     }
 
     const dragged = el.style.transform !== "";
+    // A drag leaves the page half faded inline, which would beat the stylesheet's fade-out.
+    const bg = bgRef.current;
+    if (bg?.style.opacity) {
+      bg.animate([{ opacity: bg.style.opacity }, { opacity: 0 }], { duration: 250, fill: "forwards" });
+    }
     later(
       () => {
         // Measure the frame at rest, then fly from wherever it is (dragged or not).
@@ -241,8 +247,15 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
   // short of the threshold it springs back.
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.pointerType === "mouse" || closingRef.current) return;
+    // A spring-back or the opening growth still running would override the drag.
+    frameRef.current?.getAnimations().forEach((a) => a.cancel());
     drag.current = { startY: e.clientY, dy: 0 };
-    e.currentTarget.setPointerCapture(e.pointerId);
+    rootRef.current?.setAttribute("data-dragging", "true");
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // The pointer is already gone; the drag simply won't be captured.
+    }
   };
 
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -254,12 +267,15 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
     const s = 1 - p * 0.35;
     el.style.transform = `translate(${(el.offsetWidth * (1 - s)) / 2}px, ${d.dy}px) scale(${s})`;
     if (mode === "overlay" && bgRef.current) bgRef.current.style.opacity = String(1 - p * 0.85);
+    // The title and details fade out ahead of the photo (globals.css reads --drag).
+    rootRef.current?.style.setProperty("--drag", p.toFixed(3));
   };
 
   const onPointerUp = () => {
     const d = drag.current;
     const el = frameRef.current;
     drag.current = null;
+    rootRef.current?.removeAttribute("data-dragging");
     if (!d || !el) return;
     if (d.dy > SWIPE_CLOSE_PX) {
       close();
@@ -268,6 +284,7 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
     const from = el.style.transform || "none";
     el.style.transform = "";
     if (bgRef.current) bgRef.current.style.opacity = "";
+    rootRef.current?.style.removeProperty("--drag");
     if (from !== "none" && !reducedMotion()) {
       el.animate([{ transform: from }, { transform: "none" }], { duration: 280, easing: SPRING });
     }
@@ -294,6 +311,7 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
       role={mode === "overlay" ? "dialog" : undefined}
       aria-modal={mode === "overlay" ? true : undefined}
       aria-labelledby="pv-title"
+      tabIndex={mode === "overlay" ? -1 : undefined}
     >
       <div className="pv-bg" ref={bgRef} />
       <SiteHeader current="photo" />
@@ -304,7 +322,6 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
           <div className="pv-actions">
             {!isPhone && share("text-btn share-btn")}
             <button
-              ref={closeRef}
               type="button"
               className="text-btn"
               onClick={close}

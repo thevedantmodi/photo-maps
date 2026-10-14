@@ -115,6 +115,22 @@ button {
   outline-offset: 3px;
 }
 
+/* Typing fields show focus by thickening their own rule, not with a ring around it. */
+.search-input:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+.sub-input:focus-visible {
+  outline: none;
+  box-shadow: 0 1px 0 0 var(--ink);
+}
+
+/* The photo page takes focus as a whole when it opens; no ring for that. */
+.pv:focus {
+  outline: none;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -471,13 +487,16 @@ button {
   pointer-events: none;
 }
 
-.landing-v polyline {
-  fill: none;
+.landing-v line {
   stroke: var(--muted);
   stroke-width: 1;
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
-  animation: v-draw 700ms var(--ease) 50ms forwards;
+  animation: v-draw 350ms ease-in 50ms forwards;
+}
+
+.landing-v line + line {
+  animation: v-draw 350ms var(--ease) 400ms forwards;
 }
 
 .landing-rows {
@@ -588,7 +607,7 @@ button {
   animation: undevelop 300ms var(--ease) 50ms both;
 }
 
-.landing[data-leaving="true"] .landing-v polyline {
+.landing[data-leaving="true"] .landing-v line {
   stroke-dashoffset: 0;
   animation: none;
   opacity: 0;
@@ -973,9 +992,9 @@ button {
 
 .years-btn {
   flex: none;
-  min-width: 64px;
+  min-width: 44px;
   min-height: 44px;
-  padding: 0 12px;
+  padding: 0 10px;
   border: 0;
   background: none;
   color: var(--muted);
@@ -1035,6 +1054,20 @@ button {
   inset: 0;
   z-index: -1;
   background: var(--bg);
+}
+
+/* While a photo is dragged down to close, the words around it fade first, following
+   the finger without lag. (The head can't fade as a whole: it's display: contents on
+   phones.) */
+.pv-kicker,
+.pv-title,
+.pv-actions,
+.pv-side {
+  opacity: calc(1 - var(--drag, 0) * 3);
+}
+
+.pv[data-dragging="true"] :is(.pv-kicker, .pv-title, .pv-actions, .pv-side) {
+  transition: none;
 }
 
 .pv-head {

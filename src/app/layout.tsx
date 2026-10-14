@@ -36,11 +36,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    // The Geist variable sits on <html>, where --font-sans (globals.css) reads it.
+    <html lang="en" className={geistSans.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT }} />
       </head>
-      <body className={geistSans.variable}>
+      <body>
         {children}
         <div className="lights" aria-hidden="true" />
         <Analytics />

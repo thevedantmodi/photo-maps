@@ -60,13 +60,11 @@ export default function Landing({ photoUrl, years }: LandingProps) {
       <SiteHeader current="landing" />
 
       <section className="landing-hero">
-        <svg
-          className="landing-v"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          aria-hidden="true"
-        >
-          <polyline points="0,0 50,100 100,0" pathLength={1} vectorEffect="non-scaling-stroke" />
+        {/* The V: two plain lines in percentages, so it spans the hero at any size without
+            stretching its stroke. Each draws in turn, top-left down, then back up. */}
+        <svg className="landing-v" aria-hidden="true">
+          <line x1="0" y1="0" x2="50%" y2="100%" pathLength={1} />
+          <line x1="50%" y1="100%" x2="100%" y2="0" pathLength={1} />
         </svg>
 
         <h1 className="sr-only">Photos by Vedant Modi</h1>
