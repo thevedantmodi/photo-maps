@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { addSubscriber, verifyConfirmToken } from '@/lib/subscribe';
-import styles from './confirm.module.css';
+import styles from '../subscribe.module.css';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,10 +54,15 @@ export default async function ConfirmPage({ searchParams }: Props) {
     content = <Message title="Something went wrong" body="Your subscription wasn't saved. Open the link from your email to try again." />;
   } else if (!valid) {
     content = (
-      <Message
-        title="This link has expired"
-        body="Confirmation links work for 48 hours. Sign up again from the map to get a new one."
-      />
+      <>
+        <Message
+          title="This link has expired"
+          body="Confirmation links work for 48 hours. Sign up again to get a new one."
+        />
+        <Link className={styles.button} href="/subscribe">
+          Sign up again
+        </Link>
+      </>
     );
   } else {
     content = (
