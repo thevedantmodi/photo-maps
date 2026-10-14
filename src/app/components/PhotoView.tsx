@@ -258,6 +258,19 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
     }
   };
 
+  // iOS Safari ignores touch-action inside the scrolling overlay: it starts its own
+  // scroll or bounce, cancels the pointer, and the photo springs back. Holding the
+  // touch while dragging keeps the gesture ours. (React's touch listeners are passive.)
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!el) return;
+    const hold = (e: TouchEvent) => {
+      if (drag.current && e.cancelable) e.preventDefault();
+    };
+    el.addEventListener("touchmove", hold, { passive: false });
+    return () => el.removeEventListener("touchmove", hold);
+  }, [frame]);
+
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const d = drag.current;
     const el = frameRef.current;

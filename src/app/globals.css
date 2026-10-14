@@ -1308,8 +1308,10 @@ a:hover > .arrow {
 .pv-frame {
   position: relative;
   overflow: hidden;
-  touch-action: pan-x;
+  touch-action: none;
   transform-origin: 0 0;
+  -webkit-touch-callout: none;
+  user-select: none;
   background: var(--map);
 }
 
