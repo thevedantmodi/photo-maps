@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../hooks/useTheme";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { MAP_STYLES } from "@/lib/mapStyles";
+import { photoAlt } from "@/lib/alt";
 import {
   applyRelief,
   setTerrain,
@@ -329,7 +330,11 @@ const MapComponent = ({ photos, places }: MapProps) => {
                   }));
                 }}
               >
-                <div className="cluster-marker-container">
+                <div
+                  className="cluster-marker-container"
+                  role="img"
+                  aria-label={`${pointCount} photos`}
+                >
                   {thumbs.length === 1 ? (
                     <div
                       style={{
@@ -407,6 +412,8 @@ const MapComponent = ({ photos, places }: MapProps) => {
             >
               <div
                 className="photo-marker"
+                role="img"
+                aria-label={photoAlt(photo)}
                 style={{ backgroundImage: `url('${photo.thumb_url}')` }}
               />
             </Marker>
@@ -501,7 +508,7 @@ const MapComponent = ({ photos, places }: MapProps) => {
               )}
               <img
                 src={selectedPhoto.large_url}
-                alt="Full size"
+                alt={photoAlt(selectedPhoto)}
                 onLoad={() => setImgLoaded(true)}
                 style={{
                   maxWidth: "calc(100vw - 40px)",

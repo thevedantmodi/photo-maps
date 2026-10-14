@@ -6,6 +6,7 @@ import { colors, type Theme } from "./theme";
 import { Hint, Kbd, useModKey } from "./Kbd";
 import LocationSection from "./LocationSection";
 import PlacesTab from "./PlacesTab";
+import { photoAlt } from "@/lib/alt";
 import {
   EXIF_PARSE_OPTIONS,
   extractExifDate,
@@ -30,6 +31,7 @@ interface AdminPhoto {
   id: string;
   friendly_name: string;
   caption: string | null;
+  alt_text: string | null;
   status: string;
   thumb_url: string;
   date: string | null;
@@ -430,6 +432,7 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
   const c = colors(theme);
   const mod = useModKey();
   const [caption, setCaption] = useState(photo.caption ?? "");
+  const [altText, setAltText] = useState(photo.alt_text ?? "");
   const savedLat = photo.lat != null ? formatCoord(photo.lat) : "";
   const savedLon = photo.lon != null ? formatCoord(photo.lon) : "";
   const [lat, setLat] = useState(savedLat);
@@ -481,6 +484,7 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
     try {
       const body: Record<string, unknown> = {
         caption: caption || null,
+        alt_text: altText.trim() || null,
         lat: latNum,
         lon: lonNum,
         date: date || null,
@@ -497,6 +501,7 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
       onSaved({
         ...photo,
         caption: caption || null,
+        alt_text: altText.trim() || null,
         lat: latNum,
         lon: lonNum,
         date: date || null,
@@ -507,7 +512,7 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
     } finally {
       setSaving(false);
     }
-  }, [caption, coordsInvalid, date, latNum, lonNum, onClose, onSaved, photo]);
+  }, [altText, caption, coordsInvalid, date, latNum, lonNum, onClose, onSaved, photo]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -589,7 +594,7 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
 
         <img
           src={thumbUrl}
-          alt={photo.friendly_name}
+          alt={photoAlt({ alt_text: altText, caption, date })}
           style={{ width: "100%", borderRadius: 6, marginBottom: 16, objectFit: "cover", maxHeight: 200 }}
         />
 
@@ -632,6 +637,23 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
           rows={3}
           style={{ ...inputStyle, marginBottom: 16, resize: "vertical" }}
         />
+
+        <label style={labelStyle} htmlFor="edit-alt-text">
+          Alt text
+        </label>
+        <textarea
+          id="edit-alt-text"
+          value={altText}
+          onChange={(e) => setAltText(e.target.value)}
+          placeholder={caption ? `Falls back to caption: “${caption}”` : "Describe what's in the photo"}
+          rows={2}
+          style={{ ...inputStyle, marginBottom: 4, resize: "vertical" }}
+        />
+        <div style={{ fontSize: 11, color: c.muted, marginBottom: 16 }}>
+          {altText.trim() || caption
+            ? "Read by screen readers and search engines."
+            : "Missing — screen readers will only hear the date."}
+        </div>
 
         <LocationSection
           theme={theme}
@@ -799,7 +821,7 @@ function ManageTab({ theme }: { theme: Theme }) {
           >
             <img
               src={photo.thumb_url}
-              alt={photo.friendly_name}
+              alt={photoAlt(photo)}
               style={{
                 width: "100%",
                 aspectRatio: "1",
@@ -836,6 +858,11 @@ function ManageTab({ theme }: { theme: Theme }) {
                   ? `${new Date(photo.date).toLocaleDateString()}`
                   : "No Date"}
               </div>
+              {!photo.alt_text && !photo.caption && (
+                <div style={{ fontSize: 10, color: c.muted, lineHeight: 1.4, marginTop: 2 }}>
+                  No alt text
+                </div>
+              )}
             </div>
             {/* Edit button */}
             <button

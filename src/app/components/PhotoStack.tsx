@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Photo } from "../types";
+import { photoAlt } from "@/lib/alt";
 
 // Outer size of `.photo-marker` in globals.css (48px + 3px border each side);
 // GAP keeps neighbours from touching.
@@ -80,7 +81,7 @@ export default function PhotoStack({ photos, onSelect }: PhotoStackProps) {
           key={photo.id}
           type="button"
           className="photo-marker photo-stack-item"
-          aria-label={photo.caption || photo.original_name}
+          aria-label={photoAlt(photo)}
           style={{ backgroundImage: `url('${photo.thumb_url}')` }}
           initial={{ x: 0, y: 0, scale: 0.4, opacity: 0 }}
           animate={{ x: offsets[i].x, y: offsets[i].y, scale: 1, opacity: 1 }}

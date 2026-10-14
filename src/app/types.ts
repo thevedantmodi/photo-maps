@@ -8,6 +8,7 @@ export interface Photo {
   lat: number | null;
   lon: number | null;
   caption: string | null;
+  alt_text: string | null;
   date: string | null;
   status: string;
   created_at: string | null;

@@ -1,3 +1,4 @@
+import { photoAlt } from '@/lib/alt';
 import { getBaseUrl } from '@/lib/baseUrl';
 import { getRecentPublishedPhotos } from '@/lib/photos';
 
@@ -37,7 +38,7 @@ export async function GET(req: Request) {
     // to a subscriber; the date taken goes in the body instead.
     const pubDate = photo.created_at ? new Date(photo.created_at).toUTCString() : null;
     const body =
-      `<p><a href="${escapeXml(link)}"><img src="${escapeXml(photo.thumb_url)}" alt="${escapeXml(title)}" /></a></p>` +
+      `<p><a href="${escapeXml(link)}"><img src="${escapeXml(photo.thumb_url)}" alt="${escapeXml(photoAlt(photo))}" /></a></p>` +
       `<p>${escapeXml(title)}</p>` +
       (taken ? `<p>${escapeXml(taken)}</p>` : '');
 

@@ -8,7 +8,7 @@ import styles from '../subscribe.module.css';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Confirm subscription — Photos by Vedant Modi',
+  title: 'Confirm subscription',
   robots: { index: false },
 };
 

@@ -52,6 +52,13 @@ html[data-theme='light'] .caption {
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
+.title {
+  /* Semantically the page heading; visually the same as the caption text it replaced. */
+  font-size: inherit;
+  font-weight: inherit;
+  margin: 0;
+}
+
 .date {
   font-size: 0.8em;
   opacity: 0.8;

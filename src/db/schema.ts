@@ -12,6 +12,9 @@ export const photos = pgTable(
     lat: doublePrecision('lat'),
     lon: doublePrecision('lon'),
     caption: text('caption'),
+    // Screen-reader description of what's in the frame. Null falls back to the caption;
+    // see photoAlt() in src/lib/alt.ts.
+    alt_text: text('alt_text'),
     date: timestamp('date', { withTimezone: true }),
     status: text('status').notNull().default('pending'),
     // shareVersion() value baked into the precomputed share card currently in R2, so the
