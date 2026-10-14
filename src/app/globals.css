@@ -1137,8 +1137,20 @@ a:hover > .arrow {
     transition: clip-path var(--dur) var(--ease), visibility 0s;
   }
 
+  /* Inside the row rather than hanging below it: the row's unfolding clip would
+     hide anything outside it. */
   .search-list {
-    top: calc(100% - 12px);
+    position: static;
+    clip-path: none;
+    transition: none;
+  }
+
+  .search-list:not([data-open="true"]) {
+    display: none;
+  }
+
+  .search-list[data-open="true"] {
+    animation: develop 200ms var(--ease);
   }
 }
 
