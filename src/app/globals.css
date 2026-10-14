@@ -646,7 +646,8 @@ html[data-theme="light"] .filter-chip:hover {
 }
 
 .theme-toggle,
-.subscribe-btn {
+.subscribe-btn,
+.terrain-toggle {
   position: fixed;
   top: max(20px, env(safe-area-inset-top));
   right: 20px;
@@ -668,7 +669,8 @@ html[data-theme="light"] .filter-chip:hover {
 }
 
 .theme-toggle:hover,
-.subscribe-btn:hover {
+.subscribe-btn:hover,
+.terrain-toggle:hover {
   transform: scale(1.08);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.5);
   background: rgba(255, 255, 255, 0.35);
@@ -676,32 +678,37 @@ html[data-theme="light"] .filter-chip:hover {
 
 @media (prefers-color-scheme: dark) {
   .theme-toggle,
-  .subscribe-btn {
+  .subscribe-btn,
+  .terrain-toggle {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.15);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   }
 
   .theme-toggle:hover,
-  .subscribe-btn:hover {
+  .subscribe-btn:hover,
+  .terrain-toggle:hover {
     background: rgba(255, 255, 255, 0.18);
   }
 }
 
 html[data-theme="dark"] .theme-toggle,
-html[data-theme="dark"] .subscribe-btn {
+html[data-theme="dark"] .subscribe-btn,
+html[data-theme="dark"] .terrain-toggle {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.15);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 html[data-theme="dark"] .theme-toggle:hover,
-html[data-theme="dark"] .subscribe-btn:hover {
+html[data-theme="dark"] .subscribe-btn:hover,
+html[data-theme="dark"] .terrain-toggle:hover {
   background: rgba(255, 255, 255, 0.18);
 }
 
 html[data-theme="light"] .theme-toggle,
-html[data-theme="light"] .subscribe-btn {
+html[data-theme="light"] .subscribe-btn,
+html[data-theme="light"] .terrain-toggle {
   background: rgba(255, 255, 255, 0.25);
   border-color: rgba(255, 255, 255, 0.3);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4);
@@ -710,6 +717,24 @@ html[data-theme="light"] .subscribe-btn {
 /* Subscribe: a glass disc under the theme toggle that opens a small glass panel. */
 .subscribe-btn {
   top: calc(max(20px, env(safe-area-inset-top)) + 56px);
+}
+
+/* Terrain: a third glass disc under subscribe; filled accent when 3D is on. */
+.terrain-toggle {
+  top: calc(max(20px, env(safe-area-inset-top)) + 112px);
+}
+
+.terrain-toggle.terrain-toggle-on {
+  color: #007bff;
+}
+
+html[data-theme="dark"] .terrain-toggle.terrain-toggle-on {
+  color: #5aa9ff;
+}
+
+.terrain-toggle:focus-visible {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
 }
 
 .subscribe-popover {

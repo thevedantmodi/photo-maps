@@ -10,11 +10,20 @@ import { useTheme } from "../hooks/useTheme";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { MAP_STYLES } from "@/lib/mapStyles";
 import { photoAlt } from "@/lib/alt";
+import {
+  applyRelief,
+  setTerrain,
+  DEM_SOURCE_ID,
+  PLACE_PITCH,
+  PLACE_PITCH_MIN_ZOOM,
+} from "@/lib/mapTerrain";
+import { useTerrainPreference } from "../hooks/useTerrainPreference";
 
 import DateFilter from "./DateFilter";
 import ShareButton from "./ShareButton";
 import { shareVersion } from "@/lib/shareVersion";
 import ThemeToggle from "./ThemeToggle";
+import TerrainToggle from "./TerrainToggle";
 import SubscribeButton from "./SubscribeButton";
 import LocationSidebar from "./LocationSidebar";
 import PhotoStack, { fanExtent } from "./PhotoStack";
@@ -73,6 +82,10 @@ const MapComponent = ({ photos, places }: MapProps) => {
   const [imgLoaded, setImgLoaded] = useState(false);
   const mapRef = useRef<MapRef>(null);
   const [theme, toggleTheme] = useTheme();
+  const [terrainEnabled, toggleTerrain] = useTerrainPreference();
+  // Read by the style.load listener, which outlives any one render.
+  const themeRef = useRef(theme);
+  const terrainRef = useRef(terrainEnabled);
   const [searchExpanded, setSearchExpanded] = useState(false);
   // Only narrow screens use the icon that grows into the full bar; wider
   // ones have room for a permanent inline bar. Derived so a resize to wide
@@ -123,26 +136,36 @@ const MapComponent = ({ photos, places }: MapProps) => {
   }, []);
 
   useEffect(() => {
-    if (!mapLoaded || !mapRef.current) return;
-    const map = mapRef.current.getMap();
-    if (theme === "dark") {
-      map.setFog({
-        "star-intensity": 0.8,
-        color: "rgb(8, 8, 28)",
-        "high-color": "#000010",
-        "horizon-blend": 0.02,
-        "space-color": "#000005",
-      });
-    } else {
-      map.setFog({
-        "star-intensity": 0.8,
-        color: "rgb(8, 8, 28)",
-        "high-color": "#000010",
-        "horizon-blend": 0.02,
-        "space-color": "#000005",
-      });
+    themeRef.current = theme;
+  }, [theme]);
+
+  // A theme switch swaps the whole style, dropping the DEM source, hillshade,
+  // terrain and fog; style.load puts them back. Photos are DOM markers and the
+  // camera is controlled state, so neither is touched by the swap.
+  const onMapLoad = useCallback(() => {
+    const map = mapRef.current?.getMap();
+    if (!map) return;
+    const restore = () =>
+      applyRelief(map, themeRef.current, terrainRef.current);
+    restore();
+    map.on("style.load", restore);
+    updateBounds();
+    setMapLoaded(true);
+  }, [updateBounds]);
+
+  useEffect(() => {
+    terrainRef.current = terrainEnabled;
+    if (!mapLoaded) return;
+    const map = mapRef.current?.getMap();
+    // Mid style swap the source is gone; style.load applies the new value.
+    if (!map?.getSource(DEM_SOURCE_ID)) return;
+    setTerrain(map, terrainEnabled);
+    if (!terrainEnabled && map.getPitch() > 0) {
+      map.easeTo({ pitch: 0, duration: 600 });
+    } else if (terrainEnabled && map.getZoom() >= PLACE_PITCH_MIN_ZOOM) {
+      map.easeTo({ pitch: PLACE_PITCH, duration: 600 });
     }
-  }, [theme, mapLoaded]);
+  }, [terrainEnabled, mapLoaded]);
 
   const onMove = useCallback(
     (evt: ViewStateChangeEvent) => {
@@ -156,9 +179,12 @@ const MapComponent = ({ photos, places }: MapProps) => {
   // Lands the place a little below center, clear of the search bar and top buttons.
   const flyTo = useCallback(
     (longitude: number, latitude: number, zoom = 11) => {
-      mapRef.current?.flyTo({ center: [longitude, latitude], zoom, offset: FLY_OFFSET, duration: 1200 });
+      // A slight tilt shows off the relief once there's some to see.
+      const pitch =
+        terrainEnabled && zoom >= PLACE_PITCH_MIN_ZOOM ? PLACE_PITCH : 0;
+      mapRef.current?.flyTo({ center: [longitude, latitude], zoom, pitch, offset: FLY_OFFSET, duration: 1200 });
     },
-    [],
+    [terrainEnabled],
   );
 
   const flyToBounds = useCallback(
@@ -168,7 +194,7 @@ const MapComponent = ({ photos, places }: MapProps) => {
           [bbox[0], bbox[1]],
           [bbox[2], bbox[3]],
         ],
-        { padding: 60, offset: FLY_OFFSET, duration: 1200 },
+        { padding: 60, offset: FLY_OFFSET, pitch: 0, duration: 1200 },
       );
     },
     [],
@@ -254,12 +280,12 @@ const MapComponent = ({ photos, places }: MapProps) => {
             );
           if (!onMarker) setOpenStack(null);
         }}
-        onLoad={() => {
-          updateBounds();
-          setMapLoaded(true);
-        }}
+        onLoad={onMapLoad}
         style={{ height: "100vh", width: "100%" }}
         mapStyle={mapStyle}
+        // Full reload rather than a diff, so style.load fires on every theme
+        // switch and the relief layers are re-added.
+        styleDiffing={false}
         mapboxAccessToken={mapboxToken}
         projection="globe"
         minZoom={1}
@@ -422,6 +448,13 @@ const MapComponent = ({ photos, places }: MapProps) => {
       />
 
       <ThemeToggle theme={theme} onToggle={toggleTheme} hidden={searchOpen} />
+
+      {/* Before subscribe so its popover draws over this button. */}
+      <TerrainToggle
+        enabled={terrainEnabled}
+        onToggle={toggleTerrain}
+        hidden={searchOpen}
+      />
 
       <SubscribeButton hidden={searchOpen} />
 
