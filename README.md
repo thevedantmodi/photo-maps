@@ -5,7 +5,7 @@ An interactive map of geotagged travel photos. Photos are hung on a Mapbox map l
 ## Features
 
 - **Landing** — `/`: the title set four times over, stepping right and fading like an echo, then Enter. Below the first screen, the newest photographs develop as they scroll into view, the years rule themselves out, and Enter comes round again. Old `/#<slug>` photo links are forwarded to `/p/<slug>`.
-- **Map** — `/map`: Mapbox GL with monochrome light/dark styles and Supercluster clustering. Photos are black-and-white prints until hovered; on first load they're hung one by one in date order. Clicking a small group (up to 12 photos), or photos taken at the same spot, fans them out in a wheel around it; bigger groups zoom in.
+- **Map** — `/map`: Mapbox GL with monochrome light/dark styles and Supercluster clustering. On first load the photos are hung one by one in date order. Clicking a small group (up to 12 photos), or photos taken at the same spot, fans them out in a wheel around it; bigger groups zoom in.
 - **Browse** — a year filter whose brackets slide to the chosen year, a search box that flies the map to a place (its name rises in large type), and 3D terrain.
 - **Directory** — `/directory`: every place, numbered, with years, number of photos and the most recent; a row opens the map there (`/map?lon=&lat=&z=`).
 - **Place names** — named by Mapbox reverse geocoding, with hand-named custom places (reefs, open ocean, remote parks) taking precedence.

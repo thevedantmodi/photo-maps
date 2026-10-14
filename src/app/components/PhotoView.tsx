@@ -151,8 +151,8 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
     const pose = thumbPose(origin, el.getBoundingClientRect());
     el.animate(
       [
-        { transform: pose.transform, clipPath: pose.clipPath, filter: "grayscale(1)" },
-        { transform: "none", clipPath: "inset(0px 0px)", filter: "grayscale(0)" },
+        { transform: pose.transform, clipPath: pose.clipPath },
+        { transform: "none", clipPath: "inset(0px 0px)" },
       ],
       { duration: OPEN_MS, easing: EASE },
     );
@@ -217,8 +217,8 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
         const pose = thumbPose(target, el.getBoundingClientRect());
         const anim = el.animate(
           [
-            { transform: start, clipPath: "inset(0px 0px)", filter: "grayscale(0)" },
-            { transform: pose.transform, clipPath: pose.clipPath, filter: "grayscale(1)" },
+            { transform: start, clipPath: "inset(0px 0px)" },
+            { transform: pose.transform, clipPath: pose.clipPath },
           ],
           { duration: CLOSE_MS, easing: EASE, fill: "forwards" },
         );

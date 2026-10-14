@@ -580,7 +580,6 @@ a:hover > .arrow {
   min-height: 0;
   max-height: 300px;
   object-fit: cover;
-  filter: grayscale(1) contrast(1.05);
   animation: develop 600ms var(--ease) 400ms both;
 }
 
@@ -643,13 +642,6 @@ a:hover > .arrow {
   aspect-ratio: 4 / 5;
   object-fit: cover;
   background: var(--map);
-  filter: grayscale(1);
-  transition: filter var(--dur) ease;
-}
-
-.recent-item:hover img,
-.recent-item:focus-visible img {
-  filter: none;
 }
 
 .recent-caption {
@@ -942,7 +934,7 @@ a:hover > .arrow {
   transition: opacity 200ms ease 150ms, transform 300ms var(--ease) 150ms;
 }
 
-/* Markers: square prints, black and white until hovered. */
+/* Markers: square prints. */
 .mk {
   position: relative;
   /* backwards, not both: once hung, the fade-out for the year filter must win. */
@@ -962,13 +954,6 @@ a:hover > .arrow {
   background: var(--map);
   box-shadow: 0 2px 6px var(--shadow);
   cursor: pointer;
-  filter: grayscale(1);
-  transition: filter var(--dur-fast) ease;
-}
-
-.mk-thumb:hover,
-.mk-thumb:focus-visible {
-  filter: none;
 }
 
 .mk-thumb img {
@@ -1032,13 +1017,6 @@ a:hover > .arrow {
   background: var(--map);
   box-shadow: 0 2px 6px var(--shadow);
   cursor: pointer;
-  filter: grayscale(1);
-  transition: filter var(--dur-fast) ease;
-}
-
-.photo-stack-item:hover,
-.photo-stack-item:focus-visible {
-  filter: none;
 }
 
 .photo-stack-item img {
