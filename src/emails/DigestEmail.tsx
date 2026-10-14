@@ -37,9 +37,9 @@ interface DigestEmailProps {
   unsubscribeUrl: string;
 }
 
-const caption = { color: EMAIL.text, fontSize: '14px', lineHeight: '20px', margin: '8px 0 0' };
-const date = { color: EMAIL.faint, fontSize: '12px', lineHeight: '18px', margin: '2px 0 0' };
-const photo = { borderRadius: '4px', display: 'block', width: '100%', height: 'auto' }; // radius-xs
+const caption = { color: EMAIL.text, fontSize: '15px', fontWeight: 700, lineHeight: '20px', margin: '8px 0 0' };
+const date = { color: EMAIL.muted, fontSize: '12px', lineHeight: '18px', margin: '2px 0 0' };
+const photo = { display: 'block', width: '100%', height: 'auto' };
 
 function PhotoCaption({ p }: { p: DigestPhoto }) {
   return (
@@ -103,8 +103,8 @@ export default function DigestEmail({ baseUrl, hero, rest, more, unsubscribeUrl 
             </Text>
           )}
 
-          <Section style={{ margin: '28px 0 0', textAlign: 'center' }}>
-            <Button href={`${baseUrl}/`} style={s.button}>
+          <Section style={{ margin: '28px 0 0' }}>
+            <Button href={`${baseUrl}/map`} style={s.button}>
               Open the map
             </Button>
           </Section>

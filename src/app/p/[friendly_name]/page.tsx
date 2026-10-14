@@ -1,22 +1,16 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
+import PhotoView from '@/app/components/PhotoView';
 import { getBaseUrl } from '@/lib/baseUrl';
 import { getPhotoBySlug } from '@/lib/photos';
+import { getPlaces } from '@/lib/places';
 import { CARD } from '@/lib/shareTokens';
 import { shareCardPath, shareVersion } from '@/lib/shareVersion';
-import styles from './photo.module.css';
 
 export const dynamic = 'force-dynamic';
 
 type Props = { params: Promise<{ friendly_name: string }> };
-
-function formatDate(iso: string | null): string | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { friendly_name } = await params;
@@ -25,15 +19,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = photo.caption || photo.original_name;
   const base = await getBaseUrl();
-  const card = shareCardPath(friendly_name, shareVersion(photo));
+  // Link previews can't know the viewer's theme; the dark card reads best in most apps.
+  const card = shareCardPath(friendly_name, shareVersion(photo), 'dark');
 
   return {
     metadataBase: new URL(base),
     title: `${title} — Photos by Vedant Modi`,
-    description: 'Photos! Mapped!',
+    description: 'Photographs, mapped.',
     openGraph: {
       title,
-      description: 'Photos! Mapped!',
+      description: 'Photographs, mapped.',
       type: 'article',
       images: [
         {
@@ -54,26 +49,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PhotoPage({ params }: Props) {
   const { friendly_name } = await params;
-  const photo = await getPhotoBySlug(friendly_name);
+  const [photo, places] = await Promise.all([getPhotoBySlug(friendly_name), getPlaces()]);
   if (!photo) notFound();
 
-  const date = formatDate(photo.date);
-
-  return (
-    <main className={styles.page}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        className={styles.photo}
-        src={photo.large_url}
-        alt={photo.caption || photo.original_name}
-      />
-      <div className={styles.caption}>
-        <span>{photo.caption || photo.original_name}</span>
-        {date && <span className={styles.date}>{date}</span>}
-      </div>
-      <a className={styles.mapLink} href={`/#${encodeURIComponent(photo.friendly_name)}`}>
-        Open on the map
-      </a>
-    </main>
-  );
+  return <PhotoView photo={photo} places={places} mode="page" />;
 }

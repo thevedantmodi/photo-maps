@@ -1,14 +1,20 @@
 export const dynamic = 'force-dynamic';
 
-import MapWrapper from './components/MapWrapper';
+import Landing from './components/Landing';
 import { getPublishedPhotos } from '@/lib/photos';
-import { getPlaces } from '@/lib/places';
 
 export default async function Home() {
-  const [photos, places] = await Promise.all([getPublishedPhotos(), getPlaces()]);
-  return (
-    <main style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'fixed' }}>
-      <MapWrapper photos={photos} places={places} />
-    </main>
-  );
+  const photos = await getPublishedPhotos();
+
+  // The newest upload stands in front of the title; the years span every dated photo.
+  const newest = [...photos].sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''))[0];
+  const years = photos
+    .map((p) => (p.date ? new Date(p.date).getFullYear() : NaN))
+    .filter((y) => Number.isFinite(y));
+  const span =
+    years.length > 0
+      ? { from: Math.min(...years), to: Math.max(...years) }
+      : null;
+
+  return <Landing photoUrl={newest?.large_url ?? null} years={span} />;
 }

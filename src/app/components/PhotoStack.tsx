@@ -3,13 +3,13 @@
 import { motion } from "framer-motion";
 import { Photo } from "../types";
 
-// Outer size of `.photo-marker` in globals.css (48px + 3px border each side);
-// GAP keeps neighbours from touching.
+// Outer size of `.photo-stack-item` in globals.css; GAP keeps neighbours from touching.
 const MARKER_SIZE = 54;
 const GAP = 8;
 const SPACING = MARKER_SIZE + GAP;
-const MIN_RING_RADIUS = 56;
+const MIN_RING_RADIUS = 64;
 const RING_MAX = 8;
+const EASE = [0.2, 0, 0, 1] as const;
 
 /**
  * Screen offsets (px) for fanning `n` photos around one point: a ring up to
@@ -44,12 +44,12 @@ export function fanExtent(n: number): number {
 
 interface PhotoStackProps {
   photos: Photo[];
-  onSelect: (photo: Photo) => void;
+  onSelect: (photo: Photo, el: HTMLElement) => void;
 }
 
 /**
- * Photos that share a spot, fanned out around it with a leader line back to
- * the true location. Rendered inside a Marker anchored at that location.
+ * Photos that share a spot, fanned out around it. Hairlines draw out from the true
+ * location first, then the prints slide out along them.
  */
 export default function PhotoStack({ photos, onSelect }: PhotoStackProps) {
   const offsets = fanOffsets(photos.length);
@@ -62,6 +62,7 @@ export default function PhotoStack({ photos, onSelect }: PhotoStackProps) {
         width={extent * 2}
         height={extent * 2}
         viewBox={`${-extent} ${-extent} ${extent * 2} ${extent * 2}`}
+        aria-hidden="true"
       >
         {offsets.map((o, i) => (
           <motion.line
@@ -70,7 +71,7 @@ export default function PhotoStack({ photos, onSelect }: PhotoStackProps) {
             y1={0}
             initial={{ x2: 0, y2: 0 }}
             animate={{ x2: o.x, y2: o.y }}
-            transition={{ duration: 0.2, delay: i * 0.015 }}
+            transition={{ duration: 0.2, ease: EASE, delay: Math.min(i * 0.02, 0.3) }}
           />
         ))}
       </svg>
@@ -79,17 +80,19 @@ export default function PhotoStack({ photos, onSelect }: PhotoStackProps) {
         <motion.button
           key={photo.id}
           type="button"
-          className="photo-marker photo-stack-item"
+          className="photo-stack-item"
           aria-label={photo.caption || photo.original_name}
-          style={{ backgroundImage: `url('${photo.thumb_url}')` }}
-          initial={{ x: 0, y: 0, scale: 0.4, opacity: 0 }}
+          initial={{ x: 0, y: 0, scale: 0.5, opacity: 0 }}
           animate={{ x: offsets[i].x, y: offsets[i].y, scale: 1, opacity: 1 }}
-          transition={{ duration: 0.2, delay: i * 0.015 }}
+          transition={{ duration: 0.26, ease: EASE, delay: 0.06 + Math.min(i * 0.02, 0.3) }}
           onClick={(e) => {
             e.stopPropagation();
-            onSelect(photo);
+            onSelect(photo, e.currentTarget);
           }}
-        />
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- R2 thumbnail, already sized */}
+          <img src={photo.thumb_url} alt="" draggable={false} />
+        </motion.button>
       ))}
     </div>
   );

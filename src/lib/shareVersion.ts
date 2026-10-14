@@ -15,11 +15,30 @@ type Versioned = {
   original_name: string;
   date: string | null;
   large_name: string;
+  lat: number | null;
+  lon: number | null;
 };
+
+/**
+ * Bumped whenever the card's design changes, so every card re-renders in the new look
+ * instead of serving the old one from R2 or the CDN.
+ */
+const CARD_DESIGN = 'museum-1';
+
+export type CardTheme = 'dark' | 'light';
 
 export function shareVersion(photo: Versioned): string {
   // The card falls back to original_name when there is no caption, so it belongs in the key.
-  const input = [photo.caption ?? '', photo.original_name, photo.date ?? '', photo.large_name].join('\u0000');
+  // The location names the place printed on the card.
+  const input = [
+    CARD_DESIGN,
+    photo.caption ?? '',
+    photo.original_name,
+    photo.date ?? '',
+    photo.large_name,
+    photo.lat ?? '',
+    photo.lon ?? '',
+  ].join('\u0000');
 
   let hash = 0x811c9dc5;
   for (let i = 0; i < input.length; i++) {
@@ -29,6 +48,6 @@ export function shareVersion(photo: Versioned): string {
   return (hash >>> 0).toString(36);
 }
 
-export function shareCardPath(slug: string, version: string): string {
-  return `/api/share/${encodeURIComponent(slug)}?v=${version}`;
+export function shareCardPath(slug: string, version: string, theme: CardTheme = 'dark'): string {
+  return `/api/share/${encodeURIComponent(slug)}?v=${version}&theme=${theme}`;
 }

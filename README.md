@@ -1,19 +1,28 @@
 # Photo Maps
 
-An interactive map of geotagged travel photos. Photos are plotted on a Mapbox map, clustered by zoom, and open in a full-size lightbox. Each photo has its own shareable page with a generated story-style share card.
+An interactive map of geotagged travel photos. Photos are hung on a Mapbox map like a museum of photographs, clustered by zoom; each opens as its own page with a generated story-style share card.
 
 ## Features
 
-- **Map** — Mapbox GL map with Supercluster clustering; photos taken at the same spot fan out into a stack instead of overlapping.
-- **Browse** — date filter, a location sidebar that groups photos into places, and a search box that flies the map to a place.
-- **Place names** — sidebar groups are named by Mapbox reverse geocoding, with hand-named custom places (reefs, open ocean, remote parks) taking precedence.
-- **Sharing** — every photo lives at `/p/<friendly_name>` with OG tags. `/api/share/<slug>` serves a 1080×1920 share card (rendered with `next/og`, precomputed into R2 at upload/edit time, falling back to a live render).
-- **Light/dark theme** toggle.
-- **Follow** — `/feed.xml` RSS feed of recent photos, and an email signup on the map (double opt-in through Resend) with a weekly digest that only goes out when there are new photos.
+- **Landing** — `/`: the title set four times over, stepping right and fading like an echo, then Enter. Old `/#<slug>` photo links are forwarded to `/p/<slug>`.
+- **Map** — `/map`: Mapbox GL with monochrome light/dark styles and Supercluster clustering. Photos are black-and-white prints until hovered; on first load they're hung one by one in date order. Photos taken at the same spot fan out into a stack instead of overlapping.
+- **Browse** — a year filter whose brackets slide to the chosen year, a search box that flies the map to a place (its name rises in large type), and 3D terrain.
+- **Directory** — `/directory`: every place, numbered, with years, number of photos and the most recent; a row opens the map there (`/map?lon=&lat=&z=`).
+- **Place names** — named by Mapbox reverse geocoding, with hand-named custom places (reefs, open ocean, remote parks) taking precedence.
+- **Photo page** — `/p/<friendly_name>`, one design everywhere. Opened from the map it's drawn over it (an intercepted route, so the map isn't reloaded): the photo grows out of the clicked thumbnail and shrinks back on close; on a phone, drag it down to close.
+- **Sharing** — `/api/share/<slug>?theme=dark|light` serves a 1080×1920 story card in the theme on screen (rendered with `next/og`, both themes precomputed into R2 at upload/edit time, falling back to a live render). Link previews use the dark card.
+- **Light | Dark** — follows the system until chosen; switching dims the page like gallery lights while the map restyles.
+- **Follow** — `/feed.xml` RSS feed of recent photos, and an email signup under Subscribe in the menu (double opt-in through Resend) with a weekly digest that only goes out when there are new photos.
 - **Admin** at `/admin` (HTTP Basic Auth) with three tabs:
   - **Upload** — upload photos (including HEIC) with caption, location, and date.
   - **Manage** — edit, rotate, and delete photos; clear the Cloudflare cache in front of R2.
   - **Places** — add, edit, and remove custom place labels without a redeploy.
+
+## Design
+
+- **Type** — Neue Haas Grotesk where licensed, Helvetica Neue on Apple devices, Geist elsewhere (see `--font-sans` in `globals.css`). The share card renders with the bundled Geist files.
+- **Tokens** — colours, rules and motion live as CSS custom properties at the top of `src/app/globals.css`; the share card mirrors them in `src/lib/shareTokens.ts`, and the emails in `src/emails/theme.ts`.
+- **Motion** — one curve (`cubic-bezier(0.2, 0, 0, 1)`) and short durations; everything collapses to instant under `prefers-reduced-motion`.
 
 ## Stack
 
@@ -28,8 +37,10 @@ An interactive map of geotagged travel photos. Photos are plotted on a Mapbox ma
 ```
 src/
   app/
-    page.tsx                 public map (server component, loads published photos)
-    p/[friendly_name]/       per-photo page
+    page.tsx                 landing
+    map/                     the map, plus @modal/(..)p: the photo page drawn over it
+    directory/               every place, as a table
+    p/[friendly_name]/       per-photo page (standalone)
     admin/                   admin UI (Upload / Manage / Places)
     api/
       upload/                presigned R2 upload URL
@@ -38,7 +49,7 @@ src/
       admin/places/          CRUD for custom places
       admin/cache/           purge the Cloudflare cache for the R2 domain
       share/[slug]/          share card image
-    components/              map, sidebar, search, lightbox pieces
+    components/              header, landing, map, directory and photo page pieces
   db/                        Drizzle schema + client
   lib/                       R2, GPS/EXIF, geocoding, share card helpers
   proxy.ts                   Basic Auth for /admin and admin APIs

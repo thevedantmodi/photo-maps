@@ -5,7 +5,12 @@ import { photos } from '@/db/schema';
 import { deleteObject, getPublicUrl } from '@/lib/r2';
 import { isValidLat, isValidLon } from '@/lib/gps';
 import { getBaseUrl } from '@/lib/baseUrl';
-import { generateAndStoreShareCard, shareCardKey } from '@/lib/shareCardStore';
+import {
+  CARD_THEMES,
+  generateAndStoreShareCard,
+  legacyShareCardKey,
+  shareCardKey,
+} from '@/lib/shareCardStore';
 
 export const maxDuration = 30;
 
@@ -48,12 +53,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   await db.update(photos).set(update).where(eq(photos.id, id));
 
-  // Only caption/date feed shareVersion() — lat/lon edits don't change what the card shows,
-  // so skip the wasted render/upload for those.
-  if ('caption' in update || 'date' in update) {
+  // Caption, date and location all show on the card (the location as its place name), so
+  // any of them changing means new cards.
+  if ('caption' in update || 'date' in update || 'lat' in update || 'lon' in update) {
     const base = await getBaseUrl(req.headers);
     const caption = 'caption' in update ? (update.caption as string | null) : row.caption;
     const date = 'date' in update ? (update.date as Date | null) : row.date;
+    const lat = 'lat' in update ? (update.lat as number | null) : row.lat;
+    const lon = 'lon' in update ? (update.lon as number | null) : row.lon;
     after(() =>
       generateAndStoreShareCard(
         {
@@ -61,6 +68,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           caption,
           original_name: row.original_name,
           date: date?.toISOString() ?? null,
+          lat,
+          lon,
           large_name: row.large_name,
           large_url: getPublicUrl(row.large_name),
         },
@@ -81,7 +90,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   await Promise.all([
     deleteObject(row.thumb_name),
     deleteObject(row.large_name),
-    deleteObject(shareCardKey(row.friendly_name)),
+    ...CARD_THEMES.map((theme) => deleteObject(shareCardKey(row.friendly_name, theme))),
+    deleteObject(legacyShareCardKey(row.friendly_name)),
   ]);
 
   await db.delete(photos).where(eq(photos.id, id));

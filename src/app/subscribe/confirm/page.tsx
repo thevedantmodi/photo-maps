@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
+import SiteHeader from '@/app/components/SiteHeader';
 import { addSubscriber, verifyConfirmToken } from '@/lib/subscribe';
 import styles from './confirm.module.css';
 
@@ -56,7 +57,7 @@ export default async function ConfirmPage({ searchParams }: Props) {
     content = (
       <Message
         title="This link has expired"
-        body="Confirmation links work for 48 hours. Sign up again from the map to get a new one."
+        body="Confirmation links work for 48 hours. Use Subscribe in the menu above to get a new one."
       />
     );
   } else {
@@ -75,10 +76,11 @@ export default async function ConfirmPage({ searchParams }: Props) {
 
   return (
     <main className={styles.page}>
+      <SiteHeader current="landing" />
       <div className={styles.card}>
         {content}
-        <Link className={styles.link} href="/">
-          Back to the map
+        <Link className={`${styles.link} ul`} href="/map">
+          Back to the map →
         </Link>
       </div>
     </main>

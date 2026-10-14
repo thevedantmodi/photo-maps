@@ -3,7 +3,7 @@ import { getPhotoBySlug } from '@/lib/photos';
 import { getPublicUrl } from '@/lib/r2';
 import { renderShareCardPng } from '@/lib/shareCard';
 import { shareCardKey } from '@/lib/shareCardStore';
-import { shareVersion } from '@/lib/shareVersion';
+import { shareVersion, type CardTheme } from '@/lib/shareVersion';
 
 // sharp and font reads both need Node (used by the live-render fallback).
 export const runtime = 'nodejs';
@@ -16,6 +16,9 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
+  // ?theme=light|dark — the Share button asks for the one matching the screen. Anything
+  // else (old links, link-preview crawlers) gets the dark card.
+  const theme: CardTheme = new URL(req.url).searchParams.get('theme') === 'light' ? 'light' : 'dark';
   const base = await getBaseUrl(req.headers);
   const photo = await getPhotoBySlug(slug);
   if (!photo) return new Response('Not found', { status: 404 });
@@ -26,7 +29,7 @@ export async function GET(
   // render again. Proxied (not redirected) so link-preview crawlers that don't follow
   // redirects on og:image still get bytes directly at this URL.
   if (photo.share_card_version === version) {
-    const stored = await fetch(getPublicUrl(shareCardKey(slug)));
+    const stored = await fetch(getPublicUrl(shareCardKey(slug, theme)));
     if (stored.ok) {
       return new Response(stored.body, {
         headers: { 'Content-Type': 'image/png', 'Cache-Control': CACHE_CONTROL },
@@ -36,7 +39,7 @@ export async function GET(
   }
 
   try {
-    const png = await renderShareCardPng(photo, base);
+    const png = await renderShareCardPng(photo, base, theme);
     return new Response(new Uint8Array(png), {
       headers: { 'Content-Type': 'image/png', 'Cache-Control': CACHE_CONTROL },
     });

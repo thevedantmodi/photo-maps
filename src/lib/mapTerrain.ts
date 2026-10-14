@@ -21,19 +21,19 @@ const FOG = {
   "space-color": "#000005",
 };
 
-// Tuned so the light outdoors style, which already carries vector hillshade,
-// gains depth without turning muddy, and the dark style gets visible relief.
+// Neutral greys, so the relief sits inside the monochrome light and dark styles
+// instead of tinting them blue.
 const HILLSHADE_PAINT = {
   light: {
-    "hillshade-exaggeration": 0.25,
-    "hillshade-shadow-color": "#3d4a5c",
+    "hillshade-exaggeration": 0.3,
+    "hillshade-shadow-color": "#5f5f5c",
     "hillshade-highlight-color": "#ffffff",
-    "hillshade-accent-color": "#3d4a5c",
+    "hillshade-accent-color": "#5f5f5c",
   },
   dark: {
     "hillshade-exaggeration": 0.45,
     "hillshade-shadow-color": "#000000",
-    "hillshade-highlight-color": "#5a6475",
+    "hillshade-highlight-color": "#4d4d4d",
     "hillshade-accent-color": "#000000",
   },
 } as const;
