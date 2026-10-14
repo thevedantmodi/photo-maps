@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
-import { addSubscriber, verifyConfirmToken } from '@/lib/subscribe';
+import { confirmSubscription, isConfirmTokenValid } from '@/lib/backend';
 import styles from './confirm.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -16,15 +16,8 @@ type Props = { searchParams: Promise<{ token?: string; status?: string }> };
 
 async function confirm(formData: FormData) {
   'use server';
-  const email = verifyConfirmToken(String(formData.get('token') ?? ''));
-  if (!email) redirect('/subscribe/confirm?status=invalid');
-  try {
-    await addSubscriber(email);
-  } catch (e) {
-    console.error('[subscribe] confirm failed', e);
-    redirect('/subscribe/confirm?status=error');
-  }
-  redirect('/subscribe/confirm?status=confirmed');
+  const status = await confirmSubscription(String(formData.get('token') ?? ''));
+  redirect(`/subscribe/confirm?status=${status}`);
 }
 
 function Message({ title, body }: { title: string; body: string }) {
@@ -40,7 +33,7 @@ function Message({ title, body }: { title: string; body: string }) {
 // fetch every link in an email, and a GET that subscribed would opt people in unasked.
 export default async function ConfirmPage({ searchParams }: Props) {
   const { token, status } = await searchParams;
-  const valid = token ? verifyConfirmToken(token) !== null : false;
+  const valid = token ? await isConfirmTokenValid(token) : false;
 
   let content: React.ReactNode;
   if (status === 'confirmed') {

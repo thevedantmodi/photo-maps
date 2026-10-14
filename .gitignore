@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# rust backend
+/backend/target
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

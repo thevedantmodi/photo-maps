@@ -53,9 +53,18 @@ export function coercePair(lat: unknown, lon: unknown): Coordinates | null {
   return { latitude, longitude };
 }
 
-// Parse GPS rational DMS string like "38/1 15/1 2062/100" to decimal degrees.
-// Ref is "N"/"S" for lat, "E"/"W" for lon; absent Ref = positive.
+// Parse an XMP GPS coordinate to decimal degrees. Two shapes occur: the XMP spec's
+// "38,15.34366667N" / "38,15,20.62N" with the direction attached, and rational DMS like
+// "38/1 15/1 2062/100" with the direction in a separate Ref ("N"/"S", "E"/"W"; absent =
+// positive). The backend reads both the same way (backend/src/exif.rs).
 export function dmsRationalToDecimal(dms: string, ref?: string): number | null {
+  const xmp = dms.trim().match(/^([\d.]+(?:,[\d.]+){0,2})([NSEW])$/i);
+  if (xmp) {
+    const [d, m = 0, s = 0] = xmp[1].split(',').map(Number);
+    const decimal = d + m / 60 + s / 3600;
+    if (!Number.isFinite(decimal)) return null;
+    return /[SW]/i.test(xmp[2]) ? -decimal : decimal;
+  }
   const parts = dms.trim().split(/\s+/);
   if (parts.length !== 3) return null;
   const vals = parts.map((p) => {
@@ -93,8 +102,10 @@ function extractGpsDate(exifData: Record<string, unknown>): Date | null {
   const stamp = exifData.GPSDateStamp;
   if (typeof stamp !== 'string') return null;
   const datePart = stamp.replace(/:/g, '-');
-  const time = exifData.GPSTimeStamp;
-  if (Array.isArray(time) && time.length === 3) {
+  // exifr returns the time as "HH:MM:SS(.ss)"; older versions returned [h, m, s].
+  const raw = exifData.GPSTimeStamp;
+  const time = typeof raw === 'string' ? raw.split(':').map(Number) : raw;
+  if (Array.isArray(time) && time.length === 3 && time.every((n) => Number.isFinite(n))) {
     const [h, m, s] = time as number[];
     return new Date(`${datePart}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(Math.floor(s)).padStart(2, '0')}Z`);
   }

@@ -1,0 +1,14 @@
+Photos by Vedant Modi
+
+
+CONFIRM YOUR SUBSCRIPTION
+
+Someone, hopefully you, asked to get an email when new photos go up on the map. It comes at most once a week, and only when there's something new.
+
+Confirm subscription https://ex.com/subscribe/confirm?token=abc.def&x="y"<z>'
+
+This link works for 48 hours.
+
+----------------------------------------
+
+If this wasn't you, ignore this email. Nothing happens until the link is clicked.

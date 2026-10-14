@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The Rust backend and its build output.
+    "backend/**",
   ]),
 ]);
 

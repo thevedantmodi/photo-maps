@@ -1,0 +1,195 @@
+[
+  {
+    "name": "confirm-basic",
+    "kind": "confirm",
+    "props": {
+      "confirmUrl": "https://photos.example/subscribe/confirm?token=eyJlIjoiYUBiLmMifQ.abc_-"
+    }
+  },
+  {
+    "name": "confirm-special",
+    "kind": "confirm",
+    "props": {
+      "confirmUrl": "https://ex.com/subscribe/confirm?token=abc.def&x=\"y\"<z>'"
+    }
+  },
+  {
+    "name": "digest-one",
+    "kind": "digest",
+    "props": {
+      "baseUrl": "https://photos.example",
+      "hero": {
+        "title": "Dawn in Yucca Valley",
+        "url": "https://photos.example/p/s-1",
+        "imageUrl": "https://img.example/1_thumb.jpg",
+        "date": "March 19, 2026"
+      },
+      "rest": [],
+      "more": 0
+    }
+  },
+  {
+    "name": "digest-one-nodate",
+    "kind": "digest",
+    "props": {
+      "baseUrl": "https://photos.example",
+      "hero": {
+        "title": "IMG_0001.HEIC",
+        "url": "https://photos.example/p/s-1",
+        "imageUrl": "https://img.example/1_thumb.jpg",
+        "date": null
+      },
+      "rest": [],
+      "more": 0
+    }
+  },
+  {
+    "name": "digest-two",
+    "kind": "digest",
+    "props": {
+      "baseUrl": "https://photos.example",
+      "hero": {
+        "title": "Sample <photo> & \"1\" — café",
+        "url": "https://photos.example/p/s-1",
+        "imageUrl": "https://img.example/1_thumb.jpg",
+        "date": "March 19, 2026"
+      },
+      "rest": [
+        {
+          "title": "It's \"2\"",
+          "url": "https://photos.example/p/s-2",
+          "imageUrl": "https://img.example/2_thumb.jpg",
+          "date": null
+        }
+      ],
+      "more": 0
+    }
+  },
+  {
+    "name": "digest-four",
+    "kind": "digest",
+    "props": {
+      "baseUrl": "https://photos.example",
+      "hero": {
+        "title": "One",
+        "url": "https://photos.example/p/s-1",
+        "imageUrl": "https://img.example/1_thumb.jpg",
+        "date": "March 19, 2026"
+      },
+      "rest": [
+        {
+          "title": "Two",
+          "url": "https://photos.example/p/s-2",
+          "imageUrl": "https://img.example/2_thumb.jpg",
+          "date": "March 19, 2026"
+        },
+        {
+          "title": "Three",
+          "url": "https://photos.example/p/s-3",
+          "imageUrl": "https://img.example/3_thumb.jpg",
+          "date": null
+        },
+        {
+          "title": "Four",
+          "url": "https://photos.example/p/s-4",
+          "imageUrl": "https://img.example/4_thumb.jpg",
+          "date": "March 19, 2026"
+        }
+      ],
+      "more": 0
+    }
+  },
+  {
+    "name": "digest-more",
+    "kind": "digest",
+    "props": {
+      "baseUrl": "https://photos.example",
+      "hero": {
+        "title": "One",
+        "url": "https://photos.example/p/s-1",
+        "imageUrl": "https://img.example/1_thumb.jpg",
+        "date": "March 19, 2026"
+      },
+      "rest": [
+        {
+          "title": "Two",
+          "url": "https://photos.example/p/s-2",
+          "imageUrl": "https://img.example/2_thumb.jpg",
+          "date": "March 19, 2026"
+        },
+        {
+          "title": "Three",
+          "url": "https://photos.example/p/s-3",
+          "imageUrl": "https://img.example/3_thumb.jpg",
+          "date": "March 19, 2026"
+        }
+      ],
+      "more": 7
+    }
+  },
+  {
+    "name": "digest-whitespace",
+    "kind": "digest",
+    "props": {
+      "baseUrl": "http://localhost:3000",
+      "hero": {
+        "title": "Line one\nline   two\ttab",
+        "url": "https://photos.example/p/s-1",
+        "imageUrl": "https://img.example/1_thumb.jpg",
+        "date": "March 19, 2026"
+      },
+      "rest": [
+        {
+          "title": "",
+          "url": "https://photos.example/p/s-2",
+          "imageUrl": "https://img.example/2_thumb.jpg",
+          "date": "March 19, 2026"
+        },
+        {
+          "title": "https://photos.example/p/s-3",
+          "url": "https://photos.example/p/s-3",
+          "imageUrl": "https://img.example/3_thumb.jpg",
+          "date": "March 19, 2026"
+        }
+      ],
+      "more": 1
+    }
+  },
+  {
+    "name": "digest-long",
+    "kind": "digest",
+    "props": {
+      "baseUrl": "https://photos.example",
+      "hero": {
+        "title": "A very long caption A very long caption A very long caption A very long caption A very long caption A very long caption A very long caption A very long caption A very long caption A very long caption A very long caption A very long caption",
+        "url": "https://photos.example/p/s-1",
+        "imageUrl": "https://img.example/1_thumb.jpg",
+        "date": "March 19, 2026"
+      },
+      "rest": [
+        {
+          "title": "🌅 Sunset 👩‍❤️‍👨",
+          "url": "https://photos.example/p/s-2",
+          "imageUrl": "https://img.example/2_thumb.jpg",
+          "date": "March 19, 2026"
+        }
+      ],
+      "more": 0
+    }
+  },
+  {
+    "name": "digest-emoji-preview",
+    "kind": "digest",
+    "props": {
+      "baseUrl": "https://photos.example",
+      "hero": {
+        "title": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx😀tail",
+        "url": "https://photos.example/p/s-1",
+        "imageUrl": "https://img.example/1_thumb.jpg",
+        "date": "March 19, 2026"
+      },
+      "rest": [],
+      "more": 0
+    }
+  }
+]

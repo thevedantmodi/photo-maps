@@ -1,0 +1,32 @@
+Photos by Vedant Modi
+
+
+4 NEW PHOTOS ON THE MAP
+
+https://photos.example/p/s-1
+
+Line one line two tab https://photos.example/p/s-1
+
+March 19, 2026
+
+https://photos.example/p/s-2
+
+https://photos.example/p/s-2
+
+March 19, 2026
+
+https://photos.example/p/s-3
+
+https://photos.example/p/s-3
+
+March 19, 2026
+
+…and 1 more on the map.
+
+Open the map http://localhost:3000/
+
+----------------------------------------
+
+You're getting this because you subscribed on the map. It only comes in weeks with new photos.
+
+Unsubscribe {{{RESEND_UNSUBSCRIBE_URL}}} · RSS feed http://localhost:3000/feed.xml

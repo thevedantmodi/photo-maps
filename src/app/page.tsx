@@ -1,8 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import MapWrapper from './components/MapWrapper';
-import { getPublishedPhotos } from '@/lib/photos';
-import { getPlaces } from '@/lib/places';
+import { getPlaces, getPublishedPhotos } from '@/lib/backend';
 
 export default async function Home() {
   const [photos, places] = await Promise.all([getPublishedPhotos(), getPlaces()]);

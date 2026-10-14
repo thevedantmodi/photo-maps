@@ -2,12 +2,14 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { getBaseUrl } from '@/lib/baseUrl';
-import { getPhotoBySlug } from '@/lib/photos';
-import { CARD } from '@/lib/shareTokens';
+import { getPhotoBySlug } from '@/lib/backend';
 import { shareCardPath, shareVersion } from '@/lib/shareVersion';
 import styles from './photo.module.css';
 
 export const dynamic = 'force-dynamic';
+
+// Size of the share card the backend renders (backend/src/share_card.rs).
+const CARD = { width: 1080, height: 1920 } as const;
 
 type Props = { params: Promise<{ friendly_name: string }> };
 
