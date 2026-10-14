@@ -38,9 +38,12 @@ const HILLSHADE_PAINT = {
   },
 } as const;
 
+// Which base the relief sits on: a themed vector style, or satellite imagery.
+export type ReliefBase = "light" | "dark" | "satellite";
+
 export function applyRelief(
   map: MapboxMap,
-  theme: "light" | "dark",
+  base: ReliefBase,
   terrain: boolean,
 ) {
   if (!map.getSource(DEM_SOURCE_ID)) {
@@ -52,7 +55,8 @@ export function applyRelief(
     });
   }
 
-  if (!map.getLayer(HILLSHADE_LAYER_ID)) {
+  // Imagery already carries real light and shadow; hillshade only muddies it.
+  if (base !== "satellite" && !map.getLayer(HILLSHADE_LAYER_ID)) {
     // Under the first label so place names stay crisp on top of the shading.
     const firstSymbol = map
       .getStyle()
@@ -62,7 +66,7 @@ export function applyRelief(
         id: HILLSHADE_LAYER_ID,
         type: "hillshade",
         source: DEM_SOURCE_ID,
-        paint: HILLSHADE_PAINT[theme],
+        paint: HILLSHADE_PAINT[base],
       },
       firstSymbol,
     );

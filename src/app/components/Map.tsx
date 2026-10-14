@@ -8,22 +8,25 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../hooks/useTheme";
 import { useMediaQuery } from "../hooks/useMediaQuery";
-import { MAP_STYLES } from "@/lib/mapStyles";
+import { MAP_STYLES, SATELLITE_STYLE } from "@/lib/mapStyles";
 import { photoAlt } from "@/lib/alt";
 import {
   applyRelief,
+  type ReliefBase,
   setTerrain,
   DEM_SOURCE_ID,
   PLACE_PITCH,
   PLACE_PITCH_MIN_ZOOM,
 } from "@/lib/mapTerrain";
 import { useTerrainPreference } from "../hooks/useTerrainPreference";
+import { useMapStylePreference } from "../hooks/useMapStylePreference";
 
 import DateFilter from "./DateFilter";
 import ShareButton from "./ShareButton";
 import { shareVersion } from "@/lib/shareVersion";
 import ThemeToggle from "./ThemeToggle";
 import TerrainToggle from "./TerrainToggle";
+import SatelliteToggle from "./SatelliteToggle";
 import SubscribeButton from "./SubscribeButton";
 import LocationSidebar from "./LocationSidebar";
 import PhotoStack, { fanExtent } from "./PhotoStack";
@@ -83,8 +86,11 @@ const MapComponent = ({ photos, places }: MapProps) => {
   const mapRef = useRef<MapRef>(null);
   const [theme, toggleTheme] = useTheme();
   const [terrainEnabled, toggleTerrain] = useTerrainPreference();
+  const [baseMap, toggleBaseMap] = useMapStylePreference();
+  const satellite = baseMap === "satellite";
+  const reliefBase: ReliefBase = satellite ? "satellite" : theme;
   // Read by the style.load listener, which outlives any one render.
-  const themeRef = useRef(theme);
+  const reliefRef = useRef(reliefBase);
   const terrainRef = useRef(terrainEnabled);
   const [searchExpanded, setSearchExpanded] = useState(false);
   // Only narrow screens use the icon that grows into the full bar; wider
@@ -136,17 +142,17 @@ const MapComponent = ({ photos, places }: MapProps) => {
   }, []);
 
   useEffect(() => {
-    themeRef.current = theme;
-  }, [theme]);
+    reliefRef.current = reliefBase;
+  }, [reliefBase]);
 
-  // A theme switch swaps the whole style, dropping the DEM source, hillshade,
+  // A theme or satellite switch swaps the whole style, dropping the DEM source, hillshade,
   // terrain and fog; style.load puts them back. Photos are DOM markers and the
   // camera is controlled state, so neither is touched by the swap.
   const onMapLoad = useCallback(() => {
     const map = mapRef.current?.getMap();
     if (!map) return;
     const restore = () =>
-      applyRelief(map, themeRef.current, terrainRef.current);
+      applyRelief(map, reliefRef.current, terrainRef.current);
     restore();
     map.on("style.load", restore);
     updateBounds();
@@ -257,7 +263,7 @@ const MapComponent = ({ photos, places }: MapProps) => {
   );
 
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-  const mapStyle = MAP_STYLES[theme];
+  const mapStyle = satellite ? SATELLITE_STYLE : MAP_STYLES[theme];
 
   return (
     <>
@@ -284,7 +290,7 @@ const MapComponent = ({ photos, places }: MapProps) => {
         style={{ height: "100vh", width: "100%" }}
         mapStyle={mapStyle}
         // Full reload rather than a diff, so style.load fires on every theme
-        // switch and the relief layers are re-added.
+        // or satellite switch and the relief layers are re-added.
         styleDiffing={false}
         mapboxAccessToken={mapboxToken}
         projection="globe"
@@ -449,10 +455,16 @@ const MapComponent = ({ photos, places }: MapProps) => {
 
       <ThemeToggle theme={theme} onToggle={toggleTheme} hidden={searchOpen} />
 
-      {/* Before subscribe so its popover draws over this button. */}
+      {/* Before subscribe so its popover draws over these buttons. */}
       <TerrainToggle
         enabled={terrainEnabled}
         onToggle={toggleTerrain}
+        hidden={searchOpen}
+      />
+
+      <SatelliteToggle
+        enabled={satellite}
+        onToggle={toggleBaseMap}
         hidden={searchOpen}
       />
 

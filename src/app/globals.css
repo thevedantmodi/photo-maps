@@ -647,7 +647,8 @@ html[data-theme="light"] .filter-chip:hover {
 
 .theme-toggle,
 .subscribe-btn,
-.terrain-toggle {
+.terrain-toggle,
+.satellite-toggle {
   position: fixed;
   top: max(20px, env(safe-area-inset-top));
   right: 20px;
@@ -670,7 +671,8 @@ html[data-theme="light"] .filter-chip:hover {
 
 .theme-toggle:hover,
 .subscribe-btn:hover,
-.terrain-toggle:hover {
+.terrain-toggle:hover,
+.satellite-toggle:hover {
   transform: scale(1.08);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.5);
   background: rgba(255, 255, 255, 0.35);
@@ -679,7 +681,8 @@ html[data-theme="light"] .filter-chip:hover {
 @media (prefers-color-scheme: dark) {
   .theme-toggle,
   .subscribe-btn,
-  .terrain-toggle {
+  .terrain-toggle,
+  .satellite-toggle {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(255, 255, 255, 0.15);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
@@ -687,14 +690,16 @@ html[data-theme="light"] .filter-chip:hover {
 
   .theme-toggle:hover,
   .subscribe-btn:hover,
-  .terrain-toggle:hover {
+  .terrain-toggle:hover,
+  .satellite-toggle:hover {
     background: rgba(255, 255, 255, 0.18);
   }
 }
 
 html[data-theme="dark"] .theme-toggle,
 html[data-theme="dark"] .subscribe-btn,
-html[data-theme="dark"] .terrain-toggle {
+html[data-theme="dark"] .terrain-toggle,
+html[data-theme="dark"] .satellite-toggle {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.15);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
@@ -702,13 +707,15 @@ html[data-theme="dark"] .terrain-toggle {
 
 html[data-theme="dark"] .theme-toggle:hover,
 html[data-theme="dark"] .subscribe-btn:hover,
-html[data-theme="dark"] .terrain-toggle:hover {
+html[data-theme="dark"] .terrain-toggle:hover,
+html[data-theme="dark"] .satellite-toggle:hover {
   background: rgba(255, 255, 255, 0.18);
 }
 
 html[data-theme="light"] .theme-toggle,
 html[data-theme="light"] .subscribe-btn,
-html[data-theme="light"] .terrain-toggle {
+html[data-theme="light"] .terrain-toggle,
+html[data-theme="light"] .satellite-toggle {
   background: rgba(255, 255, 255, 0.25);
   border-color: rgba(255, 255, 255, 0.3);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4);
@@ -732,9 +739,23 @@ html[data-theme="dark"] .terrain-toggle.terrain-toggle-on {
   color: #5aa9ff;
 }
 
-.terrain-toggle:focus-visible {
+.terrain-toggle:focus-visible,
+.satellite-toggle:focus-visible {
   outline: 2px solid #007bff;
   outline-offset: 2px;
+}
+
+/* Satellite: a fourth glass disc under terrain; same accent when imagery is on. */
+.satellite-toggle {
+  top: calc(max(20px, env(safe-area-inset-top)) + 168px);
+}
+
+.satellite-toggle.satellite-toggle-on {
+  color: #007bff;
+}
+
+html[data-theme="dark"] .satellite-toggle.satellite-toggle-on {
+  color: #5aa9ff;
 }
 
 .subscribe-popover {
@@ -1150,6 +1171,47 @@ html[data-theme="dark"] .search-box-suggestion:hover {
   opacity: 0;
   pointer-events: none;
   transform: scale(0.8);
+}
+
+/* Satellite imagery swings from black ocean to white snow, and the thin
+   glass-toggle-bg lets both through: dark ink drops to ~2.8:1 over forest,
+   light ink to ~1.4:1 over desert. Over imagery every glass control takes the
+   dark glass-bg plate with light ink instead, whatever the theme, so the icons
+   hold 3:1 and the search text 4.5:1 even over a white backdrop. */
+html[data-base-map="satellite"] :is(
+  .theme-toggle,
+  .subscribe-btn,
+  .terrain-toggle,
+  .satellite-toggle,
+  .sidebar-toggle-btn,
+  .search-shape
+) {
+  --foreground: #ededed;
+  color: var(--foreground);
+  background: rgba(0, 0, 0, 0.6);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+html[data-base-map="satellite"] :is(
+  .theme-toggle,
+  .subscribe-btn,
+  .terrain-toggle,
+  .satellite-toggle,
+  .sidebar-toggle-btn
+):hover {
+  background: rgba(0, 0, 0, 0.7);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+html[data-base-map="satellite"] .search-shape-input::placeholder {
+  opacity: 0.85;
+}
+
+/* #5aa9ff falls to ~2.3:1 on the plate over bright ground; this lighter
+   blue keeps the "on" state above 3:1. */
+html[data-base-map="satellite"] :is(.terrain-toggle, .satellite-toggle):is(.terrain-toggle-on, .satellite-toggle-on) {
+  color: #8cc4ff;
 }
 
 /* Admin location picker: keep Mapbox's own controls in step with the theme. */
