@@ -1,7 +1,6 @@
 // Mapbox styles, shared by the public map and the admin location picker so the
-// two never drift apart. Mapbox's own monochrome styles: quiet greys that let the
-// photographs carry the colour.
+// two never drift apart.
 export const MAP_STYLES = {
-  light: 'mapbox://styles/mapbox/light-v11',
-  dark: 'mapbox://styles/mapbox/dark-v11',
+  light: 'mapbox://styles/mapbox/outdoors-v12',
+  dark: 'mapbox://styles/legoironman1234/cmoqnuxjt006f01s4e6lc071y',
 } as const;
