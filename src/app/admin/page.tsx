@@ -784,6 +784,10 @@ function ManageTab({ theme }: { theme: Theme }) {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [editing, setEditing] = useState<AdminPhoto | null>(null);
+  // Narrow the grid to the photos that still need a date, to fill them in through Edit.
+  const [onlyUndated, setOnlyUndated] = useState(false);
+  const anyUndated = photos.some((p) => p.date == null);
+  const listed = onlyUndated && anyUndated ? photos.filter((p) => p.date == null) : photos;
 
   // loading starts true, so there is nothing to set before the fetch resolves.
   useEffect(() => {
@@ -832,6 +836,19 @@ function ManageTab({ theme }: { theme: Theme }) {
         <Kbd theme={theme}>Esc</Kbd>
         <span>closes.</span>
       </Hint>
+      {anyUndated && (
+        <div role="group" aria-label="Show" className="theme-switch filter-switch" style={{ marginBottom: 12 }}>
+          <button type="button" className="text-btn" aria-pressed={!onlyUndated} onClick={() => setOnlyUndated(false)}>
+            All
+          </button>
+          <span className="sep" aria-hidden="true">
+            |
+          </span>
+          <button type="button" className="text-btn" aria-pressed={onlyUndated} onClick={() => setOnlyUndated(true)}>
+            Needs a date
+          </button>
+        </div>
+      )}
       <div
         style={{
           display: "grid",
@@ -839,7 +856,7 @@ function ManageTab({ theme }: { theme: Theme }) {
           gap: 12,
         }}
       >
-        {photos.map((photo) => (
+        {listed.map((photo) => (
           <div
             key={photo.id}
             style={{
@@ -883,10 +900,17 @@ function ManageTab({ theme }: { theme: Theme }) {
                   ? `${photo.lat.toFixed(5)}, ${photo.lon.toFixed(5)}`
                   : "No GPS"}
               </div>
-              <div style={{ fontSize: 10, color: c.muted, lineHeight: 1.4, marginTop: 2 }}>
-                {photo.date != null
-                  ? `${new Date(photo.date).toLocaleDateString()}`
-                  : "No Date"}
+              <div
+                style={{
+                  fontSize: 10,
+                  lineHeight: 1.4,
+                  marginTop: 2,
+                  // Missing, it stands out: an undated photo drops out of every year filter.
+                  color: photo.date != null ? c.muted : c.danger,
+                  fontWeight: photo.date != null ? undefined : 600,
+                }}
+              >
+                {photo.date != null ? new Date(photo.date).toLocaleDateString() : "No date"}
               </div>
               {!photo.alt_text && !photo.caption && (
                 <div style={{ fontSize: 10, color: c.muted, lineHeight: 1.4, marginTop: 2 }}>

@@ -9,7 +9,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { useTheme } from "../hooks/useTheme";
 import { MAP_STYLES } from "@/lib/mapStyles";
 import { photoAlt } from "@/lib/alt";
-import { parseYear, yearOf, yearQuery } from "@/lib/yearParam";
+import { parseYear, yearOf, yearQuery, yearValue } from "@/lib/yearParam";
 import {
   applyRelief,
   setTerrain,
@@ -438,7 +438,7 @@ const MapComponent = ({ photos, places }: MapProps) => {
     const url = new URL(window.location.href);
     if (!url.pathname.startsWith("/map")) return;
     if (selectedYear === null) url.searchParams.delete("year");
-    else url.searchParams.set("year", String(selectedYear));
+    else url.searchParams.set("year", yearValue(selectedYear));
     if (url.href !== window.location.href) window.history.replaceState(window.history.state, "", url);
   }, [selectedYear]);
 

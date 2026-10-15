@@ -2,23 +2,34 @@
 
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 
+import { UNDATED, yearOf } from '@/lib/yearParam';
+
 interface YearFilterProps {
   photos: { date?: string | null }[];
   selectedYear: number | null;
   onYearChange: (year: number | null) => void;
 }
 
-/** The years as plain words; a pair of brackets slides to the one chosen. */
+/**
+ * The years as plain words; a pair of brackets slides to the one chosen. Photos with no
+ * date taken get "Undated" at the end, so they can be found too.
+ */
 export default function YearFilter({ photos, selectedYear, onYearChange }: YearFilterProps) {
-  const years = useMemo(() => {
+  const { years, undated } = useMemo(() => {
     const unique = new Set<number>();
+    let undated = false;
     photos.forEach((p) => {
-      if (p.date) unique.add(new Date(p.date).getFullYear());
+      const y = yearOf(p);
+      if (y === UNDATED) undated = true;
+      else unique.add(y);
     });
-    return Array.from(unique).sort((a, b) => b - a);
+    return { years: Array.from(unique).sort((a, b) => b - a), undated };
   }, [photos]);
 
-  const options: (number | null)[] = useMemo(() => [null, ...years], [years]);
+  const options: (number | null)[] = useMemo(
+    () => [null, ...years, ...(undated ? [UNDATED] : [])],
+    [years, undated],
+  );
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
   const [box, setBox] = useState<{ x: number; w: number } | null>(null);
 
@@ -34,7 +45,7 @@ export default function YearFilter({ photos, selectedYear, onYearChange }: YearF
     return () => window.removeEventListener('resize', measure);
   }, [index, options]);
 
-  if (years.length === 0) return null;
+  if (options.length < 2) return null;
 
   return (
     <div className="years">
@@ -63,7 +74,7 @@ export default function YearFilter({ photos, selectedYear, onYearChange }: YearF
             aria-pressed={year === selectedYear}
             onClick={() => onYearChange(year)}
           >
-            {year ?? 'All'}
+            {year === null ? 'All' : year === UNDATED ? 'Undated' : year}
           </button>
         ))}
       </nav>

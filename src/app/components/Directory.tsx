@@ -9,7 +9,7 @@ import SiteHeader from "./SiteHeader";
 import YearFilter from "./YearFilter";
 import { getLocationGroups } from "@/lib/locationGroups";
 import { reverseGeocode } from "@/lib/mapboxGeocode";
-import { yearOf, yearQuery } from "@/lib/yearParam";
+import { UNDATED, yearOf, yearQuery, yearValue } from "@/lib/yearParam";
 import type { CustomPlace } from "@/lib/customPlaces";
 import type { Photo } from "../types";
 
@@ -83,7 +83,7 @@ export default function Directory({ photos, places, initialYear }: DirectoryProp
     setYear(next);
     const url = new URL(window.location.href);
     if (next === null) url.searchParams.delete("year");
-    else url.searchParams.set("year", String(next));
+    else url.searchParams.set("year", yearValue(next));
     window.history.replaceState(window.history.state, "", url);
   };
 
@@ -168,7 +168,11 @@ export default function Directory({ photos, places, initialYear }: DirectoryProp
 
         {rows.length === 0 ? (
           <p className="dir-empty">
-            {year === null ? "No located photos yet." : `No located photos from ${year}.`}
+            {year === null
+              ? "No located photos yet."
+              : year === UNDATED
+                ? "No located photos without a date."
+                : `No located photos from ${year}.`}
           </p>
         ) : (
           <ol

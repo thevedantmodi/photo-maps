@@ -289,7 +289,8 @@ button {
   color: var(--muted);
 }
 
-.terrain-switch [aria-pressed="true"] {
+.terrain-switch [aria-pressed="true"],
+.filter-switch [aria-pressed="true"] {
   font-weight: 700;
 }
 
