@@ -21,8 +21,10 @@ const CLOSE_MS = 320;
 const DETAILS_DELAY_MS = 220;
 // Never leave the details hidden, even if the photo fails to load.
 const DETAILS_FALLBACK_MS = 600;
-// Drag the photo down this far on a phone and letting go closes it.
+// Drag the photo down, or left, this far on a phone and letting go closes it.
 const SWIPE_CLOSE_PX = 120;
+// How far a finger moves before the drag commits to down or left.
+const SWIPE_LOCK_PX = 8;
 
 function formatDate(iso: string | null): string | null {
   if (!iso) return null;
@@ -98,7 +100,13 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
   const probeRef = useRef<HTMLImageElement>(null);
   const played = useRef(false);
   const closingRef = useRef(false);
-  const drag = useRef<{ startY: number; dy: number } | null>(null);
+  const drag = useRef<{
+    startX: number;
+    startY: number;
+    axis: "x" | "y" | null;
+    // Distance along the locked axis: down is positive, left is negative.
+    dist: number;
+  } | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const later = useCallback((fn: () => void, ms: number) => {
@@ -246,13 +254,14 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
     return () => window.removeEventListener("keydown", onKey);
   }, [close]);
 
-  // Phones: drag the photo down to close it. It follows the finger and shrinks a little;
-  // short of the threshold it springs back.
+  // Phones: drag the photo down, or left, to close it. It follows the finger and shrinks a
+  // little; short of the threshold it springs back. Swiping right does nothing, so the
+  // browser's own back gesture from the left edge is left alone.
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.pointerType === "mouse" || closingRef.current) return;
     // A spring-back or the opening growth still running would override the drag.
     frameRef.current?.getAnimations().forEach((a) => a.cancel());
-    drag.current = { startY: e.clientY, dy: 0 };
+    drag.current = { startX: e.clientX, startY: e.clientY, axis: null, dist: 0 };
     rootRef.current?.setAttribute("data-dragging", "true");
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -278,10 +287,21 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
     const d = drag.current;
     const el = frameRef.current;
     if (!d || !el) return;
-    d.dy = Math.max(0, e.clientY - d.startY);
-    const p = Math.min(d.dy / 300, 1);
+    const dx = e.clientX - d.startX;
+    const dy = e.clientY - d.startY;
+    if (!d.axis) {
+      if (Math.hypot(dx, dy) < SWIPE_LOCK_PX) return;
+      d.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+    }
+    d.dist = d.axis === "y" ? Math.max(0, dy) : Math.min(0, dx);
+    const p = Math.min(Math.abs(d.dist) / 300, 1);
     const s = 1 - p * 0.35;
-    el.style.transform = `translate(${(el.offsetWidth * (1 - s)) / 2}px, ${d.dy}px) scale(${s})`;
+    // transform-origin is the top left, so shrinking is re-centred by hand.
+    const shrinkX = (el.offsetWidth * (1 - s)) / 2;
+    el.style.transform =
+      d.axis === "y"
+        ? `translate(${shrinkX}px, ${d.dist}px) scale(${s})`
+        : `translate(${shrinkX + d.dist}px, ${(el.offsetHeight * (1 - s)) / 2}px) scale(${s})`;
     if (mode === "overlay" && bgRef.current) bgRef.current.style.opacity = String(1 - p * 0.85);
     // The title and details fade out ahead of the photo (globals.css reads --drag).
     rootRef.current?.style.setProperty("--drag", p.toFixed(3));
@@ -293,7 +313,7 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
     drag.current = null;
     rootRef.current?.removeAttribute("data-dragging");
     if (!d || !el) return;
-    if (d.dy > SWIPE_CLOSE_PX) {
+    if (Math.abs(d.dist) > SWIPE_CLOSE_PX) {
       close();
       return;
     }
