@@ -1346,6 +1346,77 @@ a:hover > .arrow {
   background: var(--map);
 }
 
+/* Swipe progress: a ring over the photo that fills as it is swiped away, with a cross
+   once letting go will close it. PhotoView sets --swipe from 0 to 1. */
+.pv-swipe {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  width: 48px;
+  height: 48px;
+  margin: -24px 0 0 -24px;
+  pointer-events: none;
+  overflow: visible;
+  opacity: clamp(0, calc(var(--swipe, 0) * 6), 1);
+  transform: scale(calc(0.85 + var(--swipe, 0) * 0.15));
+}
+
+.pv-swipe-disc {
+  fill: var(--bg);
+  opacity: 0.88;
+}
+
+.pv-swipe-track,
+.pv-swipe-fill,
+.pv-swipe-x {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.pv-swipe-track {
+  stroke: var(--rule);
+}
+
+.pv-swipe-fill {
+  stroke: var(--ink);
+  stroke-dasharray: 1;
+  stroke-dashoffset: calc(1 - var(--swipe, 0));
+  transform: rotate(-90deg);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.pv-swipe-x {
+  stroke: var(--ink);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.pv[data-swipe-ready] .pv-swipe-x {
+  opacity: 1;
+}
+
+.pv[data-swipe-ready] .pv-swipe {
+  animation: swipe-ready 220ms var(--ease);
+}
+
+.pv[data-closing="true"] .pv-swipe {
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+@keyframes swipe-ready {
+  50% { transform: scale(1.12); }
+}
+
+/* While a photo is open, a sideways trackpad swipe is the photo's to handle, not the
+   browser's back gesture. */
+html:has(.pv) {
+  overscroll-behavior-x: none;
+}
+
 .pv-frame img {
   position: absolute;
   inset: 0;

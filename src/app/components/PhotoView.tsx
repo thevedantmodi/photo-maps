@@ -21,7 +21,7 @@ const CLOSE_MS = 320;
 const DETAILS_DELAY_MS = 220;
 // Never leave the details hidden, even if the photo fails to load.
 const DETAILS_FALLBACK_MS = 600;
-// Drag the photo down, or left, this far on a phone and letting go closes it.
+// Swipe the photo down, or right, this far and letting go closes it.
 const SWIPE_CLOSE_PX = 120;
 // How far a finger moves before the drag commits to down or left.
 const SWIPE_LOCK_PX = 8;
@@ -104,7 +104,7 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
     startX: number;
     startY: number;
     axis: "x" | "y" | null;
-    // Distance along the locked axis: down is positive, left is negative.
+    // How far along the locked axis, down or right; never negative.
     dist: number;
   } | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -254,15 +254,65 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
     return () => window.removeEventListener("keydown", onKey);
   }, [close]);
 
-  // Phones: drag the photo down, or left, to close it. It follows the finger and shrinks a
-  // little; short of the threshold it springs back. Swiping right does nothing, so the
-  // browser's own back gesture from the left edge is left alone.
-  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType === "mouse" || closingRef.current) return;
+  // Swipe the photo down, or right, to close it: a finger on a phone, two fingers on a
+  // trackpad. The photo follows, shrinking a little as the page fades, and a ring fills
+  // towards the point where letting go closes it. Short of that it springs back.
+  const dragTo = useCallback(
+    (axis: "x" | "y", dist: number) => {
+      const el = frameRef.current;
+      const root = rootRef.current;
+      if (!el || !root) return;
+      const p = Math.min(dist / 300, 1);
+      const s = 1 - p * 0.35;
+      // transform-origin is the top left, so shrinking is re-centred by hand.
+      const shrinkX = (el.offsetWidth * (1 - s)) / 2;
+      el.style.transform =
+        axis === "y"
+          ? `translate(${shrinkX}px, ${dist}px) scale(${s})`
+          : `translate(${shrinkX + dist}px, ${(el.offsetHeight * (1 - s)) / 2}px) scale(${s})`;
+      if (mode === "overlay" && bgRef.current) bgRef.current.style.opacity = String(1 - p * 0.85);
+      // The words fade out ahead of the photo and the ring fills (globals.css reads both).
+      root.style.setProperty("--drag", p.toFixed(3));
+      root.style.setProperty("--swipe", Math.min(dist / SWIPE_CLOSE_PX, 1).toFixed(3));
+      root.toggleAttribute("data-swipe-ready", dist > SWIPE_CLOSE_PX);
+    },
+    [mode],
+  );
+
+  const startDrag = useCallback(() => {
     // A spring-back or the opening growth still running would override the drag.
     frameRef.current?.getAnimations().forEach((a) => a.cancel());
-    drag.current = { startX: e.clientX, startY: e.clientY, axis: null, dist: 0 };
     rootRef.current?.setAttribute("data-dragging", "true");
+  }, []);
+
+  const endDrag = useCallback(
+    (dist: number) => {
+      const el = frameRef.current;
+      const root = rootRef.current;
+      root?.removeAttribute("data-dragging");
+      if (!el || !root) return;
+      if (dist > SWIPE_CLOSE_PX) {
+        close();
+        return;
+      }
+      const from = el.style.transform || "none";
+      el.style.transform = "";
+      if (bgRef.current) bgRef.current.style.opacity = "";
+      root.style.removeProperty("--drag");
+      root.style.removeProperty("--swipe");
+      root.removeAttribute("data-swipe-ready");
+      if (from !== "none" && !reducedMotion()) {
+        el.animate([{ transform: from }, { transform: "none" }], { duration: 280, easing: SPRING });
+      }
+    },
+    [close],
+  );
+
+  // Touch: a drag locks to whichever way the finger first moves.
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === "mouse" || closingRef.current) return;
+    startDrag();
+    drag.current = { startX: e.clientX, startY: e.clientY, axis: null, dist: 0 };
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
@@ -285,46 +335,68 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
 
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const d = drag.current;
-    const el = frameRef.current;
-    if (!d || !el) return;
+    if (!d) return;
     const dx = e.clientX - d.startX;
     const dy = e.clientY - d.startY;
     if (!d.axis) {
       if (Math.hypot(dx, dy) < SWIPE_LOCK_PX) return;
       d.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
     }
-    d.dist = d.axis === "y" ? Math.max(0, dy) : Math.min(0, dx);
-    const p = Math.min(Math.abs(d.dist) / 300, 1);
-    const s = 1 - p * 0.35;
-    // transform-origin is the top left, so shrinking is re-centred by hand.
-    const shrinkX = (el.offsetWidth * (1 - s)) / 2;
-    el.style.transform =
-      d.axis === "y"
-        ? `translate(${shrinkX}px, ${d.dist}px) scale(${s})`
-        : `translate(${shrinkX + d.dist}px, ${(el.offsetHeight * (1 - s)) / 2}px) scale(${s})`;
-    if (mode === "overlay" && bgRef.current) bgRef.current.style.opacity = String(1 - p * 0.85);
-    // The title and details fade out ahead of the photo (globals.css reads --drag).
-    rootRef.current?.style.setProperty("--drag", p.toFixed(3));
+    d.dist = Math.max(0, d.axis === "y" ? dy : dx);
+    dragTo(d.axis, d.dist);
   };
 
   const onPointerUp = () => {
     const d = drag.current;
-    const el = frameRef.current;
     drag.current = null;
-    rootRef.current?.removeAttribute("data-dragging");
-    if (!d || !el) return;
-    if (Math.abs(d.dist) > SWIPE_CLOSE_PX) {
-      close();
-      return;
-    }
-    const from = el.style.transform || "none";
-    el.style.transform = "";
-    if (bgRef.current) bgRef.current.style.opacity = "";
-    rootRef.current?.style.removeProperty("--drag");
-    if (from !== "none" && !reducedMotion()) {
-      el.animate([{ transform: from }, { transform: "none" }], { duration: 280, easing: SPRING });
-    }
+    if (d) endDrag(d.dist);
+    else rootRef.current?.removeAttribute("data-dragging");
   };
+
+  // Trackpad: a two-finger swipe arrives as sideways wheel events. Fingers moving right
+  // scroll left (negative deltaX); taking those keeps the browser's own back-swipe from
+  // running instead. It closes the moment it crosses the line, since the momentum that
+  // follows would otherwise carry it for a beat longer; a pause short of that springs back.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    let dist = 0;
+    let active = false;
+    let idle: ReturnType<typeof setTimeout> | undefined;
+    const settle = () => {
+      if (!active) return;
+      active = false;
+      if (!closingRef.current) endDrag(dist);
+      dist = 0;
+    };
+    const onWheel = (e: WheelEvent) => {
+      if (closingRef.current) {
+        // Swallow the momentum still arriving after the photo closed.
+        if (active) e.preventDefault();
+        return;
+      }
+      if (e.ctrlKey) return; // pinch to zoom
+      if (!active && (Math.abs(e.deltaX) <= Math.abs(e.deltaY) || e.deltaX >= 0)) return;
+      e.preventDefault();
+      if (!active) {
+        active = true;
+        startDrag();
+      }
+      dist = Math.max(0, dist - e.deltaX * (e.deltaMode === 1 ? 16 : 1));
+      dragTo("x", dist);
+      if (dist > SWIPE_CLOSE_PX) {
+        endDrag(dist);
+        return;
+      }
+      clearTimeout(idle);
+      idle = setTimeout(settle, 140);
+    };
+    root.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      clearTimeout(idle);
+      root.removeEventListener("wheel", onWheel);
+    };
+  }, [dragTo, startDrag, endDrag]);
 
   const version = shareVersion(photo);
   const share = (className: string) => (
@@ -407,6 +479,13 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
               />
             </div>
           )}
+          {/* Fills as the photo is swiped away; complete means letting go closes it. */}
+          <svg className="pv-swipe" viewBox="0 0 48 48" aria-hidden="true">
+            <circle className="pv-swipe-disc" cx="24" cy="24" r="23" />
+            <circle className="pv-swipe-track" cx="24" cy="24" r="18" />
+            <circle className="pv-swipe-fill" cx="24" cy="24" r="18" pathLength={1} />
+            <path className="pv-swipe-x" d="M19.5 19.5l9 9M28.5 19.5l-9 9" />
+          </svg>
         </figure>
 
         <div className="pv-side">
