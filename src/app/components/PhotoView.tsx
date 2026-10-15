@@ -255,8 +255,8 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
   }, [close]);
 
   // Swipe the photo down, or right, to close it: a finger on a phone, two fingers on a
-  // trackpad. The photo follows, shrinking a little as the page fades, and a ring fills
-  // towards the point where letting go closes it. Short of that it springs back.
+  // trackpad. The photo follows, shrinking a little as the page fades; short of the line it
+  // springs back. On a trackpad a ring at the cursor fills towards the line.
   const dragTo = useCallback(
     (axis: "x" | "y", dist: number) => {
       const el = frameRef.current;
@@ -301,6 +301,7 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
       root.style.removeProperty("--drag");
       root.style.removeProperty("--swipe");
       root.removeAttribute("data-swipe-ready");
+      root.removeAttribute("data-swipe-cursor");
       if (from !== "none" && !reducedMotion()) {
         el.animate([{ transform: from }, { transform: "none" }], { duration: 280, easing: SPRING });
       }
@@ -381,6 +382,10 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
       if (!active) {
         active = true;
         startDrag();
+        // The ring appears where the cursor is.
+        root.style.setProperty("--swipe-x", `${e.clientX}px`);
+        root.style.setProperty("--swipe-y", `${e.clientY}px`);
+        root.setAttribute("data-swipe-cursor", "");
       }
       dist = Math.max(0, dist - e.deltaX * (e.deltaMode === 1 ? 16 : 1));
       dragTo("x", dist);
@@ -422,6 +427,13 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
       tabIndex={mode === "overlay" ? -1 : undefined}
     >
       <div className="pv-bg" ref={bgRef} />
+      {/* Trackpad swipes only: sits at the cursor and fills as the swipe nears closing. */}
+      <svg className="pv-swipe" viewBox="0 0 48 48" aria-hidden="true">
+        <circle className="pv-swipe-disc" cx="24" cy="24" r="23" />
+        <circle className="pv-swipe-track" cx="24" cy="24" r="18" />
+        <circle className="pv-swipe-fill" cx="24" cy="24" r="18" pathLength={1} />
+        <path className="pv-swipe-x" d="M19.5 19.5l9 9M28.5 19.5l-9 9" />
+      </svg>
       <SiteHeader current="photo" />
 
       <div className="pv-head">
@@ -479,13 +491,6 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
               />
             </div>
           )}
-          {/* Fills as the photo is swiped away; complete means letting go closes it. */}
-          <svg className="pv-swipe" viewBox="0 0 48 48" aria-hidden="true">
-            <circle className="pv-swipe-disc" cx="24" cy="24" r="23" />
-            <circle className="pv-swipe-track" cx="24" cy="24" r="18" />
-            <circle className="pv-swipe-fill" cx="24" cy="24" r="18" pathLength={1} />
-            <path className="pv-swipe-x" d="M19.5 19.5l9 9M28.5 19.5l-9 9" />
-          </svg>
         </figure>
 
         <div className="pv-side">

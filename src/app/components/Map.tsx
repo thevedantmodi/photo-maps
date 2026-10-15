@@ -286,6 +286,32 @@ const MapComponent = ({ photos, places }: MapProps) => {
     );
   }, []);
 
+  // Zoomed out, the relief is too small to see and the map doesn't tilt yet, so a note
+  // under the switch says so rather than leave it looking like it did nothing.
+  const [terrainNote, setTerrainNote] = useState<string | null>(null);
+  const terrainNoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (terrainNoteTimer.current) clearTimeout(terrainNoteTimer.current);
+    },
+    [],
+  );
+  const chooseTerrain = useCallback(
+    (on: boolean) => {
+      if (on === terrainEnabled) return;
+      toggleTerrain();
+      if (terrainNoteTimer.current) clearTimeout(terrainNoteTimer.current);
+      const zoom = mapRef.current?.getMap().getZoom() ?? 0;
+      if (on && zoom < PLACE_PITCH_MIN_ZOOM) {
+        setTerrainNote("Zoom in to see it");
+        terrainNoteTimer.current = setTimeout(() => setTerrainNote(null), 3000);
+      } else {
+        setTerrainNote(null);
+      }
+    },
+    [terrainEnabled, toggleTerrain],
+  );
+
   const openStackAt = useCallback(
     (clusterId: number, longitude: number, latitude: number, photos: Photo[]) => {
       setOpenStack({ clusterId, longitude, latitude, photos });
@@ -399,11 +425,12 @@ const MapComponent = ({ photos, places }: MapProps) => {
             <TerrainToggle
               className="desktop-only"
               enabled={terrainEnabled}
-              onToggle={toggleTerrain}
+              onChange={chooseTerrain}
+              note={terrainNote}
             />
           </>
         }
-        menuExtra={<TerrainToggle enabled={terrainEnabled} onToggle={toggleTerrain} />}
+        menuExtra={<TerrainToggle enabled={terrainEnabled} onChange={chooseTerrain} note={terrainNote} />}
       />
 
       <div className="mapframe">
