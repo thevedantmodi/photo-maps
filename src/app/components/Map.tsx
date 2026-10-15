@@ -177,9 +177,21 @@ const MapComponent = ({ photos, places }: MapProps) => {
     router.replace(`/p/${encodeURIComponent(slug)}`);
   }, [router]);
 
+  // Escape folds the wheel and hands focus back to the cluster it came from.
+  const openStackRef = useRef<OpenStack | null>(null);
+  useEffect(() => {
+    openStackRef.current = openStack;
+  }, [openStack]);
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpenStack(null);
+      if (e.key !== "Escape") return;
+      const open = openStackRef.current;
+      setOpenStack(null);
+      if (open && document.activeElement?.closest(".photo-stack")) {
+        requestAnimationFrame(() =>
+          document.querySelector<HTMLElement>(`[data-cluster="${open.clusterId}"]`)?.focus(),
+        );
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -204,6 +216,14 @@ const MapComponent = ({ photos, places }: MapProps) => {
     themeRef.current = theme;
   }, [theme]);
 
+  const saveCamera = useCallback((longitude: number, latitude: number, zoom: number) => {
+    try {
+      sessionStorage.setItem(CAMERA_KEY, JSON.stringify({ longitude, latitude, zoom }));
+    } catch {
+      // Storage unavailable; the map just won't remember.
+    }
+  }, []);
+
   // A theme switch swaps the whole style, dropping the DEM source, hillshade,
   // terrain and fog; style.load puts them back, then lets the lights come up.
   // Photos are DOM markers and the camera is controlled state, so neither is
@@ -217,10 +237,13 @@ const MapComponent = ({ photos, places }: MapProps) => {
     };
     restore();
     map.on("style.load", restore);
+    // Remember where the map opened, too: arriving from a link and leaving without moving
+    // should still come back to the same place.
+    saveCamera(map.getCenter().lng, map.getCenter().lat, map.getZoom());
     updateBounds();
     setMapLoaded(true);
     setTimeout(() => setHanging(false), HANG_MAX_MS + 400);
-  }, [updateBounds]);
+  }, [updateBounds, saveCamera]);
 
   useEffect(() => {
     terrainRef.current = terrainEnabled;
@@ -245,14 +268,13 @@ const MapComponent = ({ photos, places }: MapProps) => {
   );
 
   // Remembered per tab, so coming back from a photo or the Directory lands where you were.
-  const onMoveEnd = useCallback((evt: ViewStateChangeEvent) => {
-    const { longitude, latitude, zoom } = evt.viewState;
-    try {
-      sessionStorage.setItem(CAMERA_KEY, JSON.stringify({ longitude, latitude, zoom }));
-    } catch {
-      // Storage unavailable; the map just won't remember.
-    }
-  }, []);
+  const onMoveEnd = useCallback(
+    (evt: ViewStateChangeEvent) => {
+      const { longitude, latitude, zoom } = evt.viewState;
+      saveCamera(longitude, latitude, zoom);
+    },
+    [saveCamera],
+  );
 
   // Lands the place a little below center, clear of the header.
   const flyTo = useCallback(
@@ -339,10 +361,48 @@ const MapComponent = ({ photos, places }: MapProps) => {
     [router],
   );
 
+  // Picking a year whose photos are all out of sight (another continent, the far side of
+  // the globe) would leave an empty map, so the map moves to them. If any is already in
+  // view it stays put.
+  const revealYear = useCallback(
+    (year: number) => {
+      const map = mapRef.current?.getMap();
+      if (!map) return;
+      const located = photos.filter((p) => yearOf(p) === year && p.lat != null && p.lon != null);
+      if (located.length === 0) return;
+      const canvas = map.getCanvas();
+      const center = map.getCenter();
+      const toRad = Math.PI / 180;
+      const visible = located.some((p) => {
+        const { x, y } = map.project([p.lon!, p.lat!]);
+        if (x < 0 || y < 0 || x > canvas.clientWidth || y > canvas.clientHeight) return false;
+        // Great-circle distance from the centre: past ~80° the point is round the back.
+        const cos =
+          Math.sin(center.lat * toRad) * Math.sin(p.lat! * toRad) +
+          Math.cos(center.lat * toRad) * Math.cos(p.lat! * toRad) * Math.cos((p.lon! - center.lng) * toRad);
+        return cos > Math.cos(80 * toRad);
+      });
+      if (visible) return;
+      let lons = located.map((p) => p.lon!);
+      // Photos either side of the date line: measure across it, not round the world.
+      if (Math.max(...lons) - Math.min(...lons) > 180) lons = lons.map((l) => (l < 0 ? l + 360 : l));
+      const lats = located.map((p) => p.lat!);
+      map.fitBounds(
+        [
+          [Math.min(...lons), Math.min(...lats)],
+          [Math.max(...lons), Math.max(...lats)],
+        ],
+        { padding: 80, maxZoom: 9, offset: FLY_OFFSET, pitch: 0, duration: FLY_MS },
+      );
+    },
+    [photos],
+  );
+
   const changeYear = useCallback(
     (year: number | null) => {
       if (year === selectedYear || pendingYear !== undefined) return;
       setOpenStack(null);
+      if (year !== null) revealYear(year);
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
         setSelectedYear(year);
         return;
@@ -353,7 +413,7 @@ const MapComponent = ({ photos, places }: MapProps) => {
         setPendingYear(undefined);
       }, YEAR_FADE_MS);
     },
-    [selectedYear, pendingYear],
+    [selectedYear, pendingYear, revealYear],
   );
 
   // Derived, not state: deriving during render drops a re-render per filter change.
@@ -500,6 +560,7 @@ const MapComponent = ({ photos, places }: MapProps) => {
                     <button
                       type="button"
                       className="mk-thumb"
+                      data-cluster={clusterId}
                       style={{ width: CLUSTER_SIZE, height: CLUSTER_SIZE }}
                       aria-label={
                         pointCount <= WHEEL_MAX

@@ -103,15 +103,19 @@ export default function Directory({ photos, places }: DirectoryProps) {
     const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
     if (!token || rows.length === 0) return;
     let cancelled = false;
-    (async () => {
-      // One request in flight at a time; cached names resolve before slow ones.
-      for (const row of rows) {
-        if (cancelled) return;
+    // Three lookups in flight at a time. One at a time let a single slow lookup (open
+    // ocean, which searches outward in rings) hold up every row below it, even rows a
+    // custom place or the cache could name at once.
+    let next = 0;
+    const worker = async () => {
+      while (!cancelled && next < rows.length) {
+        const row = rows[next++];
         const name = await reverseGeocode(row.longitude, row.latitude, token, places);
         if (cancelled) return;
         setNames((prev) => ({ ...prev, [row.id]: name }));
       }
-    })();
+    };
+    for (let i = 0; i < Math.min(3, rows.length); i++) void worker();
     return () => {
       cancelled = true;
     };

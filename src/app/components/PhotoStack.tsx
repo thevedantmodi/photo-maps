@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Photo } from "../types";
 import { photoAlt } from "@/lib/alt";
@@ -55,9 +56,20 @@ interface PhotoStackProps {
 export default function PhotoStack({ photos, onSelect }: PhotoStackProps) {
   const offsets = fanOffsets(photos.length);
   const extent = fanExtent(photos.length);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // The cluster that opened the wheel is gone, so focus moves to the first photo rather
+  // than falling back to the page. A frame later: the map attaches the marker holding the
+  // wheel after this renders, and a detached button can't take focus.
+  useEffect(() => {
+    const id = requestAnimationFrame(() =>
+      rootRef.current?.querySelector<HTMLButtonElement>(".photo-stack-item")?.focus({ preventScroll: true }),
+    );
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   return (
-    <div className="photo-stack">
+    <div className="photo-stack" ref={rootRef}>
       <svg
         className="photo-stack-legs"
         width={extent * 2}

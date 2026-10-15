@@ -13,13 +13,26 @@ export default function SubscribePanel({
   onClose: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
     // After the unfold has started, so the focus ring doesn't flash at the old position.
     const id = window.setTimeout(() => inputRef.current?.focus(), 120);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key !== 'Escape') return;
+      const inside = rootRef.current?.contains(document.activeElement);
+      onClose();
+      // Back to the Subscribe button that opened it (the menu's or the header's, whichever
+      // is showing), rather than to the top of the page.
+      if (inside) {
+        requestAnimationFrame(() => {
+          const opener = [...document.querySelectorAll<HTMLElement>('[aria-controls="subscribe-panel"]')].find(
+            (el) => el.offsetParent !== null,
+          );
+          opener?.focus();
+        });
+      }
     };
     document.addEventListener('keydown', onKey);
     return () => {
@@ -31,6 +44,7 @@ export default function SubscribePanel({
   return (
     <div
       id="subscribe-panel"
+      ref={rootRef}
       className="sub-panel"
       data-open={open}
       role="region"

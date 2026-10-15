@@ -14,5 +14,10 @@ export const metadata: Metadata = {
 
 export default async function MapPage() {
   const [photos, places] = await Promise.all([getPublishedPhotos(), getPlaces()]);
-  return <MapWrapper photos={photos} places={places} />;
+  return (
+    <>
+      <h1 className="sr-only">Galleries</h1>
+      <MapWrapper photos={photos} places={places} />
+    </>
+  );
 }

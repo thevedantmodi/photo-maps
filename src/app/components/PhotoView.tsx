@@ -7,7 +7,7 @@ import SiteHeader from "./SiteHeader";
 import { fireShutter } from "./Mark";
 import ShareButton from "./ShareButton";
 import { useMediaQuery } from "../hooks/useMediaQuery";
-import { closeTarget, forget, openOrigin, type Rect } from "@/lib/photoTransition";
+import { closeTarget, forget, openOrigin, returnFocus, type Rect } from "@/lib/photoTransition";
 import { reverseGeocode } from "@/lib/mapboxGeocode";
 import { shareVersion } from "@/lib/shareVersion";
 import { photoAlt, photoTitle } from "@/lib/alt";
@@ -177,6 +177,22 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
     if (mode === "overlay") rootRef.current?.focus({ preventScroll: true });
   }, [mode]);
 
+  // A modal over the map: everything outside it goes inert while it's open, so Tab can't
+  // wander onto the markers behind the photo and screen readers stay inside. Each ancestor's
+  // other children are marked, and only the ones this marked are released on close.
+  useEffect(() => {
+    if (mode !== "overlay") return;
+    const marked: Element[] = [];
+    for (let node: Element | null = rootRef.current; node && node !== document.body; node = node.parentElement) {
+      for (const sibling of node.parentElement?.children ?? []) {
+        if (sibling === node || sibling.hasAttribute("inert") || sibling.tagName === "SCRIPT") continue;
+        sibling.setAttribute("inert", "");
+        marked.push(sibling);
+      }
+    }
+    return () => marked.forEach((el) => el.removeAttribute("inert"));
+  }, [mode]);
+
   // The place name: a custom place, else Mapbox, cached in this browser.
   useEffect(() => {
     const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -205,6 +221,7 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
     }
 
     const finish = () => {
+      returnFocus(slug);
       forget(slug);
       router.back();
     };
@@ -411,7 +428,11 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
   );
 
   const facts: { label: string; value: string }[] = [];
-  if (hasCoords) facts.push({ label: "Place", value: place ?? "…" });
+  // When Mapbox has no name the lookup falls back to coordinates, which the Coordinates row
+  // already shows, so the Place row is left out rather than said twice.
+  const placeIsCoords =
+    hasCoords && place === `${photo.lat!.toFixed(2)}, ${photo.lon!.toFixed(2)}`;
+  if (hasCoords && !placeIsCoords) facts.push({ label: "Place", value: place ?? "…" });
   if (date) facts.push({ label: "Date", value: date });
   if (hasCoords) facts.push({ label: "Coordinates", value: formatCoords(photo.lat!, photo.lon!) });
 
@@ -452,13 +473,24 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
             </button>
           </div>
         </div>
-        <h1 id="pv-title" className="pv-title">
+        <h1
+          id="pv-title"
+          className="pv-title"
+          // Long captions step down in size so the photo stays on the first screen.
+          data-length={title.length > 70 ? "long" : title.length > 30 ? "mid" : undefined}
+        >
           {title}
         </h1>
       </div>
 
       <div className="pv-body">
-        <figure className="pv-figure" ref={figureRef}>
+        <figure
+          className="pv-figure"
+          ref={figureRef}
+          // On phones the figure takes the photo's shape, so a panorama isn't set in a tall,
+          // mostly empty box (globals.css reads --ratio).
+          style={ratio ? ({ "--ratio": ratio } as React.CSSProperties) : undefined}
+        >
           {/* Hidden: only read for the photo's proportions. */}
           {/* eslint-disable-next-line @next/next/no-img-element -- R2 thumbnail */}
           <img
@@ -468,6 +500,12 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
             hidden
             onLoad={(e) => readRatio(e.currentTarget)}
           />
+          {/* The frame is sized in the browser, so without JavaScript the photo would never
+              appear. This stands in, and gives crawlers that don't run scripts the image. */}
+          <noscript>
+            {/* eslint-disable-next-line @next/next/no-img-element -- R2 rendition, already sized */}
+            <img className="pv-noscript" src={photo.large_url} alt={photoAlt(photo)} />
+          </noscript>
           {frame && (
             <div
               ref={frameRef}
