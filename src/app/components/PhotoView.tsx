@@ -78,6 +78,35 @@ function formatCoords(lat: number, lon: number): string {
   return `${Math.abs(lat).toFixed(2)}° ${ns}, ${Math.abs(lon).toFixed(2)}° ${ew}`;
 }
 
+interface Words {
+  title: string;
+  kicker: string;
+  facts: { label: string; value: string }[];
+}
+
+/** The words beside a photo: its title, the year above it, and the rows of facts. */
+function wordsOf(
+  p: { title: string; date: string | null; lat: number | null; lon: number | null },
+  place: string | null,
+): Words {
+  const year = p.date ? new Date(p.date).getFullYear() : null;
+  const date = formatDate(p.date);
+  const facts: Words["facts"] = [];
+  if (p.lat != null && p.lon != null) {
+    // When Mapbox has no name the lookup falls back to coordinates, which the Coordinates
+    // row already shows, so the Place row is left out rather than said twice.
+    const placeIsCoords = place === `${p.lat.toFixed(2)}, ${p.lon.toFixed(2)}`;
+    if (!placeIsCoords) facts.push({ label: "Place", value: place ?? "…" });
+  }
+  if (date) facts.push({ label: "Date", value: date });
+  if (p.lat != null && p.lon != null) facts.push({ label: "Coordinates", value: formatCoords(p.lat, p.lon) });
+  return { title: p.title, kicker: year !== null ? `(${year})` : "", facts };
+}
+
+function recordOf(w: Words) {
+  return { title: w.title, kicker: w.kicker, facts: Object.fromEntries(w.facts.map((f) => [f.label, f.value])) };
+}
+
 function reducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
@@ -123,8 +152,6 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
   const router = useRouter();
   const slug = photo.friendly_name;
   const title = photoTitle(photo);
-  const year = photo.date ? new Date(photo.date).getFullYear() : null;
-  const date = formatDate(photo.date);
   const hasCoords = photo.lat != null && photo.lon != null;
   const isPhone = useMediaQuery("(max-width: 767px)");
 
@@ -141,7 +168,15 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
   const [box, setBox] = useState<{ w: number; h: number } | null>(null);
   const [sideRatio, setSideRatio] = useState<{ prev?: number; next?: number }>({});
   const [largeLoaded, setLargeLoaded] = useState(false);
-  const [place, setPlace] = useState<string | null>(null);
+  // Seeded from the step that led here, when it had already looked the place up.
+  const [place, setPlace] = useState<string | null>(() => {
+    const handed = arrived?.words?.facts.Place;
+    return handed && handed !== "…" ? handed : null;
+  });
+  // The photos either side's place names, looked up ahead with their images.
+  const [sidePlace, setSidePlace] = useState<{ prev?: string; next?: string }>({});
+  // The next photo's words, shown the moment a step commits (the page follows).
+  const [showing, setShowing] = useState<Words | null>(null);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const bgRef = useRef<HTMLDivElement>(null);
@@ -154,10 +189,10 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
   const dragX = useRef(0);
   const titleRef = useRef<HTMLHeadingElement>(null);
   // This photo's words, kept current for a step to hand on (set after the facts are built).
-  const wordsRef = useRef<Omit<StepWords, "titleFont" | "titleLineHeight" | "titleHeight"> | null>(null);
+  const wordsRef = useRef<Words | null>(null);
   // The words of the photo just left, shown fading into these until the morph is over.
   const [ghost, setGhost] = useState<StepWords | null>(() =>
-    arrived?.words && !reducedMotion() ? arrived.words : null,
+    arrived?.words && !arrived.words.settled && !reducedMotion() ? arrived.words : null,
   );
   const played = useRef(false);
   const closingRef = useRef(false);
@@ -395,22 +430,22 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       const h1 = titleRef.current;
       const words = wordsRef.current;
       const style = h1 ? getComputedStyle(h1) : null;
-      const handOn: StepWords | null =
-        h1 && words && style
-          ? {
-              ...words,
-              titleFont: style.fontSize,
-              titleLineHeight: style.lineHeight,
-              titleHeight: h1.offsetHeight,
-            }
-          : null;
+      const metrics = h1 && style
+        ? { titleFont: style.fontSize, titleLineHeight: style.lineHeight, titleHeight: h1.offsetHeight }
+        : null;
+      const handOn: StepWords | null = words && metrics ? { ...recordOf(words), ...metrics } : null;
       if (!el || !root || !peek || !toRatio || reducedMotion()) {
         // No photo alongside yet (or no motion wanted): the new one comes in on its own.
         rememberStep(dir, button, null, handOn);
         navigate();
         return;
       }
-      rememberStep(dir, button, toRatio, handOn);
+      // The words change now, as the photos start to move, rather than once the next
+      // page has arrived: the next photo's are known already.
+      const toWords = wordsOf(to, sidePlace[dir === 1 ? "next" : "prev"] ?? null);
+      if (handOn) setGhost(handOn);
+      setShowing(toWords);
+      rememberStep(dir, button, toRatio, { ...recordOf(toWords), titleFont: "", titleLineHeight: "", titleHeight: 0, settled: true });
       // Like turning a page: this photo slides off as the next slides into its place,
       // carrying on from wherever the swipe left them at the speed it let go. The page
       // underneath stays put, so there's no gap.
@@ -421,15 +456,20 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
         navigate();
       };
       springRef.current?.stop();
-      springRef.current = animate(dragX.current, -dir * peekSpan(peek), {
+      const target = -dir * peekSpan(peek);
+      springRef.current = animate(dragX.current, target, {
         ...STEP_SPRING,
         velocity,
-        onUpdate: (x) => placeX(x, true),
+        onUpdate: (x) => {
+          placeX(x, true);
+          // Close enough to rest that the page can change under it.
+          if (Math.abs(x - target) < 3) once();
+        },
         onComplete: once,
       });
       later(once, 1500);
     },
-    [next, prev, router, stepHref, later, sideRatio, peekSpan, placeX],
+    [next, prev, router, stepHref, later, sideRatio, sidePlace, peekSpan, placeX],
   );
 
   // Clicked Previous/Next: focus lands on the same button here, or the other one at the end.
@@ -471,11 +511,17 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       img.onload = read;
       img.src = to.largeUrl;
       if (img.complete) read();
+      const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+      if (token && to.lat != null && to.lon != null) {
+        reverseGeocode(to.lon, to.lat, token, places).then((name) => {
+          if (!cancelled && name) setSidePlace((r) => ({ ...r, [side]: name }));
+        });
+      }
     }
     return () => {
       cancelled = true;
     };
-  }, [prev, next, router, stepHref]);
+  }, [prev, next, router, stepHref, places]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -735,23 +781,12 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
     <ShareButton key={slug} slug={slug} caption={title} version={version} className={className} />
   );
 
-  const facts: { label: string; value: string }[] = [];
-  const kickerText = year !== null ? `(${year})` : "";
-  // When Mapbox has no name the lookup falls back to coordinates, which the Coordinates row
-  // already shows, so the Place row is left out rather than said twice.
-  const placeIsCoords =
-    hasCoords && place === `${photo.lat!.toFixed(2)}, ${photo.lon!.toFixed(2)}`;
-  if (hasCoords && !placeIsCoords) facts.push({ label: "Place", value: place ?? "…" });
-  if (date) facts.push({ label: "Date", value: date });
-  if (hasCoords) facts.push({ label: "Coordinates", value: formatCoords(photo.lat!, photo.lon!) });
-  const factsKey = JSON.stringify(facts);
+  // This photo's words, or the next one's once a step has committed.
+  const shown = showing ?? wordsOf({ title, date: photo.date, lat: photo.lat, lon: photo.lon }, place);
+  const shownKey = JSON.stringify(shown);
   useEffect(() => {
-    wordsRef.current = {
-      title,
-      kicker: kickerText,
-      facts: Object.fromEntries((JSON.parse(factsKey) as typeof facts).map((f) => [f.label, f.value])),
-    };
-  }, [title, kickerText, factsKey]);
+    wordsRef.current = JSON.parse(shownKey) as Words;
+  }, [shownKey]);
 
   return (
     <div
@@ -780,7 +815,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       <div className="pv-head">
         <div className="pv-bar">
           <span className="pv-kicker label">
-            <Morph from={ghost?.kicker}>{kickerText}</Morph>
+            <Morph from={ghost?.kicker}>{shown.kicker}</Morph>
           </span>
           <div className="pv-actions">
             {!isPhone && share("text-btn share-btn")}
@@ -799,9 +834,9 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
           id="pv-title"
           className="pv-title"
           // Long captions step down in size so the photo stays on the first screen.
-          data-length={title.length > 70 ? "long" : title.length > 30 ? "mid" : undefined}
+          data-length={shown.title.length > 70 ? "long" : shown.title.length > 30 ? "mid" : undefined}
         >
-          {ghost && ghost.title !== title && (
+          {ghost && ghost.title !== shown.title && (
             <span
               className="pv-ghost pv-ghost-title"
               aria-hidden="true"
@@ -810,8 +845,8 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
               {ghost.title}
             </span>
           )}
-          <span className="pv-new" data-morph={Boolean(ghost && ghost.title !== title)}>
-            {title}
+          <span className="pv-new" data-morph={Boolean(ghost && ghost.title !== shown.title)}>
+            {shown.title}
           </span>
         </h1>
       </div>
@@ -889,9 +924,9 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
         </figure>
 
         <div className="pv-side">
-          {facts.length > 0 && (
+          {shown.facts.length > 0 && (
             <dl className="pv-facts">
-              {facts.map((f, i) => (
+              {shown.facts.map((f, i) => (
                 <div key={f.label} className="pv-fact" style={{ "--i": i } as React.CSSProperties}>
                   <dt>{f.label}</dt>
                   <dd>

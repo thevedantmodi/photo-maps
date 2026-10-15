@@ -2,11 +2,17 @@ import { photoTitle } from '@/lib/alt';
 import { yearOf } from '@/lib/yearParam';
 import type { Photo } from '@/app/types';
 
-/** Enough of a neighbouring photo to link to it and load it ahead of time. */
+/**
+ * Enough of a neighbouring photo to link to it, load it ahead of time, and show its words
+ * the moment a swipe commits to it, before its page has arrived.
+ */
 export interface PhotoStep {
   slug: string;
   title: string;
   largeUrl: string;
+  date: string | null;
+  lat: number | null;
+  lon: number | null;
 }
 
 /** When a photo was taken, falling back to when it was uploaded for undated ones. */
@@ -35,7 +41,16 @@ export function photoNeighbours(
   );
   const i = ordered.findIndex((p) => p.friendly_name === slug);
   const step = (p: Photo | undefined): PhotoStep | null =>
-    p ? { slug: p.friendly_name, title: photoTitle(p), largeUrl: p.large_url } : null;
+    p
+      ? {
+          slug: p.friendly_name,
+          title: photoTitle(p),
+          largeUrl: p.large_url,
+          date: p.date,
+          lat: p.lat,
+          lon: p.lon,
+        }
+      : null;
   // The year rides along in the links only while the walk is actually inside it.
   const kept = withinYear ? year : null;
   return i < 0

@@ -83,6 +83,8 @@ export interface StepWords {
   titleHeight: number;
   kicker: string;
   facts: Record<string, string>;
+  /** Already morphed in place before the page changed: the new page just shows them. */
+  settled?: boolean;
 }
 
 let step: (Step & { at: number }) | null = null;
