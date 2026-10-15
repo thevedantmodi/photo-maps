@@ -22,7 +22,7 @@ An interactive map of geotagged travel photos. Photos are hung on a Mapbox map l
 
 - **Type** — Neue Haas Grotesk where licensed, Helvetica Neue on Apple devices, Geist elsewhere (see `--font-sans` in `globals.css`). The share card renders with the bundled Geist files.
 - **Tokens** — colours, rules and motion live as CSS custom properties at the top of `src/app/globals.css`; the share card mirrors them in `src/lib/shareTokens.ts`, and the emails in `src/emails/theme.ts`.
-- **Mark** — a printer's registration mark (`Mark.tsx`), beside the name, as the map loader and on the share card.
+- **Mark** — a compact camera whose lens is a globe (`Mark.tsx`, geometry in `lib/cameraMark.ts`). Beside the name its shutter clicks on hover and as a photo opens; as the map loader it draws itself and the globe turns; the share card carries it too.
 - **Motion** — one curve (`cubic-bezier(0.2, 0, 0, 1)`) and short durations; everything collapses to instant under `prefers-reduced-motion`.
 
 ## Stack

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { useRouter } from "next/navigation";
 
 import SiteHeader from "./SiteHeader";
+import { fireShutter } from "./Mark";
 import ShareButton from "./ShareButton";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import { closeTarget, forget, openOrigin, type Rect } from "@/lib/photoTransition";
@@ -146,6 +147,8 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
   useLayoutEffect(() => {
     if (!frame || played.current) return;
     played.current = true;
+    // The camera beside the name takes the shot as the photo appears.
+    fireShutter();
     const el = frameRef.current;
     if (!el || !origin || reducedMotion()) return;
     const pose = thumbPose(origin, el.getBoundingClientRect());

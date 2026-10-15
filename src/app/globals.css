@@ -180,26 +180,28 @@ button {
   letter-spacing: 0.02em;
 }
 
-/* ── The mark: a registration mark ─────────────────────────────────────── */
+/* ── The mark: a camera whose lens is a globe ─────────────────────────── */
 
 .mark {
   flex: none;
   display: block;
   overflow: visible;
-}
-
-.mark circle,
-.mark line {
   fill: none;
   stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.sh-logo .mark {
-  transition: transform 400ms var(--ease);
+/* Beside the name, Mark.tsx clicks the shutter and flips the globe on hover and when a
+   photo opens. */
+.cam-shutter,
+.cam-meridian {
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
-.sh-logo:hover .mark {
-  transform: rotate(90deg);
+.cam-arc {
+  opacity: 0;
 }
 
 /* ── Gallery lights: the whole page dims while the theme changes ──────── */
@@ -900,14 +902,28 @@ a:hover > .arrow {
   pointer-events: none;
 }
 
-.map-loader circle,
-.map-loader line {
+/* The loader: the camera draws itself in one pass, then the globe turns. The drawn
+   meridian hands over to two half-circles a half-turn apart, each sweeping from one
+   edge of the globe to the other: slow at the rim, fast through the middle. */
+.map-loader .cam-line {
   stroke-dasharray: 1;
-  animation: v-loop 1400ms var(--ease) infinite;
+  stroke-dashoffset: 1;
+  animation: v-draw 500ms var(--ease) calc(var(--i) * 45ms) forwards;
 }
 
-.map-loader line {
-  animation-delay: 150ms;
+.map-loader .cam-meridian {
+  animation: v-draw 500ms var(--ease) calc(var(--i) * 45ms) forwards,
+    fade-out 150ms ease 950ms forwards;
+}
+
+.map-loader .cam-arc {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: globe-turn 1800ms linear 950ms infinite;
+}
+
+.map-loader .cam-arc-2 {
+  animation-delay: 1850ms;
 }
 
 .place-name {
@@ -1721,10 +1737,30 @@ a:hover > .arrow {
   to { stroke-dashoffset: 0; }
 }
 
-@keyframes v-loop {
-  0% { stroke-dashoffset: 1; }
-  55% { stroke-dashoffset: 0; }
-  100% { stroke-dashoffset: -1; }
+/* A meridian on a turning globe, face on: its width is -cos(angle). It fades only near
+   the rim, where it would double the outline. */
+@keyframes globe-turn {
+  0% { transform: scaleX(-1.000); opacity: 0.00; }
+  5% { transform: scaleX(-0.988); opacity: 0.47; }
+  10% { transform: scaleX(-0.951); opacity: 0.93; }
+  15% { transform: scaleX(-0.891); opacity: 1.00; }
+  20% { transform: scaleX(-0.809); opacity: 1.00; }
+  25% { transform: scaleX(-0.707); opacity: 1.00; }
+  30% { transform: scaleX(-0.588); opacity: 1.00; }
+  35% { transform: scaleX(-0.454); opacity: 1.00; }
+  40% { transform: scaleX(-0.309); opacity: 1.00; }
+  45% { transform: scaleX(-0.156); opacity: 1.00; }
+  50% { transform: scaleX(-0.020); opacity: 1.00; }
+  55% { transform: scaleX(0.156); opacity: 1.00; }
+  60% { transform: scaleX(0.309); opacity: 1.00; }
+  65% { transform: scaleX(0.454); opacity: 1.00; }
+  70% { transform: scaleX(0.588); opacity: 1.00; }
+  75% { transform: scaleX(0.707); opacity: 1.00; }
+  80% { transform: scaleX(0.809); opacity: 1.00; }
+  85% { transform: scaleX(0.891); opacity: 1.00; }
+  90% { transform: scaleX(0.951); opacity: 0.93; }
+  95% { transform: scaleX(0.988); opacity: 0.47; }
+  100% { transform: scaleX(1.000); opacity: 0.00; }
 }
 
 @keyframes row-in {
@@ -1777,9 +1813,13 @@ a:hover > .arrow {
     transition-delay: 0ms !important;
   }
 
-  .map-loader circle,
-  .map-loader line {
+  .map-loader .cam-line {
+    animation: none;
     stroke-dashoffset: 0;
+  }
+
+  .map-loader .cam-arc {
+    display: none;
   }
 }
 

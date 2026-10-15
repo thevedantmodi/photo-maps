@@ -14,7 +14,7 @@ const Map = dynamic(() => import('./Map'), {
             <SiteHeader current="map" />
             <div className="mapframe">
                 <div className="map-loader">
-                    <Mark size={72} strokeWidth={0.6} />
+                    <Mark variant="detailed" width={150} />
                     <span className="sr-only">Loading the map</span>
                 </div>
             </div>

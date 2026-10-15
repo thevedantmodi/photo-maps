@@ -23,7 +23,7 @@ type Versioned = {
  * Bumped whenever the card's design changes, so every card re-renders in the new look
  * instead of serving the old one from R2 or the CDN.
  */
-const CARD_DESIGN = 'museum-2';
+const CARD_DESIGN = 'museum-3';
 
 export type CardTheme = 'dark' | 'light';
 

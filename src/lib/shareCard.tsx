@@ -8,6 +8,7 @@ import { ImageResponse } from 'next/og';
 import QRCode from 'qrcode';
 import sharp from 'sharp';
 
+import { CAMERA, CAMERA_VIEW, equatorPath, globeRadius, knurlPath } from '@/lib/cameraMark';
 import { placeNameFor } from '@/lib/placeName';
 import { CARD, FONT, PALETTE, PHOTO, QR, RULE, TYPE } from '@/lib/shareTokens';
 import type { CardTheme } from '@/lib/shareVersion';
@@ -105,6 +106,37 @@ function displayUrl(base: string, slug: string): string {
   return permalink(base, slug).replace(/^https?:\/\//, '');
 }
 
+/** The site's camera mark, the detailed version, drawn for satori. */
+function CameraMark({ color }: { color: string }) {
+  const width = 76;
+  const sw = 1.5;
+  const globe = globeRadius(true);
+  const { lens } = CAMERA;
+  const line = { fill: 'none', stroke: color, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
+  return (
+    <svg
+      width={width}
+      height={(width * CAMERA_VIEW.h) / CAMERA_VIEW.w}
+      viewBox={`${CAMERA_VIEW.x} ${CAMERA_VIEW.y} ${CAMERA_VIEW.w} ${CAMERA_VIEW.h}`}
+      style={{ marginRight: 20 }}
+    >
+      <path d={CAMERA.body} {...line} strokeWidth={sw} />
+      <path d={CAMERA.grip} {...line} strokeWidth={sw * 0.8} />
+      <rect {...CAMERA.shutter} {...line} strokeWidth={sw * 0.85} />
+      <rect {...CAMERA.modeDial} {...line} strokeWidth={sw * 0.85} />
+      <path d={knurlPath(7)} {...line} strokeWidth={sw * 0.38} />
+      <rect {...CAMERA.smallDial} {...line} strokeWidth={sw * 0.85} />
+      <circle {...CAMERA.afLamp} {...line} strokeWidth={sw * 0.7} />
+      <circle {...CAMERA.lensRelease} {...line} strokeWidth={sw * 0.7} />
+      <circle {...lens} {...line} strokeWidth={sw} />
+      <circle cx={lens.cx} cy={lens.cy} r={lens.r - 2.2} {...line} strokeWidth={sw * 0.7} />
+      <circle cx={lens.cx} cy={lens.cy} r={globe} {...line} strokeWidth={sw} />
+      <path d={equatorPath(globe)} {...line} strokeWidth={sw * 0.85} />
+      <ellipse cx={lens.cx} cy={lens.cy} rx={globe * 0.42} ry={globe} {...line} strokeWidth={sw * 0.85} />
+    </svg>
+  );
+}
+
 /** The subset of Photo that determines what a share card shows and where it's fetched from. */
 export type ShareCardPhoto = {
   friendly_name: string;
@@ -179,11 +211,7 @@ export async function renderShareCardPng(
           borderBottom: `${RULE}px solid ${colors.ink}`,
         }}
       >
-        <svg width={44} height={44} viewBox="0 0 24 24" style={{ marginRight: 20 }}>
-          <circle cx="12" cy="12" r="6.5" fill="none" stroke={colors.ink} strokeWidth={1.2} />
-          <line x1="12" y1="0.5" x2="12" y2="23.5" stroke={colors.ink} strokeWidth={1.2} />
-          <line x1="0.5" y1="12" x2="23.5" y2="12" stroke={colors.ink} strokeWidth={1.2} />
-        </svg>
+        <CameraMark color={colors.ink} />
         <div style={{ display: 'flex', fontSize: TYPE.name.fontSize, letterSpacing: TYPE.name.letterSpacing, lineHeight: 1.2 }}>
           Vedant Modi
         </div>
