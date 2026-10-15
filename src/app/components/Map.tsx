@@ -9,6 +9,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import { useTheme } from "../hooks/useTheme";
 import { MAP_STYLES } from "@/lib/mapStyles";
 import { photoAlt } from "@/lib/alt";
+import { parseYear, yearOf, yearQuery } from "@/lib/yearParam";
 import {
   applyRelief,
   setTerrain,
@@ -128,11 +129,14 @@ interface OpenStack {
   photos: Photo[];
 }
 
-const yearOf = (p: Photo) => (p.date ? new Date(p.date).getFullYear() : null);
 
 const MapComponent = ({ photos, places }: MapProps) => {
   const router = useRouter();
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  // A ?year= in the address opens the map filtered, if any photo is from that year.
+  const [selectedYear, setSelectedYear] = useState<number | null>(() => {
+    const year = parseYear(new URLSearchParams(window.location.search).get("year"));
+    return year !== null && photos.some((p) => yearOf(p) === year) ? year : null;
+  });
   // While set, photos not in this year fade out; then the filter applies.
   const [pendingYear, setPendingYear] = useState<number | null | undefined>(undefined);
   // Cluster ids are only stable within one zoom level, so anything that
@@ -356,9 +360,12 @@ const MapComponent = ({ photos, places }: MapProps) => {
   const openPhoto = useCallback(
     (photo: Photo, el: Element) => {
       rememberOpen(photo.friendly_name, el);
-      router.push(`/p/${encodeURIComponent(photo.friendly_name)}`, { scroll: false });
+      // The year rides along, so Previous and Next on the photo stay within it.
+      router.push(`/p/${encodeURIComponent(photo.friendly_name)}${yearQuery(selectedYear, true)}`, {
+        scroll: false,
+      });
     },
-    [router],
+    [router, selectedYear],
   );
 
   // Picking a year whose photos are all out of sight (another continent, the far side of
@@ -398,6 +405,15 @@ const MapComponent = ({ photos, places }: MapProps) => {
     [photos],
   );
 
+  // Opened from a year link with no place in it: show that year's photos.
+  const revealedOnLoad = useRef(false);
+  useEffect(() => {
+    if (!mapLoaded || revealedOnLoad.current) return;
+    revealedOnLoad.current = true;
+    const params = new URLSearchParams(window.location.search);
+    if (selectedYear !== null && !params.has("lon")) revealYear(selectedYear);
+  }, [mapLoaded, selectedYear, revealYear]);
+
   const changeYear = useCallback(
     (year: number | null) => {
       if (year === selectedYear || pendingYear !== undefined) return;
@@ -415,6 +431,16 @@ const MapComponent = ({ photos, places }: MapProps) => {
     },
     [selectedYear, pendingYear, revealYear],
   );
+
+  // The year lives in the address too, so a filtered map can be shared. Only ?year is
+  // touched; a place linked from the Directory (?lon=&lat=&z=) stays as it was.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (!url.pathname.startsWith("/map")) return;
+    if (selectedYear === null) url.searchParams.delete("year");
+    else url.searchParams.set("year", String(selectedYear));
+    if (url.href !== window.location.href) window.history.replaceState(window.history.state, "", url);
+  }, [selectedYear]);
 
   // Derived, not state: deriving during render drops a re-render per filter change.
   const filteredPhotos = useMemo(() => {

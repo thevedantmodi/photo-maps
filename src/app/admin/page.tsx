@@ -46,6 +46,7 @@ function UploadTab({ theme }: { theme: Theme }) {
   const [file, setFile] = useState<File | null>(null);
   const [friendlyName, setFriendlyName] = useState("");
   const [caption, setCaption] = useState("");
+  const [altText, setAltText] = useState("");
   const [lat, setLat] = useState("");
   const [lon, setLon] = useState("");
   // The coordinates the picked file arrived with. Kept for the whole upload so
@@ -161,6 +162,7 @@ function UploadTab({ theme }: { theme: Theme }) {
           friendly_name: friendlyName,
           original_name: file.name,
           caption,
+          alt_text: altText.trim() || null,
           lat: latNum,
           lon: lonNum,
           // The photo had GPS and the operator removed it: don't let the
@@ -180,6 +182,7 @@ function UploadTab({ theme }: { theme: Theme }) {
       setFile(null);
       setFriendlyName("");
       setCaption("");
+      setAltText("");
       setLat("");
       setLon("");
       setExifCoords(null);
@@ -194,7 +197,7 @@ function UploadTab({ theme }: { theme: Theme }) {
     } finally {
       setUploading(false);
     }
-  }, [file, friendlyName, caption, lat, lon, exifCoords, date, exifDate]);
+  }, [file, friendlyName, caption, altText, lat, lon, exifCoords, date, exifDate]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -290,6 +293,32 @@ function UploadTab({ theme }: { theme: Theme }) {
         rows={3}
         style={{ ...inputStyle, marginBottom: 16, resize: "vertical" }}
       />
+
+      <label
+        htmlFor="upload-alt-text"
+        style={{
+          display: "block",
+          fontSize: 13,
+          fontWeight: 500,
+          marginBottom: 4,
+          color: c.text,
+        }}
+      >
+        Alt text
+      </label>
+      <textarea
+        id="upload-alt-text"
+        value={altText}
+        onChange={(e) => setAltText(e.target.value)}
+        placeholder={caption ? `Falls back to caption: “${caption}”` : "Describe what's in the photo"}
+        rows={2}
+        style={{ ...inputStyle, marginBottom: 4, resize: "vertical" }}
+      />
+      <div style={{ fontSize: 11, color: c.muted, marginBottom: 16 }}>
+        {altText.trim() || caption
+          ? "Read by screen readers and search engines."
+          : "Missing — screen readers will only hear the date."}
+      </div>
 
       <div style={{ marginBottom: 8 }}>
         <LocationSection

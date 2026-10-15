@@ -57,3 +57,25 @@ export function returnFocus(slug: string) {
 export function forget(slug: string) {
   if (last?.slug === slug) last = null;
 }
+
+/**
+ * Which way the last Previous/Next went, so the photo arriving can slide in from that
+ * side. Only fresh for a moment, so a later, unrelated visit just appears.
+ */
+export interface Step {
+  dir: 1 | -1;
+  /** Clicked Previous/Next, so focus goes back to that button on the new photo. */
+  button: boolean;
+}
+
+let step: (Step & { at: number }) | null = null;
+
+export function rememberStep(dir: 1 | -1, button: boolean) {
+  step = { dir, button, at: Date.now() };
+}
+
+export function takeStep(): Step | null {
+  const s = step;
+  step = null;
+  return s && Date.now() - s.at < 2000 ? { dir: s.dir, button: s.button } : null;
+}

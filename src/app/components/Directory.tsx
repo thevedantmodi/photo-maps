@@ -6,14 +6,18 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useInView } from "./Reveal";
 import SiteHeader from "./SiteHeader";
+import YearFilter from "./YearFilter";
 import { getLocationGroups } from "@/lib/locationGroups";
 import { reverseGeocode } from "@/lib/mapboxGeocode";
+import { yearOf, yearQuery } from "@/lib/yearParam";
 import type { CustomPlace } from "@/lib/customPlaces";
 import type { Photo } from "../types";
 
 interface DirectoryProps {
   photos: Photo[];
   places: CustomPlace[];
+  /** From ?year= in the address, already checked against the photos. */
+  initialYear: number | null;
 }
 
 interface Row {
@@ -71,10 +75,26 @@ function DirItem({
  * uses, named by custom places or Mapbox (cached in this browser). A row opens the map
  * there. Hovering a row brings it forward and slides its newest photo alongside.
  */
-export default function Directory({ photos, places }: DirectoryProps) {
+export default function Directory({ photos, places, initialYear }: DirectoryProps) {
+  const [year, setYear] = useState<number | null>(initialYear);
+
+  // Same as the map: the year sits in the address so a filtered directory can be shared.
+  const changeYear = (next: number | null) => {
+    setYear(next);
+    const url = new URL(window.location.href);
+    if (next === null) url.searchParams.delete("year");
+    else url.searchParams.set("year", String(next));
+    window.history.replaceState(window.history.state, "", url);
+  };
+
+  const shown = useMemo(
+    () => (year === null ? photos : photos.filter((p) => yearOf(p) === year)),
+    [photos, year],
+  );
+
   const rows: Row[] = useMemo(() => {
-    const byId = new Map(photos.map((p) => [p.id, p]));
-    return getLocationGroups(photos).map((g) => {
+    const byId = new Map(shown.map((p) => [p.id, p]));
+    return getLocationGroups(shown).map((g) => {
       const members = g.photoIds.map((id) => byId.get(id)).filter((p): p is Photo => !!p);
       return {
         id: g.id,
@@ -85,7 +105,7 @@ export default function Directory({ photos, places }: DirectoryProps) {
         latest: newest(members),
       };
     });
-  }, [photos]);
+  }, [shown]);
 
   const [names, setNames] = useState<Record<string, string>>({});
   const [hover, setHover] = useState<number | null>(null);
@@ -133,6 +153,8 @@ export default function Directory({ photos, places }: DirectoryProps) {
         </h1>
       </div>
 
+      <YearFilter photos={photos} selectedYear={year} onYearChange={changeYear} />
+
       <div className="dir-table">
         <div className="dir-cols" aria-hidden="true">
           <span>No</span>
@@ -145,7 +167,9 @@ export default function Directory({ photos, places }: DirectoryProps) {
         </div>
 
         {rows.length === 0 ? (
-          <p className="dir-empty">No located photos yet.</p>
+          <p className="dir-empty">
+            {year === null ? "No located photos yet." : `No located photos from ${year}.`}
+          </p>
         ) : (
           <ol
             className="dir-list"
@@ -159,7 +183,7 @@ export default function Directory({ photos, places }: DirectoryProps) {
                 <DirItem key={row.id} index={i} hovered={hover === i}>
                   <Link
                     className="dir-row"
-                    href={`/map?lon=${row.longitude}&lat=${row.latitude}&z=${zoom}`}
+                    href={`/map?lon=${row.longitude}&lat=${row.latitude}&z=${zoom}${yearQuery(year)}`}
                     onMouseEnter={(e) => show(i, e.currentTarget)}
                     onFocus={(e) => show(i, e.currentTarget)}
                     onBlur={() => setHover(null)}

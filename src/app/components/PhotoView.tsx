@@ -7,7 +7,10 @@ import SiteHeader from "./SiteHeader";
 import { fireShutter } from "./Mark";
 import ShareButton from "./ShareButton";
 import { useMediaQuery } from "../hooks/useMediaQuery";
-import { closeTarget, forget, openOrigin, returnFocus, type Rect } from "@/lib/photoTransition";
+import Link from "next/link";
+import { closeTarget, forget, openOrigin, rememberStep, returnFocus, takeStep, type Rect, type Step } from "@/lib/photoTransition";
+import type { PhotoStep } from "@/lib/photoSequence";
+import { yearQuery } from "@/lib/yearParam";
 import { reverseGeocode } from "@/lib/mapboxGeocode";
 import { shareVersion } from "@/lib/shareVersion";
 import { photoAlt, photoTitle } from "@/lib/alt";
@@ -26,6 +29,8 @@ const DETAILS_FALLBACK_MS = 600;
 const SWIPE_CLOSE_PX = 120;
 // How far a finger moves before the drag commits to down or left.
 const SWIPE_LOCK_PX = 8;
+// Previous/Next: the photo slides this long on its way out and in.
+const STEP_MS = 240;
 
 function formatDate(iso: string | null): string | null {
   if (!iso) return null;
@@ -69,6 +74,11 @@ interface PhotoViewProps {
   places: CustomPlace[];
   /** "overlay": drawn over the map after a click there. "page": the standalone /p/<slug>. */
   mode: "overlay" | "page";
+  /** The photos either side, by date taken (within the map's year filter, if any). */
+  prev: PhotoStep | null;
+  next: PhotoStep | null;
+  /** The map's year filter, kept in the address as you step. */
+  year: number | null;
 }
 
 /**
@@ -76,7 +86,7 @@ interface PhotoViewProps {
  * shrinks back into it on close; on its own it simply appears. The title slides up after
  * the photo and the place, date and coordinates draw in one row at a time.
  */
-export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
+export default function PhotoView({ photo, places, mode, prev, next, year: filterYear }: PhotoViewProps) {
   const router = useRouter();
   const slug = photo.friendly_name;
   const title = photoTitle(photo);
@@ -87,6 +97,8 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
 
   // Read once: where the clicked thumbnail sat, if this photo was just opened from the map.
   const [origin] = useState<Rect | null>(() => (mode === "overlay" ? openOrigin(slug) : null));
+  // Arrived by Previous/Next: slide in from that side.
+  const [arrived] = useState<Step | null>(() => takeStep());
   const [details, setDetails] = useState(mode === "page");
   const [closing, setClosing] = useState(false);
   const [ratio, setRatio] = useState<number | null>(null);
@@ -159,7 +171,19 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
     // The camera beside the name takes the shot as the photo appears.
     fireShutter();
     const el = frameRef.current;
-    if (!el || !origin || reducedMotion()) return;
+    if (!el || reducedMotion()) return;
+    if (!origin) {
+      if (arrived) {
+        el.animate(
+          [
+            { transform: `translateX(${arrived.dir * 56}px)`, opacity: 0 },
+            { transform: "none", opacity: 1 },
+          ],
+          { duration: STEP_MS, easing: EASE },
+        );
+      }
+      return;
+    }
     const pose = thumbPose(origin, el.getBoundingClientRect());
     el.animate(
       [
@@ -169,7 +193,7 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
       { duration: OPEN_MS, easing: EASE },
     );
     later(() => setDetails(true), DETAILS_DELAY_MS);
-  }, [frame, origin, later]);
+  }, [frame, origin, arrived, later]);
 
   // Over the map, focus moves into the photo page (announced by its title) so the
   // keyboard and screen readers follow it; Escape or Close returns to the map.
@@ -264,13 +288,77 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
     );
   }, [mode, slug, router, mapHref, later]);
 
+  // Previous/Next. Replaces the address rather than adding to history, so Close still goes
+  // straight back to the map however many photos you've stepped through.
+  const steppingRef = useRef(false);
+  const stepHref = useCallback(
+    (to: PhotoStep) => `/p/${encodeURIComponent(to.slug)}${yearQuery(filterYear, true)}`,
+    [filterYear],
+  );
+  const go = useCallback(
+    (dir: 1 | -1, button = false) => {
+      const to = dir === 1 ? next : prev;
+      if (!to || closingRef.current || steppingRef.current) return;
+      steppingRef.current = true;
+      rememberStep(dir, button);
+      const navigate = () => router.replace(stepHref(to), { scroll: false });
+      const el = frameRef.current;
+      if (!el || reducedMotion()) {
+        navigate();
+        return;
+      }
+      // Out the way it's going, from wherever a swipe left it.
+      const from = el.style.transform || "none";
+      const anim = el.animate(
+        [
+          { transform: from, opacity: 1 },
+          { transform: `${from === "none" ? "" : from} translateX(${-dir * 56}px)`, opacity: 0 },
+        ],
+        { duration: STEP_MS * 0.6, easing: EASE, fill: "forwards" },
+      );
+      let done = false;
+      const once = () => {
+        if (done) return;
+        done = true;
+        navigate();
+      };
+      anim.onfinish = once;
+      later(once, STEP_MS);
+    },
+    [next, prev, router, stepHref, later],
+  );
+
+  // Clicked Previous/Next: focus lands on the same button here, or the other one at the end.
+  const stepsRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!arrived?.button) return;
+    const nav = stepsRef.current;
+    const same = nav?.querySelector<HTMLElement>(`[data-dir="${arrived.dir}"]`);
+    (same ?? nav?.querySelector<HTMLElement>("a"))?.focus({ preventScroll: true });
+  }, [arrived]);
+
+  // The neighbours load ahead, so stepping lands on a photo that's already there.
+  useEffect(() => {
+    for (const to of [prev, next]) {
+      if (!to) continue;
+      router.prefetch(stepHref(to));
+      const img = new Image();
+      img.src = to.largeUrl;
+    }
+  }, [prev, next, router, stepHref]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") close();
+      const t = e.target as HTMLElement | null;
+      const typing = t?.closest("input, textarea, select, [contenteditable='true']");
+      if (typing || e.altKey || e.metaKey || e.ctrlKey || e.shiftKey) return;
+      if (e.key === "ArrowRight") go(1);
+      else if (e.key === "ArrowLeft") go(-1);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [close]);
+  }, [close, go]);
 
   // Swipe the photo down, or right, to close it: a finger on a phone, two fingers on a
   // trackpad. The photo follows, shrinking a little as the page fades; short of the line it
@@ -280,7 +368,9 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
       const el = frameRef.current;
       const root = rootRef.current;
       if (!el || !root) return;
-      const p = Math.min(dist / 300, 1);
+      // Signed: right (or down) closes, left steps to the next photo.
+      const reach = Math.abs(dist);
+      const p = Math.min(reach / 300, 1);
       const s = 1 - p * 0.35;
       // transform-origin is the top left, so shrinking is re-centred by hand.
       const shrinkX = (el.offsetWidth * (1 - s)) / 2;
@@ -291,8 +381,9 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
       if (mode === "overlay" && bgRef.current) bgRef.current.style.opacity = String(1 - p * 0.85);
       // The words fade out ahead of the photo and the ring fills (globals.css reads both).
       root.style.setProperty("--drag", p.toFixed(3));
-      root.style.setProperty("--swipe", Math.min(dist / SWIPE_CLOSE_PX, 1).toFixed(3));
-      root.toggleAttribute("data-swipe-ready", dist > SWIPE_CLOSE_PX);
+      root.style.setProperty("--swipe", Math.min(reach / SWIPE_CLOSE_PX, 1).toFixed(3));
+      root.toggleAttribute("data-swipe-ready", reach > SWIPE_CLOSE_PX);
+      root.setAttribute("data-swipe-dir", dist < 0 ? "next" : "close");
     },
     [mode],
   );
@@ -313,6 +404,10 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
         close();
         return;
       }
+      if (dist < -SWIPE_CLOSE_PX && next) {
+        go(1);
+        return;
+      }
       const from = el.style.transform || "none";
       el.style.transform = "";
       if (bgRef.current) bgRef.current.style.opacity = "";
@@ -320,11 +415,12 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
       root.style.removeProperty("--swipe");
       root.removeAttribute("data-swipe-ready");
       root.removeAttribute("data-swipe-cursor");
+      root.removeAttribute("data-swipe-dir");
       if (from !== "none" && !reducedMotion()) {
         el.animate([{ transform: from }, { transform: "none" }], { duration: 280, easing: SPRING });
       }
     },
-    [close],
+    [close, go, next],
   );
 
   // Touch: a drag locks to whichever way the finger first moves.
@@ -361,7 +457,8 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
       if (Math.hypot(dx, dy) < SWIPE_LOCK_PX) return;
       d.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
     }
-    d.dist = Math.max(0, d.axis === "y" ? dy : dx);
+    // Down and right close; left goes on to the next photo, when there is one.
+    d.dist = d.axis === "y" ? Math.max(0, dy) : next ? dx : Math.max(0, dx);
     dragTo(d.axis, d.dist);
   };
 
@@ -373,8 +470,8 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
   };
 
   // Trackpad: a two-finger swipe arrives as sideways wheel events. Fingers moving right
-  // scroll left (negative deltaX); taking those keeps the browser's own back-swipe from
-  // running instead. It closes the moment it crosses the line, since the momentum that
+  // scroll left (negative deltaX) and close; moving left steps to the next photo. Taking
+  // them keeps the browser's own back and forward swipes from running instead. It closes the moment it crosses the line, since the momentum that
   // follows would otherwise carry it for a beat longer; a pause short of that springs back.
   useEffect(() => {
     const root = rootRef.current;
@@ -395,7 +492,7 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
         return;
       }
       if (e.ctrlKey) return; // pinch to zoom
-      if (!active && (Math.abs(e.deltaX) <= Math.abs(e.deltaY) || e.deltaX >= 0)) return;
+      if (!active && (Math.abs(e.deltaX) <= Math.abs(e.deltaY) || (e.deltaX >= 0 && !next))) return;
       e.preventDefault();
       if (!active) {
         active = true;
@@ -405,9 +502,10 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
         root.style.setProperty("--swipe-y", `${e.clientY}px`);
         root.setAttribute("data-swipe-cursor", "");
       }
-      dist = Math.max(0, dist - e.deltaX * (e.deltaMode === 1 ? 16 : 1));
+      dist -= e.deltaX * (e.deltaMode === 1 ? 16 : 1);
+      if (!next) dist = Math.max(0, dist);
       dragTo("x", dist);
-      if (dist > SWIPE_CLOSE_PX) {
+      if (Math.abs(dist) > SWIPE_CLOSE_PX) {
         endDrag(dist);
         return;
       }
@@ -419,7 +517,7 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
       clearTimeout(idle);
       root.removeEventListener("wheel", onWheel);
     };
-  }, [dragTo, startDrag, endDrag]);
+  }, [dragTo, startDrag, endDrag, next]);
 
   const version = shareVersion(photo);
   const share = (className: string) => (
@@ -455,6 +553,7 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
         <circle className="pv-swipe-track" cx="24" cy="24" r="18" />
         <circle className="pv-swipe-fill" cx="24" cy="24" r="18" pathLength={1} />
         <path className="pv-swipe-x" d="M19.5 19.5l9 9M28.5 19.5l-9 9" />
+        <path className="pv-swipe-next" d="M17 24h14M26 19l5 5-5 5" />
       </svg>
       <SiteHeader current="photo" />
 
@@ -542,6 +641,46 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
                 </div>
               ))}
             </dl>
+          )}
+          {(prev || next) && (
+            <nav className="pv-steps" aria-label="More photos" ref={stepsRef}>
+              {prev ? (
+                <Link
+                  data-dir="-1"
+                  className="text-btn"
+                  href={stepHref(prev)}
+                  replace
+                  scroll={false}
+                  title={prev.title}
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                    e.preventDefault();
+                    go(-1, true);
+                  }}
+                >
+                  ← Previous
+                </Link>
+              ) : (
+                <span />
+              )}
+              {next && (
+                <Link
+                  data-dir="1"
+                  className="text-btn"
+                  href={stepHref(next)}
+                  replace
+                  scroll={false}
+                  title={next.title}
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                    e.preventDefault();
+                    go(1, true);
+                  }}
+                >
+                  Next →
+                </Link>
+              )}
+            </nav>
           )}
           {isPhone && share("solid-btn pv-share-wide")}
         </div>

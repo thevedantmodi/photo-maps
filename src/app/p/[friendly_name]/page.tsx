@@ -5,7 +5,9 @@ import PhotoView from '@/app/components/PhotoView';
 import type { Photo } from '@/app/types';
 import { photoAlt, photoTitle } from '@/lib/alt';
 import { getBaseUrl } from '@/lib/baseUrl';
-import { getPhotoBySlug } from '@/lib/photos';
+import { getPhotoBySlug, getPublishedPhotos } from '@/lib/photos';
+import { photoNeighbours } from '@/lib/photoSequence';
+import { parseYear } from '@/lib/yearParam';
 import { getPlaces } from '@/lib/places';
 import { CARD } from '@/lib/shareTokens';
 import { AUTHOR, RSS_ALTERNATE, SITE_NAME } from '@/lib/site';
@@ -13,7 +15,10 @@ import { shareCardPath, shareVersion } from '@/lib/shareVersion';
 
 export const dynamic = 'force-dynamic';
 
-type Props = { params: Promise<{ friendly_name: string }> };
+type Props = {
+  params: Promise<{ friendly_name: string }>;
+  searchParams: Promise<{ year?: string | string[] }>;
+};
 
 function formatDate(iso: string | null): string | null {
   if (!iso) return null;
@@ -101,10 +106,17 @@ function jsonLd(photo: Photo, base: string) {
   };
 }
 
-export default async function PhotoPage({ params }: Props) {
-  const { friendly_name } = await params;
-  const [photo, places] = await Promise.all([getPhotoBySlug(friendly_name), getPlaces()]);
+export default async function PhotoPage({ params, searchParams }: Props) {
+  const [{ friendly_name }, query] = await Promise.all([params, searchParams]);
+  const [photo, places, all] = await Promise.all([
+    getPhotoBySlug(friendly_name),
+    getPlaces(),
+    getPublishedPhotos(),
+  ]);
   if (!photo) notFound();
+
+  const year = parseYear(query.year);
+  const steps = photoNeighbours(all, friendly_name, year);
 
   const base = await getBaseUrl();
   // Escape "<" so a caption containing "</script>" can't close the tag early.
@@ -113,7 +125,7 @@ export default async function PhotoPage({ params }: Props) {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ld }} />
-      <PhotoView photo={photo} places={places} mode="page" />
+      <PhotoView key={photo.id} photo={photo} places={places} mode="page" prev={steps.prev} next={steps.next} year={steps.year} />
     </>
   );
 }
