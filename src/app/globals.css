@@ -894,6 +894,9 @@ a:hover > .arrow {
   height: 100dvh;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
+  /* minmax(0, …): the year strip scrolls sideways; without this its full width stretched
+     the column, and the map with it, past the edge of a phone. */
+  grid-template-columns: minmax(0, 1fr);
   row-gap: 20px;
   padding: 0 var(--gutter) max(12px, env(safe-area-inset-bottom));
   overflow: hidden;
@@ -908,6 +911,53 @@ a:hover > .arrow {
 
 .mapframe .mapboxgl-map {
   font-family: var(--font-sans);
+}
+
+/* Mapbox's credits, folded behind a small (i) in the top right under the logo: in the
+   page's colours rather than a white pill, opening into a quiet line of small print. */
+.mapframe .mapboxgl-ctrl-attrib.mapboxgl-compact {
+  min-height: 22px;
+  margin: 4px 10px 0 0;
+  padding: 2px 26px 2px 6px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.mapframe .mapboxgl-ctrl-attrib.mapboxgl-compact:not(.mapboxgl-compact-show) {
+  padding: 0;
+  min-width: 22px;
+}
+
+.mapframe .mapboxgl-ctrl-top-right .mapboxgl-ctrl-attrib-button {
+  top: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  background-color: transparent;
+}
+
+.mapframe .mapboxgl-ctrl-attrib a {
+  color: inherit;
+}
+
+.mapframe .mapboxgl-ctrl-attrib-button:focus {
+  box-shadow: none;
+}
+
+.mapframe .mapboxgl-ctrl-attrib-button:focus-visible {
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+/* The (i) is a black image, so dark mode inverts the button; the focus ring is inverted
+   with it, hence --bg, which comes out light. */
+:root[data-theme="dark"] .mapframe .mapboxgl-ctrl-attrib-button {
+  filter: invert(1);
+}
+
+:root[data-theme="dark"] .mapframe .mapboxgl-ctrl-attrib-button:focus-visible {
+  box-shadow: 0 0 0 2px var(--bg);
 }
 
 .map-loader {

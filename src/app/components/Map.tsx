@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import Map, { Marker } from "react-map-gl/mapbox";
+import Map, { AttributionControl, Marker } from "react-map-gl/mapbox";
 import type { MapRef, ViewStateChangeEvent } from "react-map-gl/mapbox";
 import Supercluster from "supercluster";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -550,8 +550,12 @@ const MapComponent = ({ photos, places }: MapProps) => {
           mapboxAccessToken={mapboxToken}
           projection="globe"
           minZoom={1}
+          // Mapbox's logo and credits are required; both sit top right, out of the way of
+          // thumbs, with the credits folded behind a small (i) until it's tapped.
+          logoPosition="top-right"
           attributionControl={false}
         >
+          <AttributionControl compact position="top-right" />
           {clusters.map((cluster) => {
             const [longitude, latitude] = cluster.geometry.coordinates;
             const props = cluster.properties as ClusterProps;
