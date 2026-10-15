@@ -1633,6 +1633,47 @@ html:has(.pv) {
 
 /* ── Directory ─────────────────────────────────────────────────────────── */
 
+/* ── Admin: the site's header and rules, tools in a single readable column ── */
+
+.admin {
+  min-height: 100dvh;
+  padding: 0 var(--gutter) 64px;
+}
+
+.admin-head {
+  display: flex;
+  align-items: baseline;
+  gap: 32px;
+  flex-wrap: wrap;
+  padding: 24px 0 16px;
+  border-bottom: 1px solid var(--ink);
+  margin-bottom: 32px;
+}
+
+.admin-head h1 {
+  margin: 0;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 24px;
+}
+
+.admin-tabs [aria-current="page"] {
+  font-weight: 700;
+}
+
+.admin-body {
+  max-width: 720px;
+}
+
+.admin input,
+.admin textarea,
+.admin select,
+.admin button {
+  font: inherit;
+}
+
 .dir {
   min-height: 100dvh;
   padding: 0 var(--gutter) 40px;

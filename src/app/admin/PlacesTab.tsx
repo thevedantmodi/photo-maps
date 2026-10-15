@@ -87,7 +87,7 @@ function PlaceModal({ place, theme, unit, onUnitChange, onClose, onSaved }: Plac
     width: "100%",
     padding: "8px 12px",
     border: `1px solid ${invalid ? c.danger : c.inputBorder}`,
-    borderRadius: 6,
+    borderRadius: 0,
     fontSize: 14,
     boxSizing: "border-box",
     background: c.input,
@@ -231,7 +231,7 @@ function PlaceModal({ place, theme, unit, onUnitChange, onClose, onSaved }: Plac
         onClick={(e) => e.stopPropagation()}
         style={{
           background: c.modalBg,
-          borderRadius: 10,
+          borderRadius: 0,
           padding: 24,
           width: "100%",
           maxWidth: 480,
@@ -278,7 +278,7 @@ function PlaceModal({ place, theme, unit, onUnitChange, onClose, onSaved }: Plac
               display: "flex",
               padding: 2,
               gap: 2,
-              borderRadius: 6,
+              borderRadius: 0,
               background: c.chipBg,
             }}
           >
@@ -292,7 +292,7 @@ function PlaceModal({ place, theme, unit, onUnitChange, onClose, onSaved }: Plac
                 style={{
                   padding: "2px 10px",
                   border: "none",
-                  borderRadius: 4,
+                  borderRadius: 0,
                   fontSize: 12,
                   fontWeight: unit === u ? 600 : 400,
                   background: unit === u ? c.input : "transparent",
@@ -313,7 +313,7 @@ function PlaceModal({ place, theme, unit, onUnitChange, onClose, onSaved }: Plac
             display: "flex",
             alignItems: "stretch",
             border: `1px solid ${radiusInvalid ? c.danger : c.inputBorder}`,
-            borderRadius: 6,
+            borderRadius: 0,
             background: c.input,
             overflow: "hidden",
             marginBottom: radiusInvalid ? 4 : 6,
@@ -409,7 +409,7 @@ function PlaceModal({ place, theme, unit, onUnitChange, onClose, onSaved }: Plac
               background: "none",
               color: c.text,
               border: `1px solid ${c.inputBorder}`,
-              borderRadius: 6,
+              borderRadius: 0,
               fontSize: 14,
               cursor: "pointer",
             }}
@@ -425,7 +425,7 @@ function PlaceModal({ place, theme, unit, onUnitChange, onClose, onSaved }: Plac
               background: c.btn,
               color: c.btnText,
               border: "none",
-              borderRadius: 6,
+              borderRadius: 0,
               fontSize: 14,
               cursor: saving || !canSave ? "not-allowed" : "pointer",
               opacity: saving || !canSave ? 0.5 : 1,
@@ -515,7 +515,7 @@ export default function PlacesTab({ theme }: { theme: Theme }) {
   const iconBtn: React.CSSProperties = {
     background: "none",
     border: `1px solid ${c.inputBorder}`,
-    borderRadius: 4,
+    borderRadius: 0,
     width: 28,
     height: 28,
     cursor: "pointer",
@@ -542,7 +542,7 @@ export default function PlacesTab({ theme }: { theme: Theme }) {
 
       <Hint theme={theme} style={{ marginBottom: 12 }}>
         <span>
-          Names for spots Mapbox leaves unlabeled. They show in the sidebar and
+          Names for spots Mapbox leaves unlabeled. They show in the directory and
           search on the next page load. No deploy needed.
         </span>
       </Hint>
@@ -555,7 +555,7 @@ export default function PlacesTab({ theme }: { theme: Theme }) {
           background: c.btn,
           color: c.btnText,
           border: "none",
-          borderRadius: 6,
+          borderRadius: 0,
           fontSize: 14,
           cursor: "pointer",
           marginBottom: 16,
@@ -576,7 +576,7 @@ export default function PlacesTab({ theme }: { theme: Theme }) {
                 alignItems: "center",
                 gap: 10,
                 padding: "10px 12px",
-                borderRadius: 8,
+                borderRadius: 0,
                 background: c.cardBg,
               }}
             >

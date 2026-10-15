@@ -15,7 +15,7 @@ An interactive map of geotagged travel photos. Photos are hung on a Mapbox map l
 - **Follow** — `/feed.xml` RSS feed of recent photos, and an email signup under Subscribe in the menu (double opt-in through Resend) with a weekly digest that only goes out when there are new photos.
 - **Admin** at `/admin` (HTTP Basic Auth) with three tabs:
   - **Upload** — upload photos (including HEIC) with caption, location, and date.
-  - **Manage** — edit, rotate, and delete photos; clear the Cloudflare cache in front of R2.
+  - **Manage** — edit, rotate, and delete photos.
   - **Places** — add, edit, and remove custom place labels without a redeploy.
 
 ## Design
@@ -48,7 +48,6 @@ src/
       admin/process/         EXIF + resize + DB insert for an uploaded original
       admin/photos/          list / edit / rotate / delete photos
       admin/places/          CRUD for custom places
-      admin/cache/           purge the Cloudflare cache for the R2 domain
       share/[slug]/          share card image
     components/              header, landing, map, directory and photo page pieces
   db/                        Drizzle schema + client
@@ -72,10 +71,6 @@ R2_BUCKET=...
 R2_ACCESS_KEY_ID=...
 R2_SECRET_ACCESS_KEY=...
 NEXT_PUBLIC_R2_PUBLIC_URL=... # public base URL of the bucket
-
-# Cloudflare cache purge (admin "Clear cache")
-CLOUDFLARE_ZONE_ID=...        # zone serving the R2 custom domain
-CLOUDFLARE_API_TOKEN=...      # needs Zone > Cache Purge
 
 # Mapbox
 NEXT_PUBLIC_MAPBOX_TOKEN=...

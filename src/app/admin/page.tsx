@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useTheme } from "../hooks/useTheme";
+import SiteHeader from "../components/SiteHeader";
 import { colors, type Theme } from "./theme";
 import { Hint, Kbd, useModKey } from "./Kbd";
 import LocationSection from "./LocationSection";
@@ -207,7 +208,7 @@ function UploadTab({ theme }: { theme: Theme }) {
     width: "100%",
     padding: "8px 12px",
     border: `1px solid ${c.inputBorder}`,
-    borderRadius: 6,
+    borderRadius: 0,
     fontSize: 14,
     boxSizing: "border-box",
     background: c.input,
@@ -226,7 +227,7 @@ function UploadTab({ theme }: { theme: Theme }) {
         }}
         style={{
           border: `2px dashed ${c.inputBorder}`,
-          borderRadius: 8,
+          borderRadius: 0,
           padding: "36px 20px",
           textAlign: "center",
           cursor: "pointer",
@@ -332,7 +333,7 @@ function UploadTab({ theme }: { theme: Theme }) {
             style={{
               fontSize: 11,
               padding: "2px 7px",
-              borderRadius: 10,
+              borderRadius: 0,
               background: c.chipBg,
               color: c.chipText,
             }}
@@ -367,7 +368,7 @@ function UploadTab({ theme }: { theme: Theme }) {
           background: c.btn,
           color: c.btnText,
           border: "none",
-          borderRadius: 6,
+          borderRadius: 0,
           fontSize: 14,
           cursor:
             !file || !friendlyName || uploading ? "not-allowed" : "pointer",
@@ -389,7 +390,7 @@ function UploadTab({ theme }: { theme: Theme }) {
           style={{
             marginTop: 12,
             background: c.progressBg,
-            borderRadius: 4,
+            borderRadius: 0,
             overflow: "hidden",
           }}
         >
@@ -446,7 +447,7 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
     width: "100%",
     padding: "8px 12px",
     border: `1px solid ${c.inputBorder}`,
-    borderRadius: 6,
+    borderRadius: 0,
     fontSize: 14,
     boxSizing: "border-box",
     background: c.input,
@@ -566,7 +567,7 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
         onClick={(e) => e.stopPropagation()}
         style={{
           background: c.modalBg,
-          borderRadius: 10,
+          borderRadius: 0,
           padding: 24,
           width: "100%",
           maxWidth: 480,
@@ -590,7 +591,7 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
         <img
           src={thumbUrl}
           alt={photo.friendly_name}
-          style={{ width: "100%", borderRadius: 6, marginBottom: 16, objectFit: "cover", maxHeight: 200 }}
+          style={{ width: "100%", borderRadius: 0, marginBottom: 16, objectFit: "cover", maxHeight: 200 }}
         />
 
         {/* Rotation controls */}
@@ -612,7 +613,7 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
                   background: c.cardBg,
                   color: c.text,
                   border: `1px solid ${c.inputBorder}`,
-                  borderRadius: 6,
+                  borderRadius: 0,
                   fontSize: 13,
                   cursor: rotating ? "not-allowed" : "pointer",
                   opacity: rotating ? 0.5 : 1,
@@ -686,7 +687,7 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
               background: "none",
               color: c.text,
               border: `1px solid ${c.inputBorder}`,
-              borderRadius: 6,
+              borderRadius: 0,
               fontSize: 14,
               cursor: "pointer",
             }}
@@ -702,7 +703,7 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
               background: c.btn,
               color: c.btnText,
               border: "none",
-              borderRadius: 6,
+              borderRadius: 0,
               fontSize: 14,
               cursor: saving ? "not-allowed" : "pointer",
               opacity: saving ? 0.5 : 1,
@@ -792,7 +793,7 @@ function ManageTab({ theme }: { theme: Theme }) {
             key={photo.id}
             style={{
               position: "relative",
-              borderRadius: 8,
+              borderRadius: 0,
               overflow: "hidden",
               background: c.cardBg,
             }}
@@ -847,7 +848,7 @@ function ManageTab({ theme }: { theme: Theme }) {
                 background: "rgba(0,0,0,0.6)",
                 color: "#fff",
                 border: "none",
-                borderRadius: 4,
+                borderRadius: 0,
                 width: 24,
                 height: 24,
                 cursor: "pointer",
@@ -871,7 +872,7 @@ function ManageTab({ theme }: { theme: Theme }) {
                 background: "rgba(0,0,0,0.6)",
                 color: "#fff",
                 border: "none",
-                borderRadius: 4,
+                borderRadius: 0,
                 width: 24,
                 height: 24,
                 cursor: "pointer",
@@ -891,132 +892,36 @@ function ManageTab({ theme }: { theme: Theme }) {
   );
 }
 
+const TABS = [
+  { id: "upload", label: "Upload" },
+  { id: "manage", label: "Manage" },
+  { id: "places", label: "Places" },
+] as const;
+
 export default function AdminPage() {
-  const [theme, toggleTheme] = useTheme();
-  const [tab, setTab] = useState<"upload" | "manage" | "places">("upload");
-  const [clearing, setClearing] = useState(false);
-  const [cacheMsg, setCacheMsg] = useState("");
-
-  const c = colors(theme);
-
-  // Purges Cloudflare's edge cache for the R2 image host, so rotated or
-  // replaced images show up without waiting for the cache to expire.
-  const handleClearCache = async () => {
-    if (!confirm("Clear the R2 image cache? Images will reload from R2 on next view.")) return;
-    setClearing(true);
-    setCacheMsg("");
-    try {
-      const res = await fetch("/api/admin/cache", { method: "DELETE" });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Clear failed");
-      }
-      setCacheMsg("Cache cleared.");
-    } catch (err: unknown) {
-      setCacheMsg(`Error: ${err instanceof Error ? err.message : String(err)}`);
-    } finally {
-      setClearing(false);
-    }
-  };
+  const [theme] = useTheme();
+  const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("upload");
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: c.bg,
-        color: c.text,
-        fontFamily: "system-ui, sans-serif",
-      }}
-    >
-      <div style={{ maxWidth: 600, margin: "0 auto", padding: "40px 20px" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 24,
-          }}
-        >
-          <h1 style={{ fontSize: 20, fontWeight: 600, margin: 0 }}>Admin</h1>
-          <div style={{ display: "flex", gap: 8 }}>
+    <main className="admin">
+      <SiteHeader current="admin" />
+      <div className="admin-head">
+        <h1 className="label">Admin</h1>
+        <nav className="admin-tabs" aria-label="Admin sections">
+          {TABS.map((t) => (
             <button
-              onClick={handleClearCache}
-              disabled={clearing}
-              style={{
-                background: "none",
-                border: `1px solid ${c.inputBorder}`,
-                borderRadius: 6,
-                padding: "6px 12px",
-                cursor: clearing ? "default" : "pointer",
-                fontSize: 13,
-                color: c.text,
-                opacity: clearing ? 0.5 : 1,
-              }}
+              key={t.id}
+              type="button"
+              className="text-btn ul"
+              aria-current={tab === t.id ? "page" : undefined}
+              onClick={() => setTab(t.id)}
             >
-              {clearing ? "Clearing…" : "Clear cache"}
-            </button>
-            <button
-              onClick={toggleTheme}
-              style={{
-                background: "none",
-                border: `1px solid ${c.inputBorder}`,
-                borderRadius: 6,
-                padding: "6px 12px",
-                cursor: "pointer",
-                fontSize: 13,
-                color: c.text,
-              }}
-            >
-              {theme === "dark" ? "☀ Light" : "☾ Dark"}
-            </button>
-          </div>
-        </div>
-
-        {cacheMsg && (
-          <p
-            style={{
-              fontSize: 13,
-              marginTop: -12,
-              marginBottom: 16,
-              color: cacheMsg.startsWith("Error") ? c.danger : c.muted,
-            }}
-          >
-            {cacheMsg}
-          </p>
-        )}
-
-        <div
-          style={{
-            display: "flex",
-            gap: 4,
-            marginBottom: 28,
-            borderBottom: `1px solid ${c.tabBorder}`,
-          }}
-        >
-          {(["upload", "manage", "places"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              style={{
-                padding: "8px 16px",
-                border: "none",
-                background: "none",
-                cursor: "pointer",
-                fontSize: 14,
-                fontWeight: tab === t ? 600 : 400,
-                color: tab === t ? c.tabActive : c.muted,
-                borderBottom:
-                  tab === t
-                    ? `2px solid ${c.tabActive}`
-                    : "2px solid transparent",
-                borderRadius: 0,
-              }}
-            >
-              {t === "upload" ? "Upload" : t === "manage" ? "Manage" : "Places"}
+              {t.label}
             </button>
           ))}
-        </div>
-
+        </nav>
+      </div>
+      <div className="admin-body">
         {tab === "upload" && <UploadTab theme={theme} />}
         {tab === "manage" && <ManageTab theme={theme} />}
         {tab === "places" && <PlacesTab theme={theme} />}

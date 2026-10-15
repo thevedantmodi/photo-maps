@@ -33,7 +33,7 @@ export function Kbd({
         background: c.kbdBg,
         border: `1px solid ${c.kbdBorder}`,
         borderBottomWidth: 2,
-        borderRadius: 4,
+        borderRadius: 0,
         color: c.kbdText,
         fontFamily:
           "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
