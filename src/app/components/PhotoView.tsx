@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { animate, type AnimationPlaybackControls } from "framer-motion";
 
 import SiteHeader from "./SiteHeader";
 import { fireShutter } from "./Mark";
@@ -33,9 +34,28 @@ const SWIPE_LOCK_PX = 8;
 const STEP_MS = 340;
 // The space between one photo and the next as they slide past each other.
 const PEEK_GAP = 32;
-// A quick flick steps even when it's short of SWIPE_PX: px per ms, and a minimum distance.
-const FLICK_SPEED = 0.45;
-const FLICK_PX = 24;
+// Sideways the photos move on springs that take the swipe's speed with them, so a flick
+// flies and a gentle push glides. Stepping is heavy and settles without a wobble; falling
+// back short of the next photo has a little give.
+const STEP_SPRING = { type: "spring", stiffness: 190, damping: 28, mass: 1.2, restDelta: 0.5, restSpeed: 30 } as const;
+const BACK_SPRING = { type: "spring", stiffness: 320, damping: 24, mass: 1, restDelta: 0.5, restSpeed: 30 } as const;
+// A release is judged by where its speed would carry it this far ahead (ms), not where it
+// stopped: a short, fast flick steps; a long, slow drag let go gently can still fall back.
+const PROJECT_MS = 180;
+
+/** Past the first or last photo the drag gives less and less, like pulling on elastic. */
+function rubber(x: number, size: number) {
+  if (size <= 0) return 0;
+  return Math.sign(x) * (1 - 1 / ((Math.abs(x) * 0.55) / size + 1)) * size;
+}
+
+/** Speed over a trail of recent positions, px per second. */
+function speedOf(trail: { x: number; t: number }[]) {
+  const first = trail[0];
+  const last = trail[trail.length - 1];
+  if (!first || !last || last.t <= first.t || performance.now() - last.t > 80) return 0;
+  return ((last.x - first.x) / (last.t - first.t)) * 1000;
+}
 const EASE_OUT = "cubic-bezier(0.22, 1, 0.36, 1)";
 // The words changing from one photo's to the next.
 const MORPH_MS = 460;
@@ -147,8 +167,10 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
     axis: "x" | "y" | null;
     // How far along the locked axis: down, or sideways (negative is left).
     dist: number;
-    // The finger's recent positions (the last ~100ms), to tell a flick from a slow drag.
+    // The finger's recent positions (the last ~100ms), for the speed it lets go at.
     trail: { x: number; t: number }[];
+    // Where the photo already was sideways when the finger came down (mid-spring).
+    base: number;
   } | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -332,8 +354,36 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
     return w / 2 + PEEK_GAP + (peek?.offsetWidth ?? w) / 2;
   }, []);
 
+  // Places the photo `x` px sideways and the one it's moving towards just past its edge.
+  // `leaving`: it's on its way out, so it fades as it goes.
+  const springRef = useRef<AnimationPlaybackControls | null>(null);
+  const coolRef = useRef({ on: arrived !== null, last: 0 });
+  useEffect(() => {
+    coolRef.current.last = performance.now();
+  }, []);
+  const placeX = useCallback(
+    (x: number, leaving = false) => {
+      const el = frameRef.current;
+      const root = rootRef.current;
+      if (!el || !root) return;
+      dragX.current = x;
+      const toward = x < 0 ? nextPeekRef.current : x > 0 ? prevPeekRef.current : null;
+      const away = x < 0 ? prevPeekRef.current : nextPeekRef.current;
+      const span = peekSpan(toward);
+      el.style.transform = x === 0 ? "" : `translateX(${x}px)`;
+      el.style.opacity = leaving ? String(Math.max(0, 1 - Math.abs(x) / span)) : "";
+      if (toward) toward.style.transform = `translateX(${x + (x < 0 ? span : -span)}px)`;
+      if (away) away.style.transform = "";
+      if (x === 0) root.removeAttribute("data-swipe-dir");
+      else root.setAttribute("data-swipe-dir", x < 0 ? "next" : "prev");
+    },
+    [peekSpan],
+  );
+
+  useEffect(() => () => springRef.current?.stop(), []);
+
   const go = useCallback(
-    (dir: 1 | -1, button = false) => {
+    (dir: 1 | -1, button = false, velocity = 0) => {
       const to = dir === 1 ? next : prev;
       if (!to || closingRef.current || steppingRef.current) return;
       steppingRef.current = true;
@@ -361,36 +411,25 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
         return;
       }
       rememberStep(dir, button, toRatio, handOn);
-      // Like turning a page: this photo slides off as the next slides into its place, from
-      // wherever a swipe left them. The page underneath stays put, so there's no gap.
-      root.setAttribute("data-swipe-dir", dir === 1 ? "next" : "prev");
-      const span = peekSpan(peek);
-      const from = dragX.current;
-      const end = -dir * span;
-      const duration = Math.max(160, STEP_MS * Math.min(1, Math.abs(end - from) / span));
-      const timing = { duration, easing: EASE_OUT, fill: "forwards" as const };
-      // The one leaving fades as it goes, so nothing is cut off when the page changes.
-      el.animate(
-        [
-          { transform: `translateX(${from}px)`, opacity: 1 },
-          { transform: `translateX(${end}px)`, opacity: 0 },
-        ],
-        timing,
-      );
-      const anim = peek.animate(
-        [{ transform: `translateX(${from + dir * span}px)` }, { transform: "translateX(0px)" }],
-        timing,
-      );
+      // Like turning a page: this photo slides off as the next slides into its place,
+      // carrying on from wherever the swipe left them at the speed it let go. The page
+      // underneath stays put, so there's no gap.
       let done = false;
       const once = () => {
         if (done) return;
         done = true;
         navigate();
       };
-      anim.onfinish = once;
-      later(once, duration + 100);
+      springRef.current?.stop();
+      springRef.current = animate(dragX.current, -dir * peekSpan(peek), {
+        ...STEP_SPRING,
+        velocity,
+        onUpdate: (x) => placeX(x, true),
+        onComplete: once,
+      });
+      later(once, 1500);
     },
-    [next, prev, router, stepHref, later, sideRatio, peekSpan],
+    [next, prev, router, stepHref, later, sideRatio, peekSpan, placeX],
   );
 
   // Clicked Previous/Next: focus lands on the same button here, or the other one at the end.
@@ -465,13 +504,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       if (axis === "x") {
         // Sideways the photo moves one to one with the finger and the next one comes in
         // beside it; the page stays solid.
-        el.style.transform = `translateX(${dist}px)`;
-        dragX.current = dist;
-        const peek = (dist < 0 ? nextPeekRef : prevPeekRef).current;
-        const span = peekSpan(peek);
-        if (peek) peek.style.transform = `translateX(${dist + (dist < 0 ? span : -span)}px)`;
-        if (dist === 0) root.removeAttribute("data-swipe-dir");
-        else root.setAttribute("data-swipe-dir", dist < 0 ? "next" : "prev");
+        placeX(dist);
         root.style.setProperty("--swipe", Math.min(reach / SWIPE_PX, 1).toFixed(3));
         root.toggleAttribute("data-swipe-ready", reach > SWIPE_PX);
         return;
@@ -491,17 +524,20 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       root.toggleAttribute("data-swipe-ready", reach > SWIPE_PX);
       root.setAttribute("data-swipe-dir", "close");
     },
-    [mode, peekSpan],
+    [mode, placeX],
   );
 
   const startDrag = useCallback(() => {
-    // A spring-back or the opening growth still running would override the drag.
+    // A spring-back or the opening growth still running would override the drag; a
+    // sideways spring is caught where it is (the drag carries on from dragX).
+    springRef.current?.stop();
+    springRef.current = null;
     frameRef.current?.getAnimations().forEach((a) => a.cancel());
     rootRef.current?.setAttribute("data-dragging", "true");
   }, []);
 
   const endDrag = useCallback(
-    (axis: "x" | "y", dist: number, flick = false) => {
+    (axis: "x" | "y", dist: number, velocity = 0) => {
       const el = frameRef.current;
       const root = rootRef.current;
       root?.removeAttribute("data-dragging");
@@ -510,44 +546,31 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
         close();
         return;
       }
-      const far = flick ? FLICK_PX : SWIPE_PX;
-      if (axis === "x" && dist < -far && next) {
-        go(1);
-        return;
-      }
-      if (axis === "x" && dist > far && prev) {
-        go(-1);
-        return;
-      }
       if (axis === "x") {
-        // Short of the line: both photos glide back, then the one alongside hides again.
-        const peek = (dist < 0 ? nextPeekRef : prevPeekRef).current;
-        const span = peekSpan(peek);
-        el.style.transform = "";
-        dragX.current = 0;
+        // Where the release would carry it decides: past the line it steps, else it falls back.
+        const projected = dist + (velocity / 1000) * PROJECT_MS;
+        if (projected < -SWIPE_PX && dist < 0 && next) {
+          go(1, false, velocity);
+          return;
+        }
+        if (projected > SWIPE_PX && dist > 0 && prev) {
+          go(-1, false, velocity);
+          return;
+        }
         root.style.removeProperty("--swipe");
         root.removeAttribute("data-swipe-ready");
         root.removeAttribute("data-swipe-cursor");
-        const reset = () => {
-          if (steppingRef.current) return;
-          if (peek) peek.style.transform = "";
-          root.removeAttribute("data-swipe-dir");
-        };
         if (dist === 0 || reducedMotion()) {
-          reset();
+          placeX(0);
           return;
         }
-        const timing = { duration: 300, easing: EASE_OUT };
-        el.animate([{ transform: `translateX(${dist}px)` }, { transform: "translateX(0px)" }], timing);
-        const anim = peek?.animate(
-          [
-            { transform: `translateX(${dist + (dist < 0 ? span : -span)}px)` },
-            { transform: `translateX(${dist < 0 ? span : -span}px)` },
-          ],
-          timing,
-        );
-        if (anim) anim.onfinish = reset;
-        else reset();
+        // Both photos spring back together, keeping the speed the swipe had.
+        springRef.current = animate(dist, 0, {
+          ...BACK_SPRING,
+          velocity,
+          onUpdate: (x) => placeX(x),
+          onComplete: () => placeX(0),
+        });
         return;
       }
       const from = el.style.transform || "none";
@@ -562,14 +585,15 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
         el.animate([{ transform: from }, { transform: "none" }], { duration: 280, easing: SPRING });
       }
     },
-    [close, go, next, prev, peekSpan],
+    [close, go, next, prev, placeX],
   );
 
   // Touch: a drag locks to whichever way the finger first moves.
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType === "mouse" || closingRef.current) return;
+    if (e.pointerType === "mouse" || closingRef.current || steppingRef.current) return;
     startDrag();
     drag.current = {
+      base: dragX.current,
       startX: e.clientX,
       startY: e.clientY,
       axis: null,
@@ -605,9 +629,13 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       if (Math.hypot(dx, dy) < SWIPE_LOCK_PX) return;
       d.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
     }
-    // Sideways only towards a photo that's there; down closes.
+    // Sideways towards a photo that's there it follows the finger; past the first or last
+    // it stretches like elastic. Down closes.
     if (d.axis === "y") d.dist = Math.max(0, dy);
-    else d.dist = (dx < 0 ? next : prev) ? dx : 0;
+    else {
+      const x = d.base + dx;
+      d.dist = (x < 0 ? next : prev) ? x : rubber(x, figureRef.current?.clientWidth ?? 0);
+    }
     const now = performance.now();
     d.trail.push({ x: e.clientX, t: now });
     while (d.trail.length > 2 && now - d.trail[0].t > 100) d.trail.shift();
@@ -621,13 +649,8 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       rootRef.current?.removeAttribute("data-dragging");
       return;
     }
-    // A quick flick the same way as the drag counts even when it's short; a finger that
-    // stopped before lifting doesn't.
-    const first = d.trail[0];
-    const last = d.trail[d.trail.length - 1];
-    const fresh = performance.now() - last.t < 80;
-    const v = last.t > first.t ? (last.x - first.x) / (last.t - first.t) : 0;
-    endDrag(d.axis ?? "y", d.dist, fresh && Math.abs(v) > FLICK_SPEED && Math.sign(v) === Math.sign(d.dist));
+    // The photo carries on at the speed the finger let go at (none if it stopped first).
+    endDrag(d.axis ?? "y", d.dist, d.axis === "x" ? speedOf(d.trail) : 0);
   };
 
   // Trackpad: a two-finger swipe arrives as sideways wheel events. Fingers moving left
@@ -639,17 +662,21 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
     const root = rootRef.current;
     if (!root) return;
     let dist = 0;
+    let shown = 0;
+    let trail: { x: number; t: number }[] = [];
     let active = false;
     let idle: ReturnType<typeof setTimeout> | undefined;
     // A swipe's momentum keeps arriving after it has stepped. Arriving by a step, the new
     // photo ignores it until the wheel has been quiet for a moment, so one swipe is one photo.
-    let cooling = arrived !== null;
-    let lastWheel = performance.now();
+    // (Kept in refs: this effect re-runs as the photos alongside load.)
+    const cool = coolRef.current;
     const settle = () => {
       if (!active) return;
       active = false;
-      if (!closingRef.current) endDrag("x", dist);
+      if (!closingRef.current) endDrag("x", shown, 0);
       dist = 0;
+      shown = 0;
+      trail = [];
     };
     const onWheel = (e: WheelEvent) => {
       if (closingRef.current || steppingRef.current) {
@@ -658,13 +685,13 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
         return;
       }
       const now = performance.now();
-      const quiet = now - lastWheel > 200;
-      lastWheel = now;
-      if (cooling && !quiet && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      const quiet = now - cool.last > 200;
+      cool.last = now;
+      if (cool.on && !quiet && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
         e.preventDefault();
         return;
       }
-      cooling = false;
+      cool.on = false;
       if (e.ctrlKey) return; // pinch to zoom
       if (!active) {
         if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
@@ -680,12 +707,16 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
         root.style.setProperty("--swipe-y", `${e.clientY}px`);
         root.setAttribute("data-swipe-cursor", "");
       }
+      if (trail.length === 0) dist = dragX.current;
       dist -= e.deltaX * (e.deltaMode === 1 ? 16 : 1);
-      if (!next) dist = Math.max(0, dist);
-      if (!prev) dist = Math.min(0, dist);
-      dragTo("x", dist);
-      if (Math.abs(dist) > SWIPE_PX) {
-        endDrag("x", dist);
+      shown = (dist < 0 ? next : prev) ? dist : rubber(dist, figureRef.current?.clientWidth ?? 0);
+      trail.push({ x: shown, t: now });
+      while (trail.length > 2 && now - trail[0].t > 100) trail.shift();
+      dragTo("x", shown);
+      if (Math.abs(shown) > SWIPE_PX) {
+        // Past the line it goes at once, at the swipe's speed, rather than waiting out the
+        // momentum still to come.
+        endDrag("x", shown, speedOf(trail));
         return;
       }
       clearTimeout(idle);
@@ -696,7 +727,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       clearTimeout(idle);
       root.removeEventListener("wheel", onWheel);
     };
-  }, [dragTo, startDrag, endDrag, next, prev, arrived]);
+  }, [dragTo, startDrag, endDrag, next, prev]);
 
   const version = shareVersion(photo);
   const share = (className: string) => (
