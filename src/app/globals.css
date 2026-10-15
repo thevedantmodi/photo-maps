@@ -1410,8 +1410,7 @@ a:hover > .arrow {
 
 .pv-swipe-track,
 .pv-swipe-fill,
-.pv-swipe-x,
-.pv-swipe-next {
+.pv-swipe-arrow {
   fill: none;
   stroke-width: 2;
   stroke-linecap: round;
@@ -1430,21 +1429,15 @@ a:hover > .arrow {
   transform-origin: center;
 }
 
-.pv-swipe-x {
+.pv-swipe-arrow {
   stroke: var(--ink);
   opacity: 0;
   transition: opacity 120ms ease;
 }
 
-.pv-swipe-next {
-  stroke: var(--ink);
-  opacity: 0;
-  transition: opacity 120ms ease;
-}
-
-/* × to close, → to go on to the next photo. */
-.pv[data-swipe-ready]:not([data-swipe-dir="next"]) .pv-swipe-x,
-.pv[data-swipe-ready][data-swipe-dir="next"] .pv-swipe-next {
+/* The arrow points to the photo the swipe is heading for. */
+.pv[data-swipe-ready][data-swipe-dir="next"] .pv-swipe-arrow[data-dir="next"],
+.pv[data-swipe-ready][data-swipe-dir="prev"] .pv-swipe-arrow[data-dir="prev"] {
   opacity: 1;
 }
 

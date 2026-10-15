@@ -25,8 +25,8 @@ const CLOSE_MS = 320;
 const DETAILS_DELAY_MS = 220;
 // Never leave the details hidden, even if the photo fails to load.
 const DETAILS_FALLBACK_MS = 600;
-// Swipe the photo down, or right, this far and letting go closes it.
-const SWIPE_CLOSE_PX = 120;
+// Swipe the photo this far and let go: down closes it, sideways steps through the photos.
+const SWIPE_PX = 120;
 // How far a finger moves before the drag commits to down or left.
 const SWIPE_LOCK_PX = 8;
 // Previous/Next: the photo slides this long on its way out and in.
@@ -360,15 +360,16 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
     return () => window.removeEventListener("keydown", onKey);
   }, [close, go]);
 
-  // Swipe the photo down, or right, to close it: a finger on a phone, two fingers on a
-  // trackpad. The photo follows, shrinking a little as the page fades; short of the line it
-  // springs back. On a trackpad a ring at the cursor fills towards the line.
+  // Swipe the photo left for the next one and right for the one before, like turning pages
+  // (a finger on a phone, two fingers on a trackpad); swipe a finger down to close it. The
+  // photo follows, shrinking a little as the page fades; short of the line it springs back.
+  // On a trackpad a ring at the cursor fills towards the line.
   const dragTo = useCallback(
     (axis: "x" | "y", dist: number) => {
       const el = frameRef.current;
       const root = rootRef.current;
       if (!el || !root) return;
-      // Signed: right (or down) closes, left steps to the next photo.
+      // Signed: left is negative (next), right positive (previous), down positive (close).
       const reach = Math.abs(dist);
       const p = Math.min(reach / 300, 1);
       const s = 1 - p * 0.35;
@@ -381,9 +382,9 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       if (mode === "overlay" && bgRef.current) bgRef.current.style.opacity = String(1 - p * 0.85);
       // The words fade out ahead of the photo and the ring fills (globals.css reads both).
       root.style.setProperty("--drag", p.toFixed(3));
-      root.style.setProperty("--swipe", Math.min(reach / SWIPE_CLOSE_PX, 1).toFixed(3));
-      root.toggleAttribute("data-swipe-ready", reach > SWIPE_CLOSE_PX);
-      root.setAttribute("data-swipe-dir", dist < 0 ? "next" : "close");
+      root.style.setProperty("--swipe", Math.min(reach / SWIPE_PX, 1).toFixed(3));
+      root.toggleAttribute("data-swipe-ready", reach > SWIPE_PX);
+      root.setAttribute("data-swipe-dir", axis === "y" ? "close" : dist < 0 ? "next" : "prev");
     },
     [mode],
   );
@@ -395,17 +396,21 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
   }, []);
 
   const endDrag = useCallback(
-    (dist: number) => {
+    (axis: "x" | "y", dist: number) => {
       const el = frameRef.current;
       const root = rootRef.current;
       root?.removeAttribute("data-dragging");
       if (!el || !root) return;
-      if (dist > SWIPE_CLOSE_PX) {
+      if (axis === "y" && dist > SWIPE_PX) {
         close();
         return;
       }
-      if (dist < -SWIPE_CLOSE_PX && next) {
+      if (axis === "x" && dist < -SWIPE_PX && next) {
         go(1);
+        return;
+      }
+      if (axis === "x" && dist > SWIPE_PX && prev) {
+        go(-1);
         return;
       }
       const from = el.style.transform || "none";
@@ -420,7 +425,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
         el.animate([{ transform: from }, { transform: "none" }], { duration: 280, easing: SPRING });
       }
     },
-    [close, go, next],
+    [close, go, next, prev],
   );
 
   // Touch: a drag locks to whichever way the finger first moves.
@@ -457,42 +462,60 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       if (Math.hypot(dx, dy) < SWIPE_LOCK_PX) return;
       d.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
     }
-    // Down and right close; left goes on to the next photo, when there is one.
-    d.dist = d.axis === "y" ? Math.max(0, dy) : next ? dx : Math.max(0, dx);
+    // Sideways only towards a photo that's there; down closes.
+    if (d.axis === "y") d.dist = Math.max(0, dy);
+    else d.dist = (dx < 0 ? next : prev) ? dx : 0;
     dragTo(d.axis, d.dist);
   };
 
   const onPointerUp = () => {
     const d = drag.current;
     drag.current = null;
-    if (d) endDrag(d.dist);
+    if (d) endDrag(d.axis ?? "y", d.dist);
     else rootRef.current?.removeAttribute("data-dragging");
   };
 
-  // Trackpad: a two-finger swipe arrives as sideways wheel events. Fingers moving right
-  // scroll left (negative deltaX) and close; moving left steps to the next photo. Taking
-  // them keeps the browser's own back and forward swipes from running instead. It closes the moment it crosses the line, since the momentum that
-  // follows would otherwise carry it for a beat longer; a pause short of that springs back.
+  // Trackpad: a two-finger swipe arrives as sideways wheel events. Fingers moving left
+  // (positive deltaX) step to the next photo, moving right to the one before. Taking them
+  // keeps the browser's own back and forward swipes from running instead. It steps the
+  // moment it crosses the line, since the momentum that follows would otherwise carry it
+  // for a beat longer; a pause short of that springs back.
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
     let dist = 0;
     let active = false;
     let idle: ReturnType<typeof setTimeout> | undefined;
+    // A swipe's momentum keeps arriving after it has stepped. Arriving by a step, the new
+    // photo ignores it until the wheel has been quiet for a moment, so one swipe is one photo.
+    let cooling = arrived !== null;
+    let lastWheel = performance.now();
     const settle = () => {
       if (!active) return;
       active = false;
-      if (!closingRef.current) endDrag(dist);
+      if (!closingRef.current) endDrag("x", dist);
       dist = 0;
     };
     const onWheel = (e: WheelEvent) => {
-      if (closingRef.current) {
-        // Swallow the momentum still arriving after the photo closed.
+      if (closingRef.current || steppingRef.current) {
+        // Swallow the momentum still arriving after the photo closed or stepped.
         if (active) e.preventDefault();
         return;
       }
+      const now = performance.now();
+      const quiet = now - lastWheel > 200;
+      lastWheel = now;
+      if (cooling && !quiet && Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+        e.preventDefault();
+        return;
+      }
+      cooling = false;
       if (e.ctrlKey) return; // pinch to zoom
-      if (!active && (Math.abs(e.deltaX) <= Math.abs(e.deltaY) || (e.deltaX >= 0 && !next))) return;
+      if (!active) {
+        if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+        // At either end the swipe is left to the browser.
+        if (e.deltaX > 0 ? !next : !prev) return;
+      }
       e.preventDefault();
       if (!active) {
         active = true;
@@ -504,9 +527,10 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       }
       dist -= e.deltaX * (e.deltaMode === 1 ? 16 : 1);
       if (!next) dist = Math.max(0, dist);
+      if (!prev) dist = Math.min(0, dist);
       dragTo("x", dist);
-      if (Math.abs(dist) > SWIPE_CLOSE_PX) {
-        endDrag(dist);
+      if (Math.abs(dist) > SWIPE_PX) {
+        endDrag("x", dist);
         return;
       }
       clearTimeout(idle);
@@ -517,7 +541,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       clearTimeout(idle);
       root.removeEventListener("wheel", onWheel);
     };
-  }, [dragTo, startDrag, endDrag, next]);
+  }, [dragTo, startDrag, endDrag, next, prev, arrived]);
 
   const version = shareVersion(photo);
   const share = (className: string) => (
@@ -547,13 +571,13 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       tabIndex={mode === "overlay" ? -1 : undefined}
     >
       <div className="pv-bg" ref={bgRef} />
-      {/* Trackpad swipes only: sits at the cursor and fills as the swipe nears closing. */}
+      {/* Trackpad swipes only: sits at the cursor and fills as the swipe nears the next photo. */}
       <svg className="pv-swipe" viewBox="0 0 48 48" aria-hidden="true">
         <circle className="pv-swipe-disc" cx="24" cy="24" r="23" />
         <circle className="pv-swipe-track" cx="24" cy="24" r="18" />
         <circle className="pv-swipe-fill" cx="24" cy="24" r="18" pathLength={1} />
-        <path className="pv-swipe-x" d="M19.5 19.5l9 9M28.5 19.5l-9 9" />
-        <path className="pv-swipe-next" d="M17 24h14M26 19l5 5-5 5" />
+        <path className="pv-swipe-arrow" data-dir="next" d="M17 24h14M26 19l5 5-5 5" />
+        <path className="pv-swipe-arrow" data-dir="prev" d="M31 24H17M22 19l-5 5 5 5" />
       </svg>
       <SiteHeader current="photo" />
 
