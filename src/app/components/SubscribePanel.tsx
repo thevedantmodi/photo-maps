@@ -70,13 +70,21 @@ export default function SubscribePanel({
             : "Check your inbox for a confirmation link. You won't get anything until you click it."}
         </p>
       ) : (
-        <form className="sub-form" onSubmit={submit}>
+        // An email box next to a hidden text field reads as a sign-in form to password
+        // managers, which then offer to fill it. Autocomplete off, plus each manager's own
+        // opt-out (1Password, LastPass, Bitwarden, Dashlane), keeps them out.
+        <form className="sub-form" onSubmit={submit} autoComplete="off" data-form-type="other">
           <input
             ref={inputRef}
             className="sub-input"
             type="email"
+            name="subscribe-email"
             required
-            autoComplete="email"
+            autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            data-bwignore
+            data-form-type="other"
             placeholder="you@example.com"
             aria-label="Email address"
             value={email}
@@ -88,6 +96,10 @@ export default function SubscribePanel({
             name="website"
             tabIndex={-1}
             autoComplete="off"
+            data-1p-ignore
+            data-lpignore="true"
+            data-bwignore
+            data-form-type="other"
             aria-hidden="true"
             className="sub-honeypot"
           />
