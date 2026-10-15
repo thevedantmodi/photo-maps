@@ -15,6 +15,13 @@
       "when": 1790220264645,
       "tag": "0001_custom_places",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791861880135,
+      "tag": "0002_photo_alt_text",
+      "breakpoints": true
     }
   ]
 }

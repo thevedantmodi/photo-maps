@@ -4,12 +4,12 @@ import { redirect } from 'next/navigation';
 
 import SiteHeader from '@/app/components/SiteHeader';
 import { addSubscriber, verifyConfirmToken } from '@/lib/subscribe';
-import styles from './confirm.module.css';
+import styles from '../subscribe.module.css';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Confirm subscription — Photos by Vedant Modi',
+  title: 'Confirm subscription',
   robots: { index: false },
 };
 
@@ -55,10 +55,15 @@ export default async function ConfirmPage({ searchParams }: Props) {
     content = <Message title="Something went wrong" body="Your subscription wasn't saved. Open the link from your email to try again." />;
   } else if (!valid) {
     content = (
-      <Message
-        title="This link has expired"
-        body="Confirmation links work for 48 hours. Use Subscribe in the menu above to get a new one."
-      />
+      <>
+        <Message
+          title="This link has expired"
+          body="Confirmation links work for 48 hours. Sign up again to get a new one."
+        />
+        <Link className={styles.button} href="/subscribe">
+          Sign up again
+        </Link>
+      </>
     );
   } else {
     content = (
@@ -76,7 +81,7 @@ export default async function ConfirmPage({ searchParams }: Props) {
 
   return (
     <main className={styles.page}>
-      <SiteHeader current="landing" />
+      <SiteHeader current="subscribe" />
       <div className={styles.card}>
         {content}
         <Link className={`${styles.link} ul`} href="/map">

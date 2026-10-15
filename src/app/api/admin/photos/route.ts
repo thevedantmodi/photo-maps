@@ -9,6 +9,7 @@ export async function GET() {
     id: row.id,
     friendly_name: row.friendly_name,
     caption: row.caption,
+    alt_text: row.alt_text,
     status: row.status,
     thumb_url: getPublicUrl(row.thumb_name),
     thumb_name: row.thumb_name,

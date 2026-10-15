@@ -1,3 +1,4 @@
+import { photoAlt, photoTitle } from '@/lib/alt';
 import { getBaseUrl } from '@/lib/baseUrl';
 import { getRecentPublishedPhotos } from '@/lib/photos';
 
@@ -30,14 +31,14 @@ export async function GET(req: Request) {
   const photos = await getRecentPublishedPhotos(ITEM_LIMIT);
 
   const items = photos.map((photo) => {
-    const title = photo.caption || photo.original_name;
+    const title = photoTitle(photo);
     const link = `${base}/p/${encodeURIComponent(photo.friendly_name)}`;
     const taken = formatDate(photo.date);
     // created_at is when the photo was uploaded and published, which is what "new" means
     // to a subscriber; the date taken goes in the body instead.
     const pubDate = photo.created_at ? new Date(photo.created_at).toUTCString() : null;
     const body =
-      `<p><a href="${escapeXml(link)}"><img src="${escapeXml(photo.thumb_url)}" alt="${escapeXml(title)}" /></a></p>` +
+      `<p><a href="${escapeXml(link)}"><img src="${escapeXml(photo.thumb_url)}" alt="${escapeXml(photoAlt(photo))}" /></a></p>` +
       `<p>${escapeXml(title)}</p>` +
       (taken ? `<p>${escapeXml(taken)}</p>` : '');
 

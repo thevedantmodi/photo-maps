@@ -9,6 +9,7 @@ import QRCode from 'qrcode';
 import sharp from 'sharp';
 
 import { CAMERA, CAMERA_VIEW, equatorPath, globeRadius, knurlPath } from '@/lib/cameraMark';
+import { photoTitle } from '@/lib/alt';
 import { placeNameFor } from '@/lib/placeName';
 import { CARD, FONT, PALETTE, PHOTO, QR, RULE, TYPE } from '@/lib/shareTokens';
 import type { CardTheme } from '@/lib/shareVersion';
@@ -172,7 +173,7 @@ export async function renderShareCardPng(
   ];
   const url = displayUrl(base, photo.friendly_name);
   const { title, titleFontSize, photoMaxHeight } = layout(
-    photo.caption || photo.original_name,
+    photoTitle(photo),
     rows.length,
     url,
   );

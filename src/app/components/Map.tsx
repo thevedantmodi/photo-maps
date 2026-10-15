@@ -8,6 +8,7 @@ import Supercluster from "supercluster";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useTheme } from "../hooks/useTheme";
 import { MAP_STYLES } from "@/lib/mapStyles";
+import { photoAlt } from "@/lib/alt";
 import {
   applyRelief,
   setTerrain,
@@ -555,7 +556,7 @@ const MapComponent = ({ photos, places }: MapProps) => {
                     type="button"
                     className="mk-thumb"
                     style={{ width: SINGLE_SIZE, height: SINGLE_SIZE }}
-                    aria-label={photo.caption || photo.original_name}
+                    aria-label={photoAlt(photo)}
                     onClick={(e) => openPhoto(photo, e.currentTarget)}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element -- R2 thumbnail */}

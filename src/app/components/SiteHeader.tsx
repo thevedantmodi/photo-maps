@@ -7,7 +7,7 @@ import SubscribePanel from './SubscribePanel';
 import ThemeSwitch from './ThemeSwitch';
 import Mark from './Mark';
 
-export type Section = 'landing' | 'map' | 'directory' | 'photo' | 'admin';
+export type Section = 'landing' | 'map' | 'directory' | 'photo' | 'admin' | 'subscribe';
 
 /** Anything on the page can open the subscribe form under the menu with this event. */
 export const OPEN_SUBSCRIBE_EVENT = 'pm:open-subscribe';

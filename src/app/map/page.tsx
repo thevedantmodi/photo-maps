@@ -5,9 +5,11 @@ import type { Metadata } from 'next';
 import MapWrapper from '../components/MapWrapper';
 import { getPublishedPhotos } from '@/lib/photos';
 import { getPlaces } from '@/lib/places';
+import { RSS_ALTERNATE } from '@/lib/site';
 
 export const metadata: Metadata = {
-  title: 'Galleries — Photos by Vedant Modi',
+  title: 'Galleries',
+  alternates: { canonical: '/map', types: RSS_ALTERNATE },
 };
 
 export default async function MapPage() {

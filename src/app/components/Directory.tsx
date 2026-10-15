@@ -1,5 +1,6 @@
 "use client";
 
+import { photoTitle } from "@/lib/alt";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -167,7 +168,7 @@ export default function Directory({ photos, places }: DirectoryProps) {
                     <span className="dir-years">{row.years}</span>
                     <span>{row.count}</span>
                     <span className="dir-latest">
-                      {row.latest.caption || row.latest.original_name}
+                      {photoTitle(row.latest)}
                     </span>
                   </Link>
                 </DirItem>

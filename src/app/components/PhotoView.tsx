@@ -10,6 +10,7 @@ import { useMediaQuery } from "../hooks/useMediaQuery";
 import { closeTarget, forget, openOrigin, type Rect } from "@/lib/photoTransition";
 import { reverseGeocode } from "@/lib/mapboxGeocode";
 import { shareVersion } from "@/lib/shareVersion";
+import { photoAlt, photoTitle } from "@/lib/alt";
 import type { CustomPlace } from "@/lib/customPlaces";
 import type { Photo } from "../types";
 
@@ -78,7 +79,7 @@ interface PhotoViewProps {
 export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
   const router = useRouter();
   const slug = photo.friendly_name;
-  const title = photo.caption || photo.original_name;
+  const title = photoTitle(photo);
   const year = photo.date ? new Date(photo.date).getFullYear() : null;
   const date = formatDate(photo.date);
   const hasCoords = photo.lat != null && photo.lon != null;
@@ -485,7 +486,7 @@ export default function PhotoView({ photo, places, mode }: PhotoViewProps) {
                 className="pv-large"
                 data-loaded={largeLoaded}
                 src={photo.large_url}
-                alt={title}
+                alt={photoAlt(photo)}
                 draggable={false}
                 onLoad={() => setLargeLoaded(true)}
               />

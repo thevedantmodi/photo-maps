@@ -24,6 +24,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const update: Record<string, unknown> = {};
 
   if ('caption' in body) update.caption = body.caption ?? null;
+  if ('alt_text' in body) update.alt_text = body.alt_text?.trim() || null;
 
   if ('lat' in body) {
     if (body.lat == null || body.lat === '') {

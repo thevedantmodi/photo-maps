@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Photo } from "../types";
+import { photoAlt } from "@/lib/alt";
 
 // Outer size of `.photo-stack-item` in globals.css; GAP keeps neighbours from touching.
 const MARKER_SIZE = 54;
@@ -81,7 +82,7 @@ export default function PhotoStack({ photos, onSelect }: PhotoStackProps) {
           key={photo.id}
           type="button"
           className="photo-stack-item"
-          aria-label={photo.caption || photo.original_name}
+          aria-label={photoAlt(photo)}
           initial={{ x: 0, y: 0, scale: 0.5, opacity: 0 }}
           animate={{ x: offsets[i].x, y: offsets[i].y, scale: 1, opacity: 1 }}
           transition={{ duration: 0.26, ease: EASE, delay: 0.06 + Math.min(i * 0.02, 0.3) }}

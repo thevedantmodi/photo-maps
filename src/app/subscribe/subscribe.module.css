@@ -28,8 +28,11 @@
 }
 
 .button {
+  display: inline-flex;
+  align-items: center;
   min-height: 44px;
   padding: 0 20px;
+  text-decoration: none;
   border: 1px solid var(--ink);
   border-radius: 0;
   background: var(--ink);
@@ -44,4 +47,15 @@
   align-items: center;
   font-weight: 700;
   text-decoration: none;
+}
+
+.form {
+  width: 100%;
+  max-width: 440px;
+}
+
+.links {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
 }

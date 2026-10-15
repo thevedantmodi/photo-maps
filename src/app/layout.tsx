@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { Geist } from "next/font/google";
+import { getBaseUrl } from "@/lib/baseUrl";
+import { AUTHOR, RSS_ALTERNATE, SITE_DESCRIPTION, SITE_NAME } from "@/lib/site";
 import "./globals.css";
 
 // Fallback face for devices without Helvetica Neue; see --font-sans in globals.css.
@@ -9,15 +11,27 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Photos by Vedant Modi",
-  description: "Photographs, mapped.",
-  alternates: {
-    types: {
-      "application/rss+xml": [{ url: "/feed.xml", title: "Photos by Vedant Modi" }],
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    metadataBase: new URL(await getBaseUrl()),
+    title: { default: SITE_NAME, template: `%s — ${SITE_NAME}` },
+    description: SITE_DESCRIPTION,
+    authors: [{ name: AUTHOR }],
+    alternates: { types: RSS_ALTERNATE },
+    openGraph: {
+      siteName: SITE_NAME,
+      title: SITE_NAME,
+      description: SITE_DESCRIPTION,
+      type: 'website',
+      locale: 'en_US',
     },
-  },
-};
+    twitter: {
+      card: 'summary',
+      title: SITE_NAME,
+      description: SITE_DESCRIPTION,
+    },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: [
