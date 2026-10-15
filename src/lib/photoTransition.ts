@@ -71,16 +71,28 @@ export interface Step {
    * then drawn straight away, exactly where it landed, with no entrance.
    */
   ratio: number | null;
+  /** The words on the photo being left, so the new ones can grow out of them. */
+  words: StepWords | null;
+}
+
+export interface StepWords {
+  title: string;
+  /** The old title's size and height, so its ghost matches and the block eases between them. */
+  titleFont: string;
+  titleLineHeight: string;
+  titleHeight: number;
+  kicker: string;
+  facts: Record<string, string>;
 }
 
 let step: (Step & { at: number }) | null = null;
 
-export function rememberStep(dir: 1 | -1, button: boolean, ratio: number | null) {
-  step = { dir, button, ratio, at: Date.now() };
+export function rememberStep(dir: 1 | -1, button: boolean, ratio: number | null, words: StepWords | null) {
+  step = { dir, button, ratio, words, at: Date.now() };
 }
 
 export function takeStep(): Step | null {
   const s = step;
   step = null;
-  return s && Date.now() - s.at < 4000 ? { dir: s.dir, button: s.button, ratio: s.ratio } : null;
+  return s && Date.now() - s.at < 4000 ? { dir: s.dir, button: s.button, ratio: s.ratio, words: s.words } : null;
 }

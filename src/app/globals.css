@@ -1635,10 +1635,72 @@ html:has(.pv) {
   transition: none;
 }
 
-.pv[data-arrived] .pv-kicker,
-.pv[data-arrived] .pv-title,
-.pv[data-arrived] .pv-facts {
-  animation: fade 220ms ease backwards;
+/* The words morph into the next photo's: the old ones, laid over the new, blur and swell
+   away while the new ones grow in from slightly smaller and sharpen. Unchanged words stay. */
+.pv-title {
+  position: relative;
+}
+
+.pv-title > .pv-new {
+  display: block;
+}
+
+.pv-morph {
+  position: relative;
+  display: inline-block;
+}
+
+.pv-ghost {
+  position: absolute;
+  top: 0;
+  left: 0;
+  white-space: nowrap;
+  pointer-events: none;
+  transform-origin: 0 50%;
+  animation: morph-out 460ms var(--ease) forwards;
+}
+
+.pv-ghost-title {
+  right: 0;
+  white-space: normal;
+  transform-origin: 0 0;
+}
+
+.pv-new[data-morph="true"] {
+  display: inline-block;
+  transform-origin: 0 50%;
+  animation: morph-in 460ms var(--ease) backwards;
+}
+
+.pv-title > .pv-new[data-morph="true"] {
+  display: block;
+  transform-origin: 0 0;
+}
+
+@keyframes morph-out {
+  to {
+    opacity: 0;
+    filter: blur(0.2em);
+    transform: scale(1.05);
+  }
+}
+
+@keyframes morph-in {
+  from {
+    opacity: 0;
+    filter: blur(0.2em);
+    transform: scale(0.94);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-ghost {
+    display: none;
+  }
+
+  .pv-new[data-morph="true"] {
+    animation: none;
+  }
 }
 
 /* Share: a light that turns green and glows once the card is ready, then the label,

@@ -8,7 +8,7 @@ import { fireShutter } from "./Mark";
 import ShareButton from "./ShareButton";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import Link from "next/link";
-import { closeTarget, forget, openOrigin, rememberStep, returnFocus, takeStep, type Rect, type Step } from "@/lib/photoTransition";
+import { closeTarget, forget, openOrigin, rememberStep, returnFocus, takeStep, type Rect, type Step, type StepWords } from "@/lib/photoTransition";
 import type { PhotoStep } from "@/lib/photoSequence";
 import { yearQuery } from "@/lib/yearParam";
 import { reverseGeocode } from "@/lib/mapboxGeocode";
@@ -37,6 +37,8 @@ const PEEK_GAP = 32;
 const FLICK_SPEED = 0.45;
 const FLICK_PX = 24;
 const EASE_OUT = "cubic-bezier(0.22, 1, 0.36, 1)";
+// The words changing from one photo's to the next.
+const MORPH_MS = 460;
 
 /** A box of this ratio fitted inside another, like object-fit: contain. */
 function fitIn(box: { w: number; h: number }, ratio: number) {
@@ -130,6 +132,13 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
   const nextPeekRef = useRef<HTMLDivElement>(null);
   // How far the photo has been dragged sideways, so a step carries on from there.
   const dragX = useRef(0);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  // This photo's words, kept current for a step to hand on (set after the facts are built).
+  const wordsRef = useRef<Omit<StepWords, "titleFont" | "titleLineHeight" | "titleHeight"> | null>(null);
+  // The words of the photo just left, shown fading into these until the morph is over.
+  const [ghost, setGhost] = useState<StepWords | null>(() =>
+    arrived?.words && !reducedMotion() ? arrived.words : null,
+  );
   const played = useRef(false);
   const closingRef = useRef(false);
   const drag = useRef<{
@@ -333,13 +342,25 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       const root = rootRef.current;
       const peek = (dir === 1 ? nextPeekRef : prevPeekRef).current;
       const toRatio = sideRatio[dir === 1 ? "next" : "prev"] ?? null;
+      const h1 = titleRef.current;
+      const words = wordsRef.current;
+      const style = h1 ? getComputedStyle(h1) : null;
+      const handOn: StepWords | null =
+        h1 && words && style
+          ? {
+              ...words,
+              titleFont: style.fontSize,
+              titleLineHeight: style.lineHeight,
+              titleHeight: h1.offsetHeight,
+            }
+          : null;
       if (!el || !root || !peek || !toRatio || reducedMotion()) {
         // No photo alongside yet (or no motion wanted): the new one comes in on its own.
-        rememberStep(dir, button, null);
+        rememberStep(dir, button, null, handOn);
         navigate();
         return;
       }
-      rememberStep(dir, button, toRatio);
+      rememberStep(dir, button, toRatio, handOn);
       // Like turning a page: this photo slides off as the next slides into its place, from
       // wherever a swipe left them. The page underneath stays put, so there's no gap.
       root.setAttribute("data-swipe-dir", dir === 1 ? "next" : "prev");
@@ -380,6 +401,21 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
     const same = nav?.querySelector<HTMLElement>(`[data-dir="${arrived.dir}"]`);
     (same ?? nav?.querySelector<HTMLElement>("a"))?.focus({ preventScroll: true });
   }, [arrived]);
+
+  // The words morph: the old title, year and facts blur and shrink away where they stood
+  // as the new ones grow in and sharpen, and the title block eases between the two heights.
+  useLayoutEffect(() => {
+    if (!ghost) return;
+    const h1 = titleRef.current;
+    if (h1 && h1.offsetHeight !== ghost.titleHeight) {
+      h1.animate([{ height: `${ghost.titleHeight}px` }, { height: `${h1.offsetHeight}px` }], {
+        duration: MORPH_MS,
+        easing: EASE_OUT,
+      });
+    }
+    const t = setTimeout(() => setGhost(null), MORPH_MS + 50);
+    return () => clearTimeout(t);
+  }, [ghost]);
 
   // The neighbours load ahead, so stepping lands on a photo that's already there.
   useEffect(() => {
@@ -669,6 +705,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
   );
 
   const facts: { label: string; value: string }[] = [];
+  const kickerText = year !== null ? `(${year})` : "";
   // When Mapbox has no name the lookup falls back to coordinates, which the Coordinates row
   // already shows, so the Place row is left out rather than said twice.
   const placeIsCoords =
@@ -676,6 +713,14 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
   if (hasCoords && !placeIsCoords) facts.push({ label: "Place", value: place ?? "…" });
   if (date) facts.push({ label: "Date", value: date });
   if (hasCoords) facts.push({ label: "Coordinates", value: formatCoords(photo.lat!, photo.lon!) });
+  const factsKey = JSON.stringify(facts);
+  useEffect(() => {
+    wordsRef.current = {
+      title,
+      kicker: kickerText,
+      facts: Object.fromEntries((JSON.parse(factsKey) as typeof facts).map((f) => [f.label, f.value])),
+    };
+  }, [title, kickerText, factsKey]);
 
   return (
     <div
@@ -703,7 +748,9 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
 
       <div className="pv-head">
         <div className="pv-bar">
-          <span className="pv-kicker label">{year !== null ? `(${year})` : ""}</span>
+          <span className="pv-kicker label">
+            <Morph from={ghost?.kicker}>{kickerText}</Morph>
+          </span>
           <div className="pv-actions">
             {!isPhone && share("text-btn share-btn")}
             <button
@@ -717,12 +764,24 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
           </div>
         </div>
         <h1
+          ref={titleRef}
           id="pv-title"
           className="pv-title"
           // Long captions step down in size so the photo stays on the first screen.
           data-length={title.length > 70 ? "long" : title.length > 30 ? "mid" : undefined}
         >
-          {title}
+          {ghost && ghost.title !== title && (
+            <span
+              className="pv-ghost pv-ghost-title"
+              aria-hidden="true"
+              style={{ fontSize: ghost.titleFont, lineHeight: ghost.titleLineHeight }}
+            >
+              {ghost.title}
+            </span>
+          )}
+          <span className="pv-new" data-morph={Boolean(ghost && ghost.title !== title)}>
+            {title}
+          </span>
         </h1>
       </div>
 
@@ -804,7 +863,9 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
               {facts.map((f, i) => (
                 <div key={f.label} className="pv-fact" style={{ "--i": i } as React.CSSProperties}>
                   <dt>{f.label}</dt>
-                  <dd>{f.value}</dd>
+                  <dd>
+                    <Morph from={ghost?.facts[f.label]}>{f.value}</Morph>
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -853,5 +914,25 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * A word changing from one photo's to the next: the old one (if different) blurs and shrinks
+ * away on top while the new one grows in and sharpens (globals.css, "pv-ghost").
+ */
+function Morph({ from, children }: { from: string | undefined; children: string }) {
+  const changing = from !== undefined && from !== children;
+  return (
+    <span className="pv-morph">
+      {changing && (
+        <span className="pv-ghost" aria-hidden="true">
+          {from}
+        </span>
+      )}
+      <span className="pv-new" data-morph={changing}>
+        {children}
+      </span>
+    </span>
   );
 }
