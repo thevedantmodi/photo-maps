@@ -32,6 +32,31 @@ function titleSize(title: string): number {
 }
 
 /**
+ * How many lines a title wraps to, word by word as the renderer breaks it: a long unbroken
+ * run (a URL, "</script>") can't share a line, so a plain character count under-estimates.
+ */
+function wrappedLines(text: string, perLine: number): number {
+  let lines = 1;
+  let used = 0;
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    if (word.length > perLine) {
+      // Broken across lines on its own.
+      lines += (used > 0 ? 1 : 0) + Math.ceil(word.length / perLine) - 1;
+      used = word.length % perLine || perLine;
+      continue;
+    }
+    const need = used === 0 ? word.length : used + 1 + word.length;
+    if (need > perLine) {
+      lines += 1;
+      used = word.length;
+    } else {
+      used = need;
+    }
+  }
+  return lines;
+}
+
+/**
  * The card is laid out by satori, so its heights are not known until after render — but
  * the photo has to be resized before that. Estimate everything else from the text it will
  * hold and give the photo whatever height is left, so a long caption shrinks the photo
@@ -42,7 +67,7 @@ function layout(rawTitle: string, rows: number, url: string) {
   const perLine = Math.floor(INNER_WIDTH / (fontSize * TITLE_EM_PER_CHAR));
   const limit = MAX_TITLE_LINES * perLine;
   const title = rawTitle.length > limit ? `${rawTitle.slice(0, limit - 1).trimEnd()}…` : rawTitle;
-  const titleLines = Math.min(MAX_TITLE_LINES, Math.max(1, Math.ceil(title.length / perLine)));
+  const titleLines = Math.min(MAX_TITLE_LINES, Math.max(1, wrappedLines(title, perLine)));
   const titleHeight = titleLines * fontSize * TYPE.titleLineHeight + 32;
 
   const rowsHeight = rows > 0 ? rows * ROW_HEIGHT + RULE : 0;
