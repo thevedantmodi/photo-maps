@@ -30,7 +30,18 @@ const SWIPE_PX = 120;
 // How far a finger moves before the drag commits to down or left.
 const SWIPE_LOCK_PX = 8;
 // Previous/Next: the photo slides this long on its way out and in.
-const STEP_MS = 240;
+const STEP_MS = 340;
+// The space between one photo and the next as they slide past each other.
+const PEEK_GAP = 32;
+// A quick flick steps even when it's short of SWIPE_PX: px per ms, and a minimum distance.
+const FLICK_SPEED = 0.45;
+const FLICK_PX = 24;
+const EASE_OUT = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+/** A box of this ratio fitted inside another, like object-fit: contain. */
+function fitIn(box: { w: number; h: number }, ratio: number) {
+  return box.w / box.h > ratio ? { w: box.h * ratio, h: box.h } : { w: box.w, h: box.w / ratio };
+}
 
 function formatDate(iso: string | null): string | null {
   if (!iso) return null;
@@ -97,12 +108,16 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
 
   // Read once: where the clicked thumbnail sat, if this photo was just opened from the map.
   const [origin] = useState<Rect | null>(() => (mode === "overlay" ? openOrigin(slug) : null));
-  // Arrived by Previous/Next: slide in from that side.
+  // Arrived by Previous/Next. If it slid into place (ratio known), it's drawn as it landed.
   const [arrived] = useState<Step | null>(() => takeStep());
-  const [details, setDetails] = useState(mode === "page");
+  const landed = arrived?.ratio != null;
+  const [details, setDetails] = useState(mode === "page" || landed);
   const [closing, setClosing] = useState(false);
-  const [ratio, setRatio] = useState<number | null>(null);
+  const [ratio, setRatio] = useState<number | null>(() => arrived?.ratio ?? null);
   const [frame, setFrame] = useState<{ w: number; h: number } | null>(null);
+  // The figure's box, and the proportions of the photos either side, to size them alongside.
+  const [box, setBox] = useState<{ w: number; h: number } | null>(null);
+  const [sideRatio, setSideRatio] = useState<{ prev?: number; next?: number }>({});
   const [largeLoaded, setLargeLoaded] = useState(false);
   const [place, setPlace] = useState<string | null>(null);
 
@@ -111,14 +126,20 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
   const figureRef = useRef<HTMLElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const probeRef = useRef<HTMLImageElement>(null);
+  const prevPeekRef = useRef<HTMLDivElement>(null);
+  const nextPeekRef = useRef<HTMLDivElement>(null);
+  // How far the photo has been dragged sideways, so a step carries on from there.
+  const dragX = useRef(0);
   const played = useRef(false);
   const closingRef = useRef(false);
   const drag = useRef<{
     startX: number;
     startY: number;
     axis: "x" | "y" | null;
-    // How far along the locked axis, down or right; never negative.
+    // How far along the locked axis: down, or sideways (negative is left).
     dist: number;
+    // The finger's recent positions (the last ~100ms), to tell a flick from a slow drag.
+    trail: { x: number; t: number }[];
   } | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -151,7 +172,8 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       const fw = figure.clientWidth;
       const fh = figure.clientHeight;
       if (fw === 0 || fh === 0) return;
-      setFrame(fw / fh > ratio ? { w: fh * ratio, h: fh } : { w: fw, h: fw / ratio });
+      setBox({ w: fw, h: fh });
+      setFrame(fitIn({ w: fw, h: fh }, ratio));
     };
     fit();
     const ro = new ResizeObserver(fit);
@@ -173,7 +195,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
     const el = frameRef.current;
     if (!el || reducedMotion()) return;
     if (!origin) {
-      if (arrived) {
+      if (arrived && !landed) {
         el.animate(
           [
             { transform: `translateX(${arrived.dir * 56}px)`, opacity: 0 },
@@ -193,7 +215,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       { duration: OPEN_MS, easing: EASE },
     );
     later(() => setDetails(true), DETAILS_DELAY_MS);
-  }, [frame, origin, arrived, later]);
+  }, [frame, origin, arrived, landed, later]);
 
   // Over the map, focus moves into the photo page (announced by its title) so the
   // keyboard and screen readers follow it; Escape or Close returns to the map.
@@ -295,26 +317,48 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
     (to: PhotoStep) => `/p/${encodeURIComponent(to.slug)}${yearQuery(filterYear, true)}`,
     [filterYear],
   );
+  // How far the photo alongside sits from this one's centre: edge to edge, PEEK_GAP apart.
+  const peekSpan = useCallback((peek: HTMLElement | null) => {
+    const w = frameRef.current?.offsetWidth ?? 0;
+    return w / 2 + PEEK_GAP + (peek?.offsetWidth ?? w) / 2;
+  }, []);
+
   const go = useCallback(
     (dir: 1 | -1, button = false) => {
       const to = dir === 1 ? next : prev;
       if (!to || closingRef.current || steppingRef.current) return;
       steppingRef.current = true;
-      rememberStep(dir, button);
       const navigate = () => router.replace(stepHref(to), { scroll: false });
       const el = frameRef.current;
-      if (!el || reducedMotion()) {
+      const root = rootRef.current;
+      const peek = (dir === 1 ? nextPeekRef : prevPeekRef).current;
+      const toRatio = sideRatio[dir === 1 ? "next" : "prev"] ?? null;
+      if (!el || !root || !peek || !toRatio || reducedMotion()) {
+        // No photo alongside yet (or no motion wanted): the new one comes in on its own.
+        rememberStep(dir, button, null);
         navigate();
         return;
       }
-      // Out the way it's going, from wherever a swipe left it.
-      const from = el.style.transform || "none";
-      const anim = el.animate(
+      rememberStep(dir, button, toRatio);
+      // Like turning a page: this photo slides off as the next slides into its place, from
+      // wherever a swipe left them. The page underneath stays put, so there's no gap.
+      root.setAttribute("data-swipe-dir", dir === 1 ? "next" : "prev");
+      const span = peekSpan(peek);
+      const from = dragX.current;
+      const end = -dir * span;
+      const duration = Math.max(160, STEP_MS * Math.min(1, Math.abs(end - from) / span));
+      const timing = { duration, easing: EASE_OUT, fill: "forwards" as const };
+      // The one leaving fades as it goes, so nothing is cut off when the page changes.
+      el.animate(
         [
-          { transform: from, opacity: 1 },
-          { transform: `${from === "none" ? "" : from} translateX(${-dir * 56}px)`, opacity: 0 },
+          { transform: `translateX(${from}px)`, opacity: 1 },
+          { transform: `translateX(${end}px)`, opacity: 0 },
         ],
-        { duration: STEP_MS * 0.6, easing: EASE, fill: "forwards" },
+        timing,
+      );
+      const anim = peek.animate(
+        [{ transform: `translateX(${from + dir * span}px)` }, { transform: "translateX(0px)" }],
+        timing,
       );
       let done = false;
       const once = () => {
@@ -323,9 +367,9 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
         navigate();
       };
       anim.onfinish = once;
-      later(once, STEP_MS);
+      later(once, duration + 100);
     },
-    [next, prev, router, stepHref, later],
+    [next, prev, router, stepHref, later, sideRatio, peekSpan],
   );
 
   // Clicked Previous/Next: focus lands on the same button here, or the other one at the end.
@@ -339,12 +383,23 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
 
   // The neighbours load ahead, so stepping lands on a photo that's already there.
   useEffect(() => {
-    for (const to of [prev, next]) {
+    let cancelled = false;
+    for (const [side, to] of [["prev", prev], ["next", next]] as const) {
       if (!to) continue;
       router.prefetch(stepHref(to));
       const img = new Image();
+      const read = () => {
+        if (!cancelled && img.naturalWidth > 0 && img.naturalHeight > 0) {
+          setSideRatio((r) => ({ ...r, [side]: img.naturalWidth / img.naturalHeight }));
+        }
+      };
+      img.onload = read;
       img.src = to.largeUrl;
+      if (img.complete) read();
     }
+    return () => {
+      cancelled = true;
+    };
   }, [prev, next, router, stepHref]);
 
   useEffect(() => {
@@ -371,6 +426,20 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       if (!el || !root) return;
       // Signed: left is negative (next), right positive (previous), down positive (close).
       const reach = Math.abs(dist);
+      if (axis === "x") {
+        // Sideways the photo moves one to one with the finger and the next one comes in
+        // beside it; the page stays solid.
+        el.style.transform = `translateX(${dist}px)`;
+        dragX.current = dist;
+        const peek = (dist < 0 ? nextPeekRef : prevPeekRef).current;
+        const span = peekSpan(peek);
+        if (peek) peek.style.transform = `translateX(${dist + (dist < 0 ? span : -span)}px)`;
+        if (dist === 0) root.removeAttribute("data-swipe-dir");
+        else root.setAttribute("data-swipe-dir", dist < 0 ? "next" : "prev");
+        root.style.setProperty("--swipe", Math.min(reach / SWIPE_PX, 1).toFixed(3));
+        root.toggleAttribute("data-swipe-ready", reach > SWIPE_PX);
+        return;
+      }
       const p = Math.min(reach / 300, 1);
       const s = 1 - p * 0.35;
       // transform-origin is the top left, so shrinking is re-centred by hand.
@@ -384,9 +453,9 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       root.style.setProperty("--drag", p.toFixed(3));
       root.style.setProperty("--swipe", Math.min(reach / SWIPE_PX, 1).toFixed(3));
       root.toggleAttribute("data-swipe-ready", reach > SWIPE_PX);
-      root.setAttribute("data-swipe-dir", axis === "y" ? "close" : dist < 0 ? "next" : "prev");
+      root.setAttribute("data-swipe-dir", "close");
     },
-    [mode],
+    [mode, peekSpan],
   );
 
   const startDrag = useCallback(() => {
@@ -396,7 +465,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
   }, []);
 
   const endDrag = useCallback(
-    (axis: "x" | "y", dist: number) => {
+    (axis: "x" | "y", dist: number, flick = false) => {
       const el = frameRef.current;
       const root = rootRef.current;
       root?.removeAttribute("data-dragging");
@@ -405,12 +474,44 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
         close();
         return;
       }
-      if (axis === "x" && dist < -SWIPE_PX && next) {
+      const far = flick ? FLICK_PX : SWIPE_PX;
+      if (axis === "x" && dist < -far && next) {
         go(1);
         return;
       }
-      if (axis === "x" && dist > SWIPE_PX && prev) {
+      if (axis === "x" && dist > far && prev) {
         go(-1);
+        return;
+      }
+      if (axis === "x") {
+        // Short of the line: both photos glide back, then the one alongside hides again.
+        const peek = (dist < 0 ? nextPeekRef : prevPeekRef).current;
+        const span = peekSpan(peek);
+        el.style.transform = "";
+        dragX.current = 0;
+        root.style.removeProperty("--swipe");
+        root.removeAttribute("data-swipe-ready");
+        root.removeAttribute("data-swipe-cursor");
+        const reset = () => {
+          if (steppingRef.current) return;
+          if (peek) peek.style.transform = "";
+          root.removeAttribute("data-swipe-dir");
+        };
+        if (dist === 0 || reducedMotion()) {
+          reset();
+          return;
+        }
+        const timing = { duration: 300, easing: EASE_OUT };
+        el.animate([{ transform: `translateX(${dist}px)` }, { transform: "translateX(0px)" }], timing);
+        const anim = peek?.animate(
+          [
+            { transform: `translateX(${dist + (dist < 0 ? span : -span)}px)` },
+            { transform: `translateX(${dist < 0 ? span : -span}px)` },
+          ],
+          timing,
+        );
+        if (anim) anim.onfinish = reset;
+        else reset();
         return;
       }
       const from = el.style.transform || "none";
@@ -425,14 +526,20 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
         el.animate([{ transform: from }, { transform: "none" }], { duration: 280, easing: SPRING });
       }
     },
-    [close, go, next, prev],
+    [close, go, next, prev, peekSpan],
   );
 
   // Touch: a drag locks to whichever way the finger first moves.
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.pointerType === "mouse" || closingRef.current) return;
     startDrag();
-    drag.current = { startX: e.clientX, startY: e.clientY, axis: null, dist: 0 };
+    drag.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      axis: null,
+      dist: 0,
+      trail: [{ x: e.clientX, t: performance.now() }],
+    };
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
@@ -465,14 +572,26 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
     // Sideways only towards a photo that's there; down closes.
     if (d.axis === "y") d.dist = Math.max(0, dy);
     else d.dist = (dx < 0 ? next : prev) ? dx : 0;
+    const now = performance.now();
+    d.trail.push({ x: e.clientX, t: now });
+    while (d.trail.length > 2 && now - d.trail[0].t > 100) d.trail.shift();
     dragTo(d.axis, d.dist);
   };
 
   const onPointerUp = () => {
     const d = drag.current;
     drag.current = null;
-    if (d) endDrag(d.axis ?? "y", d.dist);
-    else rootRef.current?.removeAttribute("data-dragging");
+    if (!d) {
+      rootRef.current?.removeAttribute("data-dragging");
+      return;
+    }
+    // A quick flick the same way as the drag counts even when it's short; a finger that
+    // stopped before lifting doesn't.
+    const first = d.trail[0];
+    const last = d.trail[d.trail.length - 1];
+    const fresh = performance.now() - last.t < 80;
+    const v = last.t > first.t ? (last.x - first.x) / (last.t - first.t) : 0;
+    endDrag(d.axis ?? "y", d.dist, fresh && Math.abs(v) > FLICK_SPEED && Math.sign(v) === Math.sign(d.dist));
   };
 
   // Trackpad: a two-finger swipe arrives as sideways wheel events. Fingers moving left
@@ -565,6 +684,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       data-mode={mode}
       data-details={details}
       data-closing={closing}
+      data-arrived={landed || undefined}
       role={mode === "overlay" ? "dialog" : undefined}
       aria-modal={mode === "overlay" ? true : undefined}
       aria-labelledby="pv-title"
@@ -653,6 +773,29 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
               />
             </div>
           )}
+          {/* The photos either side, waiting off to the side of the frame for a swipe. */}
+          {box &&
+            ([
+              ["prev", prev],
+              ["next", next],
+            ] as const).map(([side, to]) => {
+              const r = sideRatio[side];
+              if (!to || !r) return null;
+              const size = fitIn(box, r);
+              return (
+                <div
+                  key={to.slug}
+                  ref={side === "prev" ? prevPeekRef : nextPeekRef}
+                  className="pv-peek"
+                  data-dir={side}
+                  aria-hidden="true"
+                  style={{ width: size.w, height: size.h, marginLeft: -size.w / 2, marginTop: -size.h / 2 }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- R2 rendition, already loaded */}
+                  <img src={to.largeUrl} alt="" draggable={false} />
+                </div>
+              );
+            })}
         </figure>
 
         <div className="pv-side">

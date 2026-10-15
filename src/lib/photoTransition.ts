@@ -66,16 +66,21 @@ export interface Step {
   dir: 1 | -1;
   /** Clicked Previous/Next, so focus goes back to that button on the new photo. */
   button: boolean;
+  /**
+   * The new photo's proportions, when it slid into place before the page changed: it is
+   * then drawn straight away, exactly where it landed, with no entrance.
+   */
+  ratio: number | null;
 }
 
 let step: (Step & { at: number }) | null = null;
 
-export function rememberStep(dir: 1 | -1, button: boolean) {
-  step = { dir, button, at: Date.now() };
+export function rememberStep(dir: 1 | -1, button: boolean, ratio: number | null) {
+  step = { dir, button, ratio, at: Date.now() };
 }
 
 export function takeStep(): Step | null {
   const s = step;
   step = null;
-  return s && Date.now() - s.at < 2000 ? { dir: s.dir, button: s.button } : null;
+  return s && Date.now() - s.at < 4000 ? { dir: s.dir, button: s.button, ratio: s.ratio } : null;
 }

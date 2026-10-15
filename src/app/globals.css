@@ -1482,6 +1482,36 @@ html:has(.pv) {
   animation: fade 250ms ease backwards;
 }
 
+/* Previous / Next: the photo alongside waits just past this one's edge, out of sight
+   until a swipe brings it in. While one is moving the figure clips, so the
+   photos slide past each other inside it rather than over the details. */
+.pv-peek {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+  background: var(--map);
+}
+
+.pv-peek img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pv[data-swipe-dir="next"] .pv-peek[data-dir="next"],
+.pv[data-swipe-dir="prev"] .pv-peek[data-dir="prev"] {
+  visibility: visible;
+}
+
+.pv[data-swipe-dir="next"] .pv-figure,
+.pv[data-swipe-dir="prev"] .pv-figure {
+  overflow: hidden;
+}
+
 .pv-large {
   opacity: 0;
   transition: opacity var(--dur) ease;
@@ -1593,6 +1623,24 @@ html:has(.pv) {
   transition: opacity 250ms ease 100ms;
 }
 
+/* Landed by a swipe or Previous / Next: the page was already there, so nothing fades in
+   again (the map behind never shows); only the words change, with a short fade. */
+.pv[data-arrived] > .pv-bg,
+.pv[data-arrived] > .sh,
+.pv[data-arrived] .pv-frame {
+  animation: none;
+}
+
+.pv[data-arrived] .pv-large {
+  transition: none;
+}
+
+.pv[data-arrived] .pv-kicker,
+.pv[data-arrived] .pv-title,
+.pv[data-arrived] .pv-facts {
+  animation: fade 220ms ease backwards;
+}
+
 /* Share: a light that turns green and glows once the card is ready, then the label,
    which changes in place one line at a time. */
 .share-label {
@@ -1622,7 +1670,6 @@ html:has(.pv) {
   0%, 100% { box-shadow: 0 0 4px 0 color-mix(in srgb, var(--go) 55%, transparent); }
   50% { box-shadow: 0 0 10px 3px color-mix(in srgb, var(--go) 80%, transparent); }
 }
-
 
 .share-reel {
   display: block;
