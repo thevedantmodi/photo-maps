@@ -325,9 +325,11 @@ button {
   position: absolute;
   z-index: 19;
   top: 100%;
-  left: calc((100% - 11 * var(--col-gap)) / 12 * 4 + 4 * var(--col-gap));
-  width: min(440px, calc(100vw - 2 * var(--gutter)));
-  padding: 16px 0 18px;
+  /* Inset on every side, so over the map the words don't run to its edges; it reaches
+     out by its side padding so the words themselves still line up with the column. */
+  left: calc((100% - 11 * var(--col-gap)) / 12 * 4 + 4 * var(--col-gap) - 24px);
+  width: min(488px, calc(100vw - 2 * var(--gutter)));
+  padding: 20px 24px 22px;
   background: var(--bg);
   clip-path: inset(0 0 100% 0);
   visibility: hidden;
@@ -494,6 +496,7 @@ button {
   .sub-panel {
     left: 0;
     width: 100%;
+    padding: 18px 16px 20px;
   }
 }
 
