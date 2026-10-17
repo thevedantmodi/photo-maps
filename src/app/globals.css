@@ -1533,8 +1533,8 @@ html:has(.pv) {
   animation: fade 250ms ease backwards;
 }
 
-/* Previous / Next: the photo alongside waits just past this one's edge, out of sight
-   until a swipe brings it in. While one is moving the figure clips, so the
+/* Previous / Next: the photo alongside waits centred under this one, out of sight until
+   a swipe morphs it in (PhotoView, placeX). While one is moving the figure clips, so the
    photos slide past each other inside it rather than over the details. */
 .pv-peek {
   position: absolute;

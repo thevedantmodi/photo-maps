@@ -78,6 +78,43 @@ function formatCoords(lat: number, lon: number): string {
   return `${Math.abs(lat).toFixed(2)}° ${ns}, ${Math.abs(lon).toFixed(2)}° ${ew}`;
 }
 
+/**
+ * One photo's part in the morph between two: scaled to cover the shared frame (W x H) and
+ * clipped to it, like object-fit: cover, then swelled, blurred and faded.
+ */
+function morph(
+  el: HTMLElement,
+  m: { w: number; h: number; W: number; H: number; x: number; swell: number; blur: number; opacity: number },
+) {
+  const k = Math.max(m.W / m.w, m.H / m.h);
+  const insetX = Math.max(0, (m.w - m.W / k) / 2);
+  const insetY = Math.max(0, (m.h - m.H / k) / 2);
+  el.style.transformOrigin = "50% 50%";
+  el.style.transform = `translateX(${m.x}px) scale(${k * m.swell})`;
+  el.style.clipPath = `inset(${insetY}px ${insetX}px)`;
+  el.style.opacity = String(Math.max(0, Math.min(1, m.opacity)));
+  // The blur goes on the picture inside, enlarged just enough that its softened edges stay
+  // outside the frame; blurred whole, the frame's own edge would haze past the other photo.
+  // (In the photo's own pixels, so it looks the same however far the frame is scaled.)
+  const blur = m.blur / (k * m.swell);
+  const grow = 1 + (4 * blur) / Math.max(1, Math.min(m.w, m.h));
+  for (const img of el.querySelectorAll("img")) {
+    img.style.filter = blur > 0.2 ? `blur(${blur.toFixed(2)}px)` : "";
+    img.style.transform = blur > 0.2 ? `scale(${grow.toFixed(4)})` : "";
+  }
+}
+
+function clearMorph(el: HTMLElement) {
+  el.style.transformOrigin = "";
+  el.style.transform = "";
+  el.style.clipPath = "";
+  el.style.opacity = "";
+  for (const img of el.querySelectorAll("img")) {
+    img.style.filter = "";
+    img.style.transform = "";
+  }
+}
+
 interface Words {
   title: string;
   kicker: string;
@@ -389,28 +426,66 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
     return w / 2 + PEEK_GAP + (peek?.offsetWidth ?? w) / 2;
   }, []);
 
-  // Places the photo `x` px sideways and the one it's moving towards just past its edge.
-  // `leaving`: it's on its way out, so it fades as it goes.
+  // The step between photos, after the iPhone's fold: rather than sliding past each other,
+  // the two photos share one frame that reshapes from this photo's proportions to the
+  // next one's, as this one blurs and swells away and the next comes into focus in its
+  // place. `x` is how far the swipe (or its spring) has gone; a span's worth completes it.
   const springRef = useRef<AnimationPlaybackControls | null>(null);
   const coolRef = useRef({ on: arrived !== null, last: 0 });
   useEffect(() => {
     coolRef.current.last = performance.now();
   }, []);
   const placeX = useCallback(
-    (x: number, leaving = false) => {
+    (x: number) => {
       const el = frameRef.current;
       const root = rootRef.current;
       if (!el || !root) return;
       dragX.current = x;
       const toward = x < 0 ? nextPeekRef.current : x > 0 ? prevPeekRef.current : null;
       const away = x < 0 ? prevPeekRef.current : nextPeekRef.current;
-      const span = peekSpan(toward);
-      el.style.transform = x === 0 ? "" : `translateX(${x}px)`;
-      el.style.opacity = leaving ? String(Math.max(0, 1 - Math.abs(x) / span)) : "";
-      if (toward) toward.style.transform = `translateX(${x + (x < 0 ? span : -span)}px)`;
-      if (away) away.style.transform = "";
-      if (x === 0) root.removeAttribute("data-swipe-dir");
-      else root.setAttribute("data-swipe-dir", x < 0 ? "next" : "prev");
+      if (away) clearMorph(away);
+      if (x === 0) {
+        clearMorph(el);
+        if (toward) clearMorph(toward);
+        root.removeAttribute("data-swipe-dir");
+        return;
+      }
+      root.setAttribute("data-swipe-dir", x < 0 ? "next" : "prev");
+      const p = Math.min(1, Math.abs(x) / peekSpan(toward));
+      // The shared frame: from this photo's box to the next one's.
+      const w0 = el.offsetWidth;
+      const h0 = el.offsetHeight;
+      const w1 = toward?.offsetWidth || w0;
+      const h1 = toward?.offsetHeight || h0;
+      const W = w0 + (w1 - w0) * p;
+      const H = h0 + (h1 - h0) * p;
+      // One frame for both: it drifts a little with the finger and breathes out mid-way,
+      // settling back to centre as the next one lands.
+      const drift = x * 0.12 * (1 - p);
+      const swell = 1 + 0.035 * Math.sin(p * Math.PI);
+      morph(el, {
+        w: w0,
+        h: h0,
+        W,
+        H,
+        x: drift,
+        swell,
+        blur: 14 * p,
+        // Underneath, it holds until the next one is mostly there, so the page never shows.
+        opacity: p < 0.6 ? 1 : 1 - (p - 0.6) / 0.4,
+      });
+      if (toward) {
+        morph(toward, {
+          w: w1,
+          h: h1,
+          W,
+          H,
+          x: drift,
+          swell,
+          blur: 14 * (1 - p),
+          opacity: Math.min(1, p * 1.4),
+        });
+      }
     },
     [peekSpan],
   );
@@ -446,9 +521,8 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       if (handOn) setGhost(handOn);
       setShowing(toWords);
       rememberStep(dir, button, toRatio, { ...recordOf(toWords), titleFont: "", titleLineHeight: "", titleHeight: 0, settled: true });
-      // Like turning a page: this photo slides off as the next slides into its place,
-      // carrying on from wherever the swipe left them at the speed it let go. The page
-      // underneath stays put, so there's no gap.
+      // The morph runs on to the next photo, from wherever the swipe left it and at the
+      // speed it let go. The page underneath stays put, so there's no gap.
       let done = false;
       const once = () => {
         if (done) return;
@@ -461,7 +535,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
         ...STEP_SPRING,
         velocity,
         onUpdate: (x) => {
-          placeX(x, true);
+          placeX(x);
           // Close enough to rest that the page can change under it.
           if (Math.abs(x - target) < 3) once();
         },
@@ -548,8 +622,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       // Signed: left is negative (next), right positive (previous), down positive (close).
       const reach = Math.abs(dist);
       if (axis === "x") {
-        // Sideways the photo moves one to one with the finger and the next one comes in
-        // beside it; the page stays solid.
+        // Sideways the finger scrubs the morph to the next photo; the page stays solid.
         placeX(dist);
         root.style.setProperty("--swipe", Math.min(reach / SWIPE_PX, 1).toFixed(3));
         root.toggleAttribute("data-swipe-ready", reach > SWIPE_PX);
@@ -610,7 +683,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
           placeX(0);
           return;
         }
-        // Both photos spring back together, keeping the speed the swipe had.
+        // The morph springs back, keeping the speed the swipe had.
         springRef.current = animate(dist, 0, {
           ...BACK_SPRING,
           velocity,
