@@ -8,76 +8,83 @@ import { ImageResponse } from 'next/og';
 import QRCode from 'qrcode';
 import sharp from 'sharp';
 
-import {
-  AMBIENT,
-  BACKGROUND,
-  CARD,
-  FONT,
-  GLASS,
-  PHOTO,
-  QR,
-  TYPE,
-} from '@/lib/shareTokens';
+import { CAMERA, CAMERA_VIEW, equatorPath, globeRadius, knurlPath } from '@/lib/cameraMark';
+import { photoTitle } from '@/lib/alt';
+import { placeNameFor } from '@/lib/placeName';
+import { CARD, FONT, PALETTE, PHOTO, QR, RULE, TYPE } from '@/lib/shareTokens';
+import type { CardTheme } from '@/lib/shareVersion';
+
+const INNER_WIDTH = CARD.width - 2 * CARD.sidePadding;
+const INNER_HEIGHT = CARD.height - 2 * CARD.safeInset;
+
+// Geist averages ~0.52em per character at display sizes with the card's tight tracking,
+// and ~0.56em at 600 weight for the link.
+const TITLE_EM_PER_CHAR = 0.52;
+const URL_EM_PER_CHAR = 0.56;
+const MAX_TITLE_LINES = 3;
+
+const HEADER_HEIGHT = Math.ceil(TYPE.name.fontSize * 1.2) + 28 + RULE;
+const ROW_HEIGHT = Math.ceil(TYPE.row.fontSize * 1.2) + 32 + RULE;
+const URL_WIDTH = INNER_WIDTH - QR.tile - 40;
+
+function titleSize(title: string): number {
+  return TYPE.title.find((t) => title.length <= t.maxChars)!.fontSize;
+}
 
 /**
- * The ambient layer is blurred beyond recognition, so it is rendered small and upscaled by
- * satori. Measured on a 287 KB source: 10 ms this way against 61 ms blurring the full
- * 1080x1920 buffer, for an identical result. Both are noise next to satori's ~2.6 s.
+ * How many lines a title wraps to, word by word as the renderer breaks it: a long unbroken
+ * run (a URL, "</script>") can't share a line, so a plain character count under-estimates.
  */
-const AMBIENT_DIVISOR = 4;
-
-/** Gap between the photo and the plate below it. */
-const PLATE_GAP = 60;
+function wrappedLines(text: string, perLine: number): number {
+  let lines = 1;
+  let used = 0;
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    if (word.length > perLine) {
+      // Broken across lines on its own.
+      lines += (used > 0 ? 1 : 0) + Math.ceil(word.length / perLine) - 1;
+      used = word.length % perLine || perLine;
+      continue;
+    }
+    const need = used === 0 ? word.length : used + 1 + word.length;
+    if (need > perLine) {
+      lines += 1;
+      used = word.length;
+    } else {
+      used = need;
+    }
+  }
+  return lines;
+}
 
 /**
- * Width available to the text column inside the plate: the card, less the side padding, the
- * plate's own padding and border, the gap, and the QR tile.
+ * The card is laid out by satori, so its heights are not known until after render — but
+ * the photo has to be resized before that. Estimate everything else from the text it will
+ * hold and give the photo whatever height is left, so a long caption shrinks the photo
+ * instead of overlapping it.
  */
-const TEXT_WIDTH =
-  CARD.width -
-  2 * CARD.sidePadding -
-  2 * GLASS.paddingX -
-  6 -
-  GLASS.gap -
-  (QR.size + 2 * QR.padding);
+function layout(rawTitle: string, rows: number, url: string) {
+  const fontSize = titleSize(rawTitle);
+  const perLine = Math.floor(INNER_WIDTH / (fontSize * TITLE_EM_PER_CHAR));
+  const limit = MAX_TITLE_LINES * perLine;
+  const title = rawTitle.length > limit ? `${rawTitle.slice(0, limit - 1).trimEnd()}…` : rawTitle;
+  const titleLines = Math.min(MAX_TITLE_LINES, Math.max(1, wrappedLines(title, perLine)));
+  const titleHeight = titleLines * fontSize * TYPE.titleLineHeight + 32;
 
-// Geist averages ~0.52em per character at these sizes; Geist Mono is a true 0.6em.
-const CAPTION_CHARS_PER_LINE = Math.floor(TEXT_WIDTH / (TYPE.caption.fontSize * 0.52));
-const URL_CHARS_PER_LINE = Math.floor(TEXT_WIDTH / (TYPE.url.fontSize * 0.6));
-const MAX_CAPTION_LINES = 4;
+  const rowsHeight = rows > 0 ? rows * ROW_HEIGHT + RULE : 0;
 
-/**
- * The plate is laid out by satori, so its height is not known until after render — but the
- * photo has to be resized before that. Estimate the plate's height from the text it will
- * hold and give the photo whatever vertical space is left, so a long caption shrinks the
- * photo instead of overlapping it.
- */
-function layout(caption: string, hasDate: boolean, url: string) {
-  const limit = MAX_CAPTION_LINES * CAPTION_CHARS_PER_LINE;
-  const clamped =
-    caption.length > limit ? `${caption.slice(0, limit - 1).trimEnd()}…` : caption;
+  const urlPerLine = Math.floor(URL_WIDTH / (TYPE.url.fontSize * URL_EM_PER_CHAR));
+  const urlLines = Math.max(1, Math.ceil(url.length / urlPerLine));
+  const footerHeight =
+    40 +
+    Math.max(QR.tile, TYPE.urlLabel.fontSize * 1.2 + 6 + urlLines * TYPE.url.fontSize * 1.2);
 
-  const captionLines = Math.min(
-    MAX_CAPTION_LINES,
-    Math.max(1, Math.ceil(clamped.length / CAPTION_CHARS_PER_LINE))
-  );
-  const urlLines = Math.max(1, Math.ceil(url.length / URL_CHARS_PER_LINE));
-
-  const rows = 1 + (hasDate ? 1 : 0) + 1;
-  const plateHeight =
-    2 * GLASS.paddingY +
-    6 +
-    captionLines * TYPE.caption.fontSize * TYPE.caption.lineHeight +
-    (hasDate ? TYPE.date.fontSize * 1.4 : 0) +
-    urlLines * TYPE.url.fontSize * 1.4 +
-    (rows - 1) * 14 +
-    4;
-
-  const available = CARD.height - 2 * CARD.safeInset - PLATE_GAP - plateHeight;
+  const available =
+    INNER_HEIGHT - HEADER_HEIGHT - titleHeight - rowsHeight - footerHeight - 2 * PHOTO.gap;
 
   return {
-    caption: clamped,
-    photoMaxHeight: Math.max(420, Math.round(available)),
+    title,
+    titleFontSize: fontSize,
+    photoMaxHeight: Math.min(PHOTO.maxHeight, Math.max(PHOTO.minHeight, Math.floor(available))),
   };
 }
 
@@ -93,15 +100,12 @@ const fontFile = (name: string) => readFile(join(FONT_DIR, name));
 let fontsPromise: ReturnType<typeof loadFonts> | null = null;
 
 function loadFonts() {
-  return Promise.all([
-    fontFile('Geist-Regular.ttf'),
-    fontFile('Geist-SemiBold.ttf'),
-    fontFile('GeistMono-Regular.ttf'),
-  ]).then(([regular, semibold, mono]) => [
-    { name: FONT.sans, data: regular, weight: 400 as const, style: 'normal' as const },
-    { name: FONT.sans, data: semibold, weight: 600 as const, style: 'normal' as const },
-    { name: FONT.mono, data: mono, weight: 400 as const, style: 'normal' as const },
-  ]);
+  return Promise.all([fontFile('Geist-Regular.ttf'), fontFile('Geist-SemiBold.ttf')]).then(
+    ([regular, semibold]) => [
+      { name: FONT.sans, data: regular, weight: 400 as const, style: 'normal' as const },
+      { name: FONT.sans, data: semibold, weight: 600 as const, style: 'normal' as const },
+    ],
+  );
 }
 
 function fonts() {
@@ -128,45 +132,87 @@ function displayUrl(base: string, slug: string): string {
   return permalink(base, slug).replace(/^https?:\/\//, '');
 }
 
+/** The site's camera mark, the detailed version, drawn for satori. */
+function CameraMark({ color }: { color: string }) {
+  const width = 76;
+  const sw = 1.5;
+  const globe = globeRadius(true);
+  const { lens } = CAMERA;
+  const line = { fill: 'none', stroke: color, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
+  return (
+    <svg
+      width={width}
+      height={(width * CAMERA_VIEW.h) / CAMERA_VIEW.w}
+      viewBox={`${CAMERA_VIEW.x} ${CAMERA_VIEW.y} ${CAMERA_VIEW.w} ${CAMERA_VIEW.h}`}
+      style={{ marginRight: 20 }}
+    >
+      <path d={CAMERA.body} {...line} strokeWidth={sw} />
+      <path d={CAMERA.grip} {...line} strokeWidth={sw * 0.8} />
+      <rect {...CAMERA.shutter} {...line} strokeWidth={sw * 0.85} />
+      <rect {...CAMERA.modeDial} {...line} strokeWidth={sw * 0.85} />
+      <path d={knurlPath(7)} {...line} strokeWidth={sw * 0.38} />
+      <rect {...CAMERA.smallDial} {...line} strokeWidth={sw * 0.85} />
+      <circle {...CAMERA.afLamp} {...line} strokeWidth={sw * 0.7} />
+      <circle {...CAMERA.lensRelease} {...line} strokeWidth={sw * 0.7} />
+      <circle {...lens} {...line} strokeWidth={sw} />
+      <circle cx={lens.cx} cy={lens.cy} r={lens.r - 2.2} {...line} strokeWidth={sw * 0.7} />
+      <circle cx={lens.cx} cy={lens.cy} r={globe} {...line} strokeWidth={sw} />
+      <path d={equatorPath(globe)} {...line} strokeWidth={sw * 0.85} />
+      <ellipse cx={lens.cx} cy={lens.cy} rx={globe * 0.42} ry={globe} {...line} strokeWidth={sw * 0.85} />
+    </svg>
+  );
+}
+
 /** The subset of Photo that determines what a share card shows and where it's fetched from. */
 export type ShareCardPhoto = {
   friendly_name: string;
   caption: string | null;
   original_name: string;
   date: string | null;
+  lat: number | null;
+  lon: number | null;
   large_url: string;
 };
 
 /**
- * Renders a photo's share card to PNG bytes. Shared by the live-render fallback in
- * /api/share/[slug] and the precompute path in shareCardStore — same output either way.
+ * Renders a photo's share card to PNG bytes, in the dark or light theme. Shared by the
+ * live-render fallback in /api/share/[slug] and the precompute path in shareCardStore —
+ * same output either way.
  */
-export async function renderShareCardPng(photo: ShareCardPhoto, base: string): Promise<Buffer> {
+export async function renderShareCardPng(
+  photo: ShareCardPhoto,
+  base: string,
+  theme: CardTheme,
+): Promise<Buffer> {
+  const colors = PALETTE[theme];
   const source = await fetch(photo.large_url);
   if (!source.ok) throw new Error(`share card source fetch failed: ${source.status}`);
   const buf = Buffer.from(await source.arrayBuffer());
 
-  const rawCaption = photo.caption || photo.original_name;
+  const place = photo.lat != null && photo.lon != null ? await placeNameFor(photo.lat, photo.lon) : null;
   const date = formatDate(photo.date);
+  const year = photo.date ? new Date(photo.date).getFullYear() : null;
+  const rows = [
+    ...(place ? [{ label: 'Place', value: place }] : []),
+    ...(date ? [{ label: 'Date', value: date }] : []),
+  ];
   const url = displayUrl(base, photo.friendly_name);
-  const { caption, photoMaxHeight } = layout(rawCaption, date !== null, url);
+  const { title, titleFontSize, photoMaxHeight } = layout(
+    photoTitle(photo),
+    rows.length,
+    url,
+  );
 
-  // One source buffer, two derivatives: the photo itself, and the blurred ground behind it.
-  const [fitted, ambient, qr] = await Promise.all([
+  const [fitted, qr] = await Promise.all([
     sharp(buf)
-      .resize(PHOTO.maxWidth, Math.min(PHOTO.maxHeight, photoMaxHeight), { fit: 'inside' })
-      .jpeg({ quality: 82 })
+      .resize(PHOTO.maxWidth, photoMaxHeight, { fit: 'inside' })
+      .jpeg({ quality: 85 })
       .toBuffer({ resolveWithObject: true }),
-    sharp(buf)
-      .resize(CARD.width / AMBIENT_DIVISOR, CARD.height / AMBIENT_DIVISOR, { fit: 'cover' })
-      .blur(AMBIENT.blur / AMBIENT_DIVISOR)
-      .modulate({ brightness: AMBIENT.brightness, saturation: AMBIENT.saturation })
-      .jpeg({ quality: AMBIENT.quality })
-      .toBuffer(),
     QRCode.toBuffer(permalink(base, photo.friendly_name), {
       width: QR.renderSize,
       margin: 0,
       errorCorrectionLevel: 'M',
+      color: { dark: '#000000', light: '#ffffff' },
     }),
   ]);
 
@@ -176,83 +222,106 @@ export async function renderShareCardPng(photo: ShareCardPhoto, base: string): P
         width: CARD.width,
         height: CARD.height,
         display: 'flex',
-        position: 'relative',
-        background: BACKGROUND,
+        flexDirection: 'column',
+        padding: `${CARD.safeInset}px ${CARD.sidePadding}px`,
+        background: colors.bg,
+        color: colors.ink,
         fontFamily: FONT.sans,
       }}
     >
-      <img
-        src={dataUri(ambient, 'image/jpeg')}
-        width={CARD.width}
-        height={CARD.height}
-        style={{ position: 'absolute', top: 0, left: 0, objectFit: 'cover' }}
-      />
-
       <div
         style={{
-          position: 'relative',
           display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          width: CARD.width,
-          height: CARD.height,
-          padding: `${CARD.safeInset}px ${CARD.sidePadding}px`,
+          alignItems: 'center',
+          paddingBottom: 28,
+          borderBottom: `${RULE}px solid ${colors.ink}`,
         }}
       >
-        {/* Bottom-anchored so the gap to the plate is always PLATE_GAP: the plate's height
-            varies with the text it holds, and centring here would move the photo with it. */}
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'center',
-            minHeight: 0,
-          }}
-        >
-          <img
-            src={dataUri(fitted.data, 'image/jpeg')}
-            width={fitted.info.width}
-            height={fitted.info.height}
-            style={{ borderRadius: PHOTO.radius, boxShadow: PHOTO.shadow }}
-          />
+        <CameraMark color={colors.ink} />
+        <div style={{ display: 'flex', fontSize: TYPE.name.fontSize, letterSpacing: TYPE.name.letterSpacing, lineHeight: 1.2 }}>
+          Vedant Modi
         </div>
-
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: GLASS.gap,
-            marginTop: PLATE_GAP,
-            padding: `${GLASS.paddingY}px ${GLASS.paddingX}px`,
-            background: GLASS.background,
-            border: GLASS.border,
-            borderRadius: GLASS.radius,
-            boxShadow: GLASS.shadow,
-            color: GLASS.text,
-          }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, gap: 14, minWidth: 0 }}>
-            <div style={{ display: 'flex', ...TYPE.caption }}>{caption}</div>
-            {date ? <div style={{ display: 'flex', ...TYPE.date }}>{date}</div> : null}
-            <div style={{ display: 'flex', fontFamily: FONT.mono, marginTop: 4, ...TYPE.url }}>
-              {url}
-            </div>
-          </div>
-
+        {year !== null ? (
           <div
             style={{
               display: 'flex',
-              flex: 'none',
-              padding: QR.padding,
-              background: '#ffffff',
-              borderRadius: QR.radius,
-              boxShadow: QR.shadow,
+              marginLeft: 'auto',
+              fontSize: TYPE.year.fontSize,
+              fontWeight: TYPE.year.fontWeight,
+              letterSpacing: TYPE.year.letterSpacing,
             }}
           >
-            <img src={dataUri(qr, 'image/png')} width={QR.size} height={QR.size} />
+            {String(year)}
           </div>
+        ) : null}
+      </div>
+
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: photoMaxHeight + 2 * PHOTO.gap,
+        }}
+      >
+        <img src={dataUri(fitted.data, 'image/jpeg')} width={fitted.info.width} height={fitted.info.height} />
+      </div>
+
+      <div
+        style={{
+          display: 'flex',
+          marginBottom: 32,
+          fontSize: titleFontSize,
+          fontWeight: 600,
+          lineHeight: TYPE.titleLineHeight,
+          letterSpacing: titleFontSize * TYPE.titleLetterSpacing,
+        }}
+      >
+        {title}
+      </div>
+
+      {rows.length > 0 ? (
+        <div style={{ display: 'flex', flexDirection: 'column', fontSize: TYPE.row.fontSize, borderBottom: `${RULE}px solid ${colors.ink}` }}>
+          {rows.map((row) => (
+            <div
+              key={row.label}
+              style={{ display: 'flex', padding: '16px 0', borderTop: `${RULE}px solid ${colors.ink}`, lineHeight: 1.2 }}
+            >
+              <div style={{ display: 'flex', width: TYPE.row.labelWidth, flex: 'none', fontWeight: 600 }}>{row.label}</div>
+              <div style={{ display: 'flex', flex: 1 }}>{row.value}</div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <div style={{ display: 'flex', alignItems: 'flex-end', marginTop: 'auto', paddingTop: 40 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', width: URL_WIDTH, marginRight: 40 }}>
+          <div style={{ display: 'flex', fontSize: TYPE.urlLabel.fontSize, color: colors.muted, marginBottom: 6 }}>
+            See it on the map
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              fontSize: TYPE.url.fontSize,
+              fontWeight: TYPE.url.fontWeight,
+              lineHeight: 1.2,
+              wordBreak: 'break-all',
+            }}
+          >
+            {url}
+          </div>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            width: QR.tile,
+            height: QR.tile,
+            flex: 'none',
+            padding: QR.padding,
+            background: '#ffffff',
+          }}
+        >
+          <img src={dataUri(qr, 'image/png')} width={QR.tile - 2 * QR.padding} height={QR.tile - 2 * QR.padding} />
         </div>
       </div>
     </div>

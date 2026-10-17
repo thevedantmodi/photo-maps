@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useTheme } from "../hooks/useTheme";
+import SiteHeader from "../components/SiteHeader";
 import { colors, type Theme } from "./theme";
 import { Hint, Kbd, useModKey } from "./Kbd";
 import LocationSection from "./LocationSection";
@@ -45,6 +46,7 @@ function UploadTab({ theme }: { theme: Theme }) {
   const [file, setFile] = useState<File | null>(null);
   const [friendlyName, setFriendlyName] = useState("");
   const [caption, setCaption] = useState("");
+  const [altText, setAltText] = useState("");
   const [lat, setLat] = useState("");
   const [lon, setLon] = useState("");
   // The coordinates the picked file arrived with. Kept for the whole upload so
@@ -160,6 +162,7 @@ function UploadTab({ theme }: { theme: Theme }) {
           friendly_name: friendlyName,
           original_name: file.name,
           caption,
+          alt_text: altText.trim() || null,
           lat: latNum,
           lon: lonNum,
           // The photo had GPS and the operator removed it: don't let the
@@ -179,6 +182,7 @@ function UploadTab({ theme }: { theme: Theme }) {
       setFile(null);
       setFriendlyName("");
       setCaption("");
+      setAltText("");
       setLat("");
       setLon("");
       setExifCoords(null);
@@ -193,7 +197,7 @@ function UploadTab({ theme }: { theme: Theme }) {
     } finally {
       setUploading(false);
     }
-  }, [file, friendlyName, caption, lat, lon, exifCoords, date, exifDate]);
+  }, [file, friendlyName, caption, altText, lat, lon, exifCoords, date, exifDate]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -209,7 +213,7 @@ function UploadTab({ theme }: { theme: Theme }) {
     width: "100%",
     padding: "8px 12px",
     border: `1px solid ${c.inputBorder}`,
-    borderRadius: 6,
+    borderRadius: 0,
     fontSize: 14,
     boxSizing: "border-box",
     background: c.input,
@@ -228,7 +232,7 @@ function UploadTab({ theme }: { theme: Theme }) {
         }}
         style={{
           border: `2px dashed ${c.inputBorder}`,
-          borderRadius: 8,
+          borderRadius: 0,
           padding: "36px 20px",
           textAlign: "center",
           cursor: "pointer",
@@ -290,6 +294,32 @@ function UploadTab({ theme }: { theme: Theme }) {
         style={{ ...inputStyle, marginBottom: 16, resize: "vertical" }}
       />
 
+      <label
+        htmlFor="upload-alt-text"
+        style={{
+          display: "block",
+          fontSize: 13,
+          fontWeight: 500,
+          marginBottom: 4,
+          color: c.text,
+        }}
+      >
+        Alt text
+      </label>
+      <textarea
+        id="upload-alt-text"
+        value={altText}
+        onChange={(e) => setAltText(e.target.value)}
+        placeholder={caption ? `Falls back to caption: “${caption}”` : "Describe what's in the photo"}
+        rows={2}
+        style={{ ...inputStyle, marginBottom: 4, resize: "vertical" }}
+      />
+      <div style={{ fontSize: 11, color: c.muted, marginBottom: 16 }}>
+        {altText.trim() || caption
+          ? "Read by screen readers and search engines."
+          : "Missing — screen readers will only hear the date."}
+      </div>
+
       <div style={{ marginBottom: 8 }}>
         <LocationSection
           theme={theme}
@@ -334,7 +364,7 @@ function UploadTab({ theme }: { theme: Theme }) {
             style={{
               fontSize: 11,
               padding: "2px 7px",
-              borderRadius: 10,
+              borderRadius: 0,
               background: c.chipBg,
               color: c.chipText,
             }}
@@ -369,7 +399,7 @@ function UploadTab({ theme }: { theme: Theme }) {
           background: c.btn,
           color: c.btnText,
           border: "none",
-          borderRadius: 6,
+          borderRadius: 0,
           fontSize: 14,
           cursor:
             !file || !friendlyName || uploading ? "not-allowed" : "pointer",
@@ -391,7 +421,7 @@ function UploadTab({ theme }: { theme: Theme }) {
           style={{
             marginTop: 12,
             background: c.progressBg,
-            borderRadius: 4,
+            borderRadius: 0,
             overflow: "hidden",
           }}
         >
@@ -449,7 +479,7 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
     width: "100%",
     padding: "8px 12px",
     border: `1px solid ${c.inputBorder}`,
-    borderRadius: 6,
+    borderRadius: 0,
     fontSize: 14,
     boxSizing: "border-box",
     background: c.input,
@@ -571,7 +601,7 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
         onClick={(e) => e.stopPropagation()}
         style={{
           background: c.modalBg,
-          borderRadius: 10,
+          borderRadius: 0,
           padding: 24,
           width: "100%",
           maxWidth: 480,
@@ -595,7 +625,7 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
         <img
           src={thumbUrl}
           alt={photoAlt({ alt_text: altText, caption, date })}
-          style={{ width: "100%", borderRadius: 6, marginBottom: 16, objectFit: "cover", maxHeight: 200 }}
+          style={{ width: "100%", borderRadius: 0, marginBottom: 16, objectFit: "cover", maxHeight: 200 }}
         />
 
         {/* Rotation controls */}
@@ -617,7 +647,7 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
                   background: c.cardBg,
                   color: c.text,
                   border: `1px solid ${c.inputBorder}`,
-                  borderRadius: 6,
+                  borderRadius: 0,
                   fontSize: 13,
                   cursor: rotating ? "not-allowed" : "pointer",
                   opacity: rotating ? 0.5 : 1,
@@ -708,7 +738,7 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
               background: "none",
               color: c.text,
               border: `1px solid ${c.inputBorder}`,
-              borderRadius: 6,
+              borderRadius: 0,
               fontSize: 14,
               cursor: "pointer",
             }}
@@ -724,7 +754,7 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
               background: c.btn,
               color: c.btnText,
               border: "none",
-              borderRadius: 6,
+              borderRadius: 0,
               fontSize: 14,
               cursor: saving ? "not-allowed" : "pointer",
               opacity: saving ? 0.5 : 1,
@@ -754,6 +784,10 @@ function ManageTab({ theme }: { theme: Theme }) {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [editing, setEditing] = useState<AdminPhoto | null>(null);
+  // Narrow the grid to the photos that still need a date, to fill them in through Edit.
+  const [onlyUndated, setOnlyUndated] = useState(false);
+  const anyUndated = photos.some((p) => p.date == null);
+  const listed = onlyUndated && anyUndated ? photos.filter((p) => p.date == null) : photos;
 
   // loading starts true, so there is nothing to set before the fetch resolves.
   useEffect(() => {
@@ -802,6 +836,19 @@ function ManageTab({ theme }: { theme: Theme }) {
         <Kbd theme={theme}>Esc</Kbd>
         <span>closes.</span>
       </Hint>
+      {anyUndated && (
+        <div role="group" aria-label="Show" className="theme-switch filter-switch" style={{ marginBottom: 12 }}>
+          <button type="button" className="text-btn" aria-pressed={!onlyUndated} onClick={() => setOnlyUndated(false)}>
+            All
+          </button>
+          <span className="sep" aria-hidden="true">
+            |
+          </span>
+          <button type="button" className="text-btn" aria-pressed={onlyUndated} onClick={() => setOnlyUndated(true)}>
+            Needs a date
+          </button>
+        </div>
+      )}
       <div
         style={{
           display: "grid",
@@ -809,12 +856,12 @@ function ManageTab({ theme }: { theme: Theme }) {
           gap: 12,
         }}
       >
-        {photos.map((photo) => (
+        {listed.map((photo) => (
           <div
             key={photo.id}
             style={{
               position: "relative",
-              borderRadius: 8,
+              borderRadius: 0,
               overflow: "hidden",
               background: c.cardBg,
             }}
@@ -853,10 +900,17 @@ function ManageTab({ theme }: { theme: Theme }) {
                   ? `${photo.lat.toFixed(5)}, ${photo.lon.toFixed(5)}`
                   : "No GPS"}
               </div>
-              <div style={{ fontSize: 10, color: c.muted, lineHeight: 1.4, marginTop: 2 }}>
-                {photo.date != null
-                  ? `${new Date(photo.date).toLocaleDateString()}`
-                  : "No Date"}
+              <div
+                style={{
+                  fontSize: 10,
+                  lineHeight: 1.4,
+                  marginTop: 2,
+                  // Missing, it stands out: an undated photo drops out of every year filter.
+                  color: photo.date != null ? c.muted : c.danger,
+                  fontWeight: photo.date != null ? undefined : 600,
+                }}
+              >
+                {photo.date != null ? new Date(photo.date).toLocaleDateString() : "No date"}
               </div>
               {!photo.alt_text && !photo.caption && (
                 <div style={{ fontSize: 10, color: c.muted, lineHeight: 1.4, marginTop: 2 }}>
@@ -874,7 +928,7 @@ function ManageTab({ theme }: { theme: Theme }) {
                 background: "rgba(0,0,0,0.6)",
                 color: "#fff",
                 border: "none",
-                borderRadius: 4,
+                borderRadius: 0,
                 width: 24,
                 height: 24,
                 cursor: "pointer",
@@ -898,7 +952,7 @@ function ManageTab({ theme }: { theme: Theme }) {
                 background: "rgba(0,0,0,0.6)",
                 color: "#fff",
                 border: "none",
-                borderRadius: 4,
+                borderRadius: 0,
                 width: 24,
                 height: 24,
                 cursor: "pointer",
@@ -918,132 +972,36 @@ function ManageTab({ theme }: { theme: Theme }) {
   );
 }
 
+const TABS = [
+  { id: "upload", label: "Upload" },
+  { id: "manage", label: "Manage" },
+  { id: "places", label: "Places" },
+] as const;
+
 export default function AdminPage() {
-  const [theme, toggleTheme] = useTheme();
-  const [tab, setTab] = useState<"upload" | "manage" | "places">("upload");
-  const [clearing, setClearing] = useState(false);
-  const [cacheMsg, setCacheMsg] = useState("");
-
-  const c = colors(theme);
-
-  // Purges Cloudflare's edge cache for the R2 image host, so rotated or
-  // replaced images show up without waiting for the cache to expire.
-  const handleClearCache = async () => {
-    if (!confirm("Clear the R2 image cache? Images will reload from R2 on next view.")) return;
-    setClearing(true);
-    setCacheMsg("");
-    try {
-      const res = await fetch("/api/admin/cache", { method: "DELETE" });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Clear failed");
-      }
-      setCacheMsg("Cache cleared.");
-    } catch (err: unknown) {
-      setCacheMsg(`Error: ${err instanceof Error ? err.message : String(err)}`);
-    } finally {
-      setClearing(false);
-    }
-  };
+  const [theme] = useTheme();
+  const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("upload");
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: c.bg,
-        color: c.text,
-        fontFamily: "system-ui, sans-serif",
-      }}
-    >
-      <div style={{ maxWidth: 600, margin: "0 auto", padding: "40px 20px" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: 24,
-          }}
-        >
-          <h1 style={{ fontSize: 20, fontWeight: 600, margin: 0 }}>Admin</h1>
-          <div style={{ display: "flex", gap: 8 }}>
+    <main className="admin">
+      <SiteHeader current="admin" />
+      <div className="admin-head">
+        <h1 className="label">Admin</h1>
+        <nav className="admin-tabs" aria-label="Admin sections">
+          {TABS.map((t) => (
             <button
-              onClick={handleClearCache}
-              disabled={clearing}
-              style={{
-                background: "none",
-                border: `1px solid ${c.inputBorder}`,
-                borderRadius: 6,
-                padding: "6px 12px",
-                cursor: clearing ? "default" : "pointer",
-                fontSize: 13,
-                color: c.text,
-                opacity: clearing ? 0.5 : 1,
-              }}
+              key={t.id}
+              type="button"
+              className="text-btn ul"
+              aria-current={tab === t.id ? "page" : undefined}
+              onClick={() => setTab(t.id)}
             >
-              {clearing ? "Clearing…" : "Clear cache"}
-            </button>
-            <button
-              onClick={toggleTheme}
-              style={{
-                background: "none",
-                border: `1px solid ${c.inputBorder}`,
-                borderRadius: 6,
-                padding: "6px 12px",
-                cursor: "pointer",
-                fontSize: 13,
-                color: c.text,
-              }}
-            >
-              {theme === "dark" ? "☀ Light" : "☾ Dark"}
-            </button>
-          </div>
-        </div>
-
-        {cacheMsg && (
-          <p
-            style={{
-              fontSize: 13,
-              marginTop: -12,
-              marginBottom: 16,
-              color: cacheMsg.startsWith("Error") ? c.danger : c.muted,
-            }}
-          >
-            {cacheMsg}
-          </p>
-        )}
-
-        <div
-          style={{
-            display: "flex",
-            gap: 4,
-            marginBottom: 28,
-            borderBottom: `1px solid ${c.tabBorder}`,
-          }}
-        >
-          {(["upload", "manage", "places"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              style={{
-                padding: "8px 16px",
-                border: "none",
-                background: "none",
-                cursor: "pointer",
-                fontSize: 14,
-                fontWeight: tab === t ? 600 : 400,
-                color: tab === t ? c.tabActive : c.muted,
-                borderBottom:
-                  tab === t
-                    ? `2px solid ${c.tabActive}`
-                    : "2px solid transparent",
-                borderRadius: 0,
-              }}
-            >
-              {t === "upload" ? "Upload" : t === "manage" ? "Manage" : "Places"}
+              {t.label}
             </button>
           ))}
-        </div>
-
+        </nav>
+      </div>
+      <div className="admin-body">
         {tab === "upload" && <UploadTab theme={theme} />}
         {tab === "manage" && <ManageTab theme={theme} />}
         {tab === "places" && <PlacesTab theme={theme} />}

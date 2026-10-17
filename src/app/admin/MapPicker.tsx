@@ -126,7 +126,7 @@ export default function MapPicker({
 
   const frame: React.CSSProperties = {
     height,
-    borderRadius: 8,
+    borderRadius: 0,
     overflow: "hidden",
     border: `1px solid ${c.inputBorder}`,
     background: c.mapBg,
@@ -138,7 +138,7 @@ export default function MapPicker({
     left: 10,
     top: 10,
     padding: "5px 9px",
-    borderRadius: 6,
+    borderRadius: 0,
     border: "1px solid transparent",
     background:
       theme === "dark" ? "rgba(0,0,0,0.65)" : "rgba(255,255,255,0.9)",

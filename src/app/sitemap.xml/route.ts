@@ -3,9 +3,9 @@ import { getRecentPublishedPhotos } from '@/lib/photos';
 
 export const dynamic = 'force-dynamic';
 
-// The sitemap protocol caps a single file at 50,000 URLs; two slots go to the home and
-// subscribe pages.
-const MAX_PHOTOS = 49_998;
+// The sitemap protocol caps a single file at 50,000 URLs; four slots go to the home, map,
+// directory and subscribe pages.
+const MAX_PHOTOS = 49_996;
 
 function escapeXml(s: string): string {
   return s
@@ -40,6 +40,8 @@ export async function GET(req: Request) {
   const entries = [
     // No trailing slash: matches the canonical Next renders for "/".
     url(base, photos[0]?.created_at ?? null, 'weekly', '1.0'),
+    url(`${base}/map`, photos[0]?.created_at ?? null, 'weekly', '0.9'),
+    url(`${base}/directory`, photos[0]?.created_at ?? null, 'weekly', '0.8'),
     url(`${base}/subscribe`, null, 'yearly', '0.5'),
     ...photos.map((photo) =>
       url(

@@ -1,145 +1,1087 @@
-:root {
-  /* Light Mode Defaults */
-  --background: #ffffff;
-  --foreground: #171717;
-  --map-background: #e5e5e5;
-  --modal-background: rgba(255, 255, 255, 0.6);
-  --modal-text: #171717;
-  --modal-close-bg: rgba(0, 0, 0, 0.1);
-  --modal-close-text: #171717;
+/* Photo Maps — a museum of photographs.
+   Two themes on one set of tokens. The theme lives on <html data-theme>, set before
+   first paint by the inline script in layout.tsx; the media query only covers the
+   no-JS case. */
 
-  --cluster-bg: rgba(255, 255, 255, 0.9);
-  --cluster-border: rgba(0, 0, 0, 0.2);
-  --cluster-text: #171717;
-  --cluster-shadow: rgba(0, 0, 0, 0.2);
+:root,
+:root[data-theme="light"] {
+  --bg: #ededeb;
+  --ink: #141414;
+  --muted: #636361;
+  --rule: #c4c4c0;
+  --map: #e2e2df;
+  --faint: #dededb;
+  --echo-1: #6e6e6c;
+  --echo-2: #959593;
+  --echo-3: #b4b4b1;
+  --shadow: rgba(0, 0, 0, 0.25);
+  /* Panels that drop down over the page (subscribe, search, the phone menu): a soft
+     shadow underneath so they read as lifted off what's behind. Their unfolding clip
+     is widened on three sides (--pop-reach) so it doesn't cut the shadow off. */
+  --pop-shadow: 0 14px 28px -12px var(--shadow), 0 2px 6px -2px var(--shadow);
+  --pop-reach: -40px;
+  --go: #1f9d55;
+  color-scheme: light;
+}
 
-  --marker-border: #ffffff;
-  --marker-shadow: rgba(0, 0, 0, 0.3);
-
-  --loading-bg: #f5f5f5;
-  --loading-text: #333;
+:root[data-theme="dark"] {
+  --bg: #1c1c1c;
+  --ink: #ededed;
+  --muted: #9a9a9a;
+  --rule: #3a3a3a;
+  --map: #232323;
+  --faint: #262626;
+  --echo-1: #9a9a9a;
+  --echo-2: #6e6e6e;
+  --echo-3: #4e4e4e;
+  --shadow: rgba(0, 0, 0, 0.45);
+  --go: #2fd27a;
+  color-scheme: dark;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --map-background: #111111;
-    --modal-background: rgba(0, 0, 0, 0.6);
-    --modal-text: #ededed;
-    --modal-close-bg: rgba(255, 255, 255, 0.2);
-    --modal-close-text: #ffffff;
-    --cluster-bg: rgba(30, 30, 30, 0.8);
-    --cluster-border: rgba(255, 255, 255, 0.8);
-    --cluster-text: #ffffff;
-    --cluster-shadow: rgba(0, 0, 0, 0.5);
-    --marker-border: #ffffff;
-    --marker-shadow: rgba(0, 0, 0, 0.5);
-    --loading-bg: #111;
-    --loading-text: #fff;
+  :root:not([data-theme]) {
+    --bg: #1c1c1c;
+    --ink: #ededed;
+    --muted: #9a9a9a;
+    --rule: #3a3a3a;
+    --map: #232323;
+    --faint: #262626;
+    --echo-1: #9a9a9a;
+    --echo-2: #6e6e6e;
+    --echo-3: #4e4e4e;
+    --shadow: rgba(0, 0, 0, 0.45);
+    --go: #2fd27a;
+    color-scheme: dark;
   }
 }
 
-html[data-theme="dark"] {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --map-background: #111111;
-  --modal-background: rgba(0, 0, 0, 0.6);
-  --modal-text: #ededed;
-  --modal-close-bg: rgba(255, 255, 255, 0.2);
-  --modal-close-text: #ffffff;
-  --cluster-bg: rgba(30, 30, 30, 0.8);
-  --cluster-border: rgba(255, 255, 255, 0.8);
-  --cluster-text: #ffffff;
-  --cluster-shadow: rgba(0, 0, 0, 0.5);
-  --marker-border: #ffffff;
-  --marker-shadow: rgba(0, 0, 0, 0.5);
-  --loading-bg: #111;
-  --loading-text: #fff;
+:root {
+  /* Neue Haas Grotesk when licensed, Helvetica Neue on Apple devices, Geist (loaded by
+     next/font) everywhere else before falling back to Arial. */
+  --font-sans: "Neue Haas Grotesk Text", "Neue Haas Grotesk Display", "Helvetica Neue",
+    Helvetica, var(--font-geist-sans), Arial, sans-serif;
+
+  /* Motion: one curve, three lengths. */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --dur-fast: 150ms;
+  --dur: 250ms;
+  --dur-slow: 400ms;
+
+  /* Page margins and the 12-column grid. */
+  --gutter: 40px;
+  --col-gap: 24px;
 }
 
-html[data-theme="light"] {
-  --background: #ffffff;
-  --foreground: #171717;
-  --map-background: #e5e5e5;
-  --modal-background: rgba(255, 255, 255, 0.6);
-  --modal-text: #171717;
-  --modal-close-bg: rgba(0, 0, 0, 0.1);
-  --modal-close-text: #171717;
-  --cluster-bg: rgba(255, 255, 255, 0.9);
-  --cluster-border: rgba(0, 0, 0, 0.2);
-  --cluster-text: #171717;
-  --cluster-shadow: rgba(0, 0, 0, 0.2);
-  --marker-border: #ffffff;
-  --marker-shadow: rgba(0, 0, 0, 0.3);
-  --loading-bg: #f5f5f5;
-  --loading-text: #333;
+@media (max-width: 767px) {
+  :root {
+    --gutter: 16px;
+    --col-gap: 16px;
+  }
+}
+
+/* Older names, still read by the admin map picker's Mapbox overrides. */
+:root {
+  --background: var(--bg);
+  --foreground: var(--ink);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--ink);
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.35;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-variant-numeric: tabular-nums;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+/* Typing fields show focus by thickening their own rule, not with a ring around it. */
+.search-input:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+
+.sub-input:focus-visible {
+  outline: none;
+  box-shadow: 0 1px 0 0 var(--ink);
+}
+
+/* The photo page takes focus as a whole when it opens; no ring for that. */
+.pv:focus {
+  outline: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
-/* Leaflet Cluster Custom Styles */
-.custom-cluster-icon {
-  background: transparent;
-  border: none;
+/* Text buttons and links: plain type, a hairline that draws in on hover. */
+.text-btn {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: left;
 }
 
-.cluster-marker-container {
-  background-color: var(--cluster-bg);
-  backdrop-filter: blur(10px);
-  border-radius: 50%;
-  width: 64px;
-  height: 64px;
+.ul {
+  text-decoration: none;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% 1px;
+  transition: background-size 180ms var(--ease);
+}
+
+.ul:hover,
+.ul[aria-current="page"],
+.ul[aria-pressed="true"],
+.ul[aria-expanded="true"] {
+  background-size: 100% 1px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* ── The mark: a camera whose lens is a globe ─────────────────────────── */
+
+.mark {
+  flex: none;
+  display: block;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Beside the name, Mark.tsx clicks the shutter and flips the globe on hover and when a
+   photo opens. */
+.cam-shutter,
+.cam-meridian {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.cam-arc {
+  opacity: 0;
+}
+
+/* ── Gallery lights: the whole page dims while the theme changes ──────── */
+
+.lights {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 280ms ease;
+}
+
+:root[data-lights="off"] .lights {
+  opacity: 1;
+  transition-duration: 180ms;
+}
+
+/* ── Site header ───────────────────────────────────────────────────────── */
+
+.sh {
+  position: relative;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--col-gap);
+  align-items: start;
+  padding: max(24px, env(safe-area-inset-top)) 0 20px;
+  border-bottom: 1px solid var(--ink);
+  background: var(--bg);
+  font-size: 14px;
+}
+
+.sh-logo {
+  grid-column: 1 / span 4;
   display: flex;
   align-items: center;
-  justify-content: center;
-  color: var(--cluster-text);
-  font-weight: bold;
-  font-size: 14px;
-  border: 3px solid var(--cluster-border);
-  box-shadow: 0 4px 12px var(--cluster-shadow);
-  overflow: hidden;
+  gap: 12px;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.sh-nav {
+  grid-column: 5 / span 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.sh-nav a[aria-current="page"] {
+  font-weight: 700;
+}
+
+.sh-tools {
+  grid-column: 7 / span 4;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--col-gap);
+  min-width: 0;
+}
+
+.sh-theme {
+  grid-column: 11 / span 2;
+  justify-self: end;
+}
+
+.sh-menu-btn,
+.sh-menu {
+  display: none;
+}
+
+.theme-switch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.theme-switch .sep {
+  color: var(--muted);
+}
+
+.terrain-switch [aria-pressed="true"],
+.filter-switch [aria-pressed="true"] {
+  font-weight: 700;
+}
+
+.terrain-switch {
   position: relative;
 }
 
-.cluster-count-badge {
+/* Hangs under the switch so the header never shifts. */
+.terrain-note {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
-  border-radius: 12px;
-  padding: 2px 6px;
+  left: 0;
+  top: 100%;
+  margin-top: 4px;
   font-size: 12px;
-  pointer-events: none;
-  z-index: 10;
+  color: var(--muted);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 200ms ease;
 }
 
-.custom-marker-icon {
+.terrain-note[data-in="true"] {
+  opacity: 1;
+}
+
+:root[data-theme="light"] .theme-switch [data-option="light"],
+:root[data-theme="dark"] .theme-switch [data-option="dark"] {
+  font-weight: 700;
+}
+
+/* Subscribe unfolds under the menu. */
+.sub-panel {
+  position: absolute;
+  z-index: 19;
+  top: 100%;
+  /* Inset on every side, so over the map the words don't run to its edges; it reaches
+     out by its side padding so the words themselves still line up with the column. */
+  left: calc((100% - 11 * var(--col-gap)) / 12 * 4 + 4 * var(--col-gap) - 24px);
+  width: min(488px, calc(100vw - 2 * var(--gutter)));
+  padding: 20px 24px 22px;
+  background: var(--bg);
+  box-shadow: var(--pop-shadow);
+  clip-path: inset(0 var(--pop-reach) 100% var(--pop-reach));
+  visibility: hidden;
+  transition: clip-path var(--dur) var(--ease), visibility 0s linear var(--dur);
+}
+
+.sub-panel[data-open="true"] {
+  clip-path: inset(0 var(--pop-reach) var(--pop-reach) var(--pop-reach));
+  visibility: visible;
+  transition: clip-path var(--dur) var(--ease), visibility 0s;
+}
+
+.sub-panel::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-bottom: 1px solid var(--ink);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 300ms var(--ease) 80ms;
+}
+
+.sub-panel[data-open="true"]::after {
+  transform: scaleX(1);
+}
+
+.sub-title {
+  margin: 0 0 10px;
+  font-weight: 700;
+}
+
+.sub-form {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.sub-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--ink);
+  border-radius: 0;
   background: transparent;
-  border: none;
+  color: var(--ink);
+  font: inherit;
 }
 
-.photo-marker {
-  width: 48px;
-  height: 48px;
-  background-size: cover;
-  background-position: center;
-  border-radius: 50%;
-  border: 3px solid var(--marker-border);
-  box-shadow: 0 4px 8px var(--marker-shadow);
-  transition: transform 0.2s;
+.sub-input::placeholder {
+  color: var(--muted);
+  opacity: 1;
 }
 
-/* Photos sharing one spot, fanned out by PhotoStack. The wrapper is a
-   zero-size point at the true location; everything is placed around it. */
+.solid-btn {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--ink);
+  color: var(--bg);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.solid-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.sub-note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.sub-error {
+  margin: 10px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sub-honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+@media (max-width: 767px) {
+  .sh {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: max(12px, env(safe-area-inset-top)) 0 12px;
+  }
+
+  .sh-logo {
+    font-size: 18px;
+    gap: 10px;
+  }
+
+  .sh-nav,
+  .sh-theme {
+    display: none;
+  }
+
+  .sh-tools {
+    margin-left: auto;
+    gap: 18px;
+    align-items: center;
+  }
+
+  .sh-tools .desktop-only {
+    display: none;
+  }
+
+  .sh-menu-btn {
+    display: block;
+    min-height: 44px;
+    font-weight: 700;
+  }
+
+  .sh-menu {
+    position: absolute;
+    z-index: 19;
+    top: 100%;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px 0 20px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--ink);
+    font-size: 18px;
+    box-shadow: var(--pop-shadow);
+    clip-path: inset(0 var(--pop-reach) 100% var(--pop-reach));
+    visibility: hidden;
+    transition: clip-path var(--dur) var(--ease), visibility 0s linear var(--dur);
+  }
+
+  .sh-menu[data-open="true"] {
+    clip-path: inset(0 var(--pop-reach) var(--pop-reach) var(--pop-reach));
+    visibility: visible;
+    transition: clip-path var(--dur) var(--ease), visibility 0s;
+  }
+
+  .sh-menu a,
+  .sh-menu .text-btn {
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+  }
+
+  .sh-menu a[aria-current="page"] {
+    font-weight: 700;
+  }
+
+  .sub-panel {
+    left: 0;
+    width: 100%;
+    padding: 18px 16px 20px;
+  }
+}
+
+/* ── Landing ───────────────────────────────────────────────────────────── */
+
+.landing {
+  padding: 0 var(--gutter);
+  overflow-x: clip;
+}
+
+.landing-first {
+  height: 100dvh;
+  min-height: 560px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.landing-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 24px 0 32px;
+  min-height: 0;
+}
+
+/* Crop marks: a small cross at each corner of the first screen, ruled in on load. */
+.crop-marks {
+  position: absolute;
+  inset: 0 0 24px;
+  pointer-events: none;
+}
+
+.crop {
+  position: absolute;
+  overflow: visible;
+}
+
+.crop line {
+  stroke: var(--muted);
+  stroke-width: 1;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: v-draw 400ms var(--ease) forwards;
+}
+
+.crop-tl { left: -10px; top: -10px; }
+.crop-tr { left: calc(100% - 10px); top: -10px; }
+.crop-bl { left: -10px; top: calc(100% - 10px); }
+.crop-br { left: calc(100% - 10px); top: calc(100% - 10px); }
+
+.crop-tl line { animation-delay: 100ms; }
+.crop-tr line { animation-delay: 180ms; }
+.crop-br line { animation-delay: 260ms; }
+.crop-bl line { animation-delay: 340ms; }
+
+.landing-rows {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  font-size: clamp(40px, 5vw, 72px);
+  line-height: 0.95;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.landing-row {
+  display: flex;
+  gap: 0.28em;
+  margin-left: calc(var(--i) * 6%);
+  color: var(--row-color);
+  animation:
+    row-in 450ms var(--ease) calc(150ms + var(--i) * 60ms) both,
+    row-dim 400ms ease calc(450ms + var(--i) * 60ms) both;
+}
+
+.landing-row:nth-child(1) { --row-color: var(--ink); }
+.landing-row:nth-child(2) { --row-color: var(--echo-1); }
+.landing-row:nth-child(3) { --row-color: var(--echo-2); }
+.landing-row:nth-child(4) { --row-color: var(--echo-3); }
+
+.landing-enter {
+  position: relative;
+  align-self: flex-start;
+  margin-left: 45%;
+  display: flex;
+  align-items: center;
+  gap: 0.28em;
+  font-size: clamp(40px, 5vw, 72px);
+  line-height: 0.95;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+  text-decoration: none;
+  animation: row-in 450ms var(--ease) 420ms both;
+}
+
+.arrow {
+  display: inline-block;
+  font-weight: 400;
+  transition: transform var(--dur-fast) var(--ease);
+}
+
+a:hover > .arrow {
+  transform: translateX(0.12em);
+}
+
+.landing-photo {
+  position: relative;
+  display: block;
+  flex: 1 1 0;
+  width: min(420px, 100%);
+  min-height: 0;
+  max-height: 300px;
+  object-fit: cover;
+  animation: develop 600ms var(--ease) 400ms both;
+}
+
+.landing-foot {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: max(24px, env(safe-area-inset-bottom));
+  animation: rise 300ms var(--ease) 600ms both;
+}
+
+.landing-foot > * {
+  padding: 10px 12px;
+  border-top: 1px solid var(--ink);
+  border-left: 1px solid var(--ink);
+}
+
+.landing-foot > :last-child {
+  border-right: 1px solid var(--ink);
+  text-align: right;
+}
+
+.landing-foot .k {
+  color: var(--muted);
+  margin-right: 24px;
+}
+
+.landing .sh {
+  animation: fade 250ms ease both;
+}
+
+/* Below the first screen: the newest photographs, the years, and Enter again. */
+.landing-recent {
+  padding: 96px 0 0;
+}
+
+.landing-section-head {
+  padding-bottom: 12px;
+  margin-bottom: 24px;
+}
+
+.recent-grid {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 48px var(--col-gap);
+}
+
+.recent-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.recent-item img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  background: var(--map);
+}
+
+.recent-caption {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ink);
+}
+
+.recent-title {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-year {
+  flex: none;
+  color: var(--muted);
+}
+
+.landing-years {
+  padding: 120px 0 0;
+}
+
+.years-span {
+  display: flex;
+  align-items: center;
+  gap: var(--col-gap);
+}
+
+.year-big {
+  flex: none;
+  font-size: clamp(72px, 14vw, 220px);
+  line-height: 0.9;
+  font-weight: 500;
+  letter-spacing: -0.05em;
+  color: var(--echo-3);
+}
+
+.year-line {
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--echo-3);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 900ms var(--ease) calc(var(--delay, 0ms) + 200ms);
+}
+
+.years-span[data-in="true"] .year-line {
+  transform: scaleX(1);
+}
+
+.landing-cta {
+  padding: 120px 0 max(64px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cta-enter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28em;
+  padding-bottom: 12px;
+  font-size: clamp(40px, 6vw, 96px);
+  line-height: 0.95;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.cta-also {
+  margin: 0;
+  font-size: 15px;
+}
+
+/* Enter: the rows slide off to the right in turn, then the map takes over. */
+.landing[data-leaving="true"] .landing-row {
+  animation: row-out 400ms var(--ease) calc(var(--i) * 40ms) both;
+}
+
+.landing[data-leaving="true"] .landing-enter {
+  animation: row-out 400ms var(--ease) 160ms both;
+}
+
+.landing[data-leaving="true"] .landing-photo {
+  animation: undevelop 300ms var(--ease) 50ms both;
+}
+
+.landing[data-leaving="true"] .crop-marks,
+.landing[data-leaving="true"] .landing-foot,
+.landing[data-leaving="true"] .landing-recent,
+.landing[data-leaving="true"] .landing-years,
+.landing[data-leaving="true"] .landing-cta {
+  animation: fade-out 200ms ease both;
+}
+
+@media (max-width: 767px) {
+  .landing-hero {
+    gap: 20px;
+    padding: 20px 0 20px;
+  }
+
+  .crop-marks {
+    display: none;
+  }
+
+  .landing-rows {
+    font-size: clamp(30px, 10.4vw, 44px);
+  }
+
+  .landing-row {
+    flex-direction: column;
+    gap: 0;
+    margin-left: calc(var(--i) * 5vw);
+  }
+
+  .landing-row:nth-child(4) {
+    display: none;
+  }
+
+  .landing-photo {
+    width: 100%;
+    max-height: none;
+  }
+
+  .landing-enter {
+    order: 3;
+    margin-left: 0;
+    align-self: stretch;
+    justify-content: space-between;
+    min-height: 64px;
+    border-top: 1px solid var(--ink);
+    border-bottom: 1px solid var(--ink);
+    font-size: 32px;
+  }
+
+  .landing-foot {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .landing-foot > *,
+  .landing-foot > :last-child {
+    padding: 0;
+    border: 0;
+  }
+
+  .landing-foot .k {
+    margin-right: 6px;
+  }
+
+  .landing-recent {
+    padding-top: 64px;
+  }
+
+  .recent-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 32px var(--col-gap);
+  }
+
+  .landing-years,
+  .landing-cta {
+    padding-top: 80px;
+  }
+}
+
+/* ── Scroll reveals (see Reveal.tsx) ───────────────────────────────────── */
+
+.reveal[data-reveal="rise"] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 400ms ease var(--delay, 0ms), transform 600ms var(--ease) var(--delay, 0ms);
+}
+
+/* The clip goes on the child: a fully clipped element never counts as in view. */
+.reveal[data-reveal="develop"] > * {
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 700ms var(--ease) var(--delay, 0ms);
+}
+
+.reveal[data-reveal="draw"] {
+  position: relative;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 400ms ease var(--delay, 0ms), transform 500ms var(--ease) var(--delay, 0ms);
+}
+
+.reveal[data-reveal="draw"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-bottom: 1px solid var(--ink);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 700ms var(--ease) calc(var(--delay, 0ms) + 150ms);
+}
+
+.reveal[data-in="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+.reveal[data-reveal="develop"][data-in="true"] > * {
+  clip-path: inset(0 0 0 0);
+}
+
+.reveal[data-in="true"]::after {
+  transform: scaleX(1);
+}
+
+/* ── Map page ──────────────────────────────────────────────────────────── */
+
+.mapshell {
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  /* minmax(0, …): the year strip scrolls sideways; without this its full width stretched
+     the column, and the map with it, past the edge of a phone. */
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 20px;
+  padding: 0 var(--gutter) max(12px, env(safe-area-inset-bottom));
+  overflow: hidden;
+}
+
+.mapframe {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--map);
+}
+
+.mapframe .mapboxgl-map {
+  font-family: var(--font-sans);
+}
+
+/* Mapbox's credits, folded behind a small (i) in the top right under the logo: in the
+   page's colours rather than a white pill, opening into a quiet line of small print. */
+.mapframe .mapboxgl-ctrl-attrib.mapboxgl-compact {
+  min-height: 22px;
+  margin: 4px 10px 0 0;
+  padding: 2px 26px 2px 6px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.mapframe .mapboxgl-ctrl-attrib.mapboxgl-compact:not(.mapboxgl-compact-show) {
+  padding: 0;
+  min-width: 22px;
+}
+
+.mapframe .mapboxgl-ctrl-top-right .mapboxgl-ctrl-attrib-button {
+  top: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  background-color: transparent;
+}
+
+.mapframe .mapboxgl-ctrl-attrib a {
+  color: inherit;
+}
+
+.mapframe .mapboxgl-ctrl-attrib-button:focus {
+  box-shadow: none;
+}
+
+.mapframe .mapboxgl-ctrl-attrib-button:focus-visible {
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+/* The (i) is a black image, so dark mode inverts the button; the focus ring is inverted
+   with it, hence --bg, which comes out light. */
+:root[data-theme="dark"] .mapframe .mapboxgl-ctrl-attrib-button {
+  filter: invert(1);
+}
+
+:root[data-theme="dark"] .mapframe .mapboxgl-ctrl-attrib-button:focus-visible {
+  box-shadow: 0 0 0 2px var(--bg);
+}
+
+.map-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--map);
+  color: var(--ink);
+  transition: opacity 200ms ease;
+}
+
+.map-loader[data-done="true"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* The loader: the camera draws itself in one pass, then the globe turns. The drawn
+   meridian hands over to two half-circles a half-turn apart, each sweeping from one
+   edge of the globe to the other: slow at the rim, fast through the middle. */
+.map-loader .cam-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: v-draw 500ms var(--ease) calc(var(--i) * 45ms) forwards;
+}
+
+.map-loader .cam-meridian {
+  animation: v-draw 500ms var(--ease) calc(var(--i) * 45ms) forwards,
+    fade-out 150ms ease 950ms forwards;
+}
+
+.map-loader .cam-arc {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: globe-turn 1800ms linear 950ms infinite;
+}
+
+.map-loader .cam-arc-2 {
+  animation-delay: 1850ms;
+}
+
+.place-name {
+  position: absolute;
+  z-index: 2;
+  left: 24px;
+  bottom: 8px;
+  max-width: calc(100% - 48px);
+  margin: 0;
+  overflow: hidden;
+  font-size: clamp(48px, 8vw, 120px);
+  line-height: 0.95;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+
+.place-name[data-in="true"] {
+  opacity: 1;
+  transform: none;
+  transition: opacity 200ms ease 150ms, transform 300ms var(--ease) 150ms;
+}
+
+/* Markers: square prints. */
+.mk {
+  position: relative;
+  /* backwards, not both: once hung, the fade-out for the year filter must win. */
+  animation: hang 260ms var(--ease) backwards;
+  transition: opacity var(--dur-fast) ease, transform var(--dur-fast) ease;
+}
+
+.mk[data-leaving="true"] {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.96);
+}
+
+.mk-thumb {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: var(--map);
+  box-shadow: 0 2px 6px var(--shadow);
+  cursor: pointer;
+}
+
+.mk-thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mk-label {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ink);
+  text-shadow: 0 0 2px var(--map), 0 0 6px var(--map);
+}
+
+/* Photos taken at one spot, fanned out around it. The wrapper is a zero-size point at
+   the true location; everything is placed around it. */
 .photo-stack {
   position: relative;
   width: 0;
@@ -153,1006 +1095,1096 @@ body {
   transform: translate(-50%, -50%);
   overflow: visible;
   pointer-events: none;
-  filter: drop-shadow(0 1px 2px var(--marker-shadow));
 }
 
 .photo-stack-legs line {
-  stroke: var(--marker-border);
-  stroke-width: 2;
+  stroke: var(--ink);
+  stroke-width: 1;
 }
 
 .photo-stack-origin {
   position: absolute;
-  left: -5px;
-  top: -5px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--marker-border);
-  box-shadow: 0 2px 4px var(--marker-shadow);
+  left: -4px;
+  top: -4px;
+  width: 8px;
+  height: 8px;
+  background: var(--ink);
 }
 
 .photo-stack-item {
   position: absolute;
   left: -27px;
   top: -27px;
-  box-sizing: content-box;
+  width: 54px;
+  height: 54px;
   padding: 0;
+  border: 0;
+  background: var(--map);
+  box-shadow: 0 2px 6px var(--shadow);
   cursor: pointer;
-  appearance: none;
-  background-color: var(--marker-border);
 }
 
-/* Animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--modal-background);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
-  box-sizing: border-box;
-  backdrop-filter: blur(25px) saturate(180%);
-  -webkit-backdrop-filter: blur(25px) saturate(180%);
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.modal-traffic-lights {
-  position: absolute;
-  top: -20px;
-  right: -20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-@media (max-width: 768px) {
-  .modal-traffic-lights {
-    top: 10px;
-    right: 10px;
-  }
-}
-
-.modal-close-btn,
-.modal-share-btn {
-  /* badge-scrim: these straddle the photo edge, so they must read over map and photo alike */
-  background: rgba(0, 0, 0, 0.6);
-  border: none;
-  color: #ffffff;
-  cursor: pointer;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(10px);
-  transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), background 0.2s ease, box-shadow 0.2s ease;
-}
-
-.modal-close-btn:hover {
-  background: #ff3b30;
-  color: white;
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(255, 59, 48, 0.4);
-}
-
-.modal-share-btn:hover:not(:disabled) {
-  background: #007bff;
-  color: white;
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
-}
-
-.modal-share-btn:focus-visible {
-  outline: 2px solid #007bff;
-  outline-offset: 2px;
-}
-
-.modal-share-btn:disabled {
-  opacity: 0.65;
-  cursor: default;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.icon-spin {
-  animation: spin 0.8s linear infinite;
-}
-
-.modal-caption {
-  margin-top: 20px;
-  color: var(--modal-text);
-  font-family: sans-serif;
-  animation: fadeIn 0.4s ease-out forwards;
-
-  /* Frost Effect */
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  padding: 16px 32px;
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  text-align: center;
-  max-width: 80%;
-
-  /* Centering */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-@media (prefers-color-scheme: dark) {
-  .modal-caption {
-    background: rgba(30, 30, 30, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-  }
-}
-
-html[data-theme="dark"] .modal-caption {
-  background: rgba(30, 30, 30, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-html[data-theme="light"] .modal-caption {
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.modal-content {
-  position: relative;
-  width: fit-content;
-  max-width: calc(100vw - 40px);
-  flex-shrink: 1;
-  min-height: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 0 auto;
-  animation: fadeIn 0.3s ease-out forwards;
-}
-
-.loading-container {
-  height: 100vh;
+.photo-stack-item img {
+  display: block;
   width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Search: an outlined box in the header; on a phone, a word that opens a row. */
+.search {
   position: relative;
-  overflow: hidden;
-  background-color: var(--loading-bg);
-}
-
-.skeleton-pulse {
-  background: linear-gradient(
-    90deg,
-    var(--loading-bg) 25%,
-    color-mix(in srgb, var(--loading-text) 8%, var(--loading-bg)) 50%,
-    var(--loading-bg) 75%
-  );
-  background-size: 200% 100%;
-  animation: skeleton-sweep 1.6s ease-in-out infinite;
-}
-
-@keyframes skeleton-sweep {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-.skeleton-marker {
-  position: absolute;
-  border-radius: 50%;
-  width: 12px;
-  height: 12px;
-}
-
-.skeleton-controls {
-  position: absolute;
-  bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(85%, 600px);
-  height: 36px;
-  border-radius: 18px;
-}
-
-.skeleton-toggle {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 64px;
-  height: 32px;
-  border-radius: 8px;
-}
-
-/* Time Slider Styles */
-.slider-container {
-  position: absolute;
-  bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 85%;
-  max-width: 600px;
-  height: 60px;
-  /* Increased height for better touch target */
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  padding: 10px 20px;
-  border-radius: 30px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s ease;
-}
-
-@media (max-width: 768px) {
-  .slider-container {
-    bottom: 80px;
-    /* Move up slightly on mobile to avoid bottom bar/gestures */
-    width: 90%;
-    padding: 10px 15px;
-  }
-}
-
-@media (prefers-color-scheme: dark) {
-  .slider-container {
-    background: rgba(0, 0, 0, 0.6);
-  }
-}
-
-html[data-theme="dark"] .slider-container {
-  background: rgba(0, 0, 0, 0.6);
-}
-
-html[data-theme="light"] .slider-container {
-  background: rgba(255, 255, 255, 0.8);
-}
-
-.slider {
-  position: relative;
-  width: 100%;
-}
-
-.slider__track,
-.slider__range {
-  position: absolute;
-  border-radius: 3px;
-  height: 6px;
-  /* Slightly thicker */
-}
-
-.slider__track {
-  background-color: #ced4da;
-  width: 100%;
-  z-index: 1;
-}
-
-.slider__range {
-  background-color: #007bff;
-  z-index: 2;
-  transition: left 0.1s ease, width 0.1s ease;
-  /* Smooth track movement */
-}
-
-.thumb,
-.thumb::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.thumb {
-  pointer-events: none;
-  position: absolute;
-  height: 0;
-  /* Fix alignment: thumb width is 24px.
-     We make input wider so thumb center travels 0 to 100% of parent */
-  width: calc(100% + 24px);
-  left: -12px;
-  outline: none;
-  z-index: 3;
-}
-
-.thumb--left {
-  z-index: 4;
-}
-
-.thumb--right {
-  z-index: 5;
-}
-
-/* For Chrome browsers */
-.thumb::-webkit-slider-thumb {
-  background-color: #f1f5f7;
-  border: none;
-  border-radius: 50%;
-  box-shadow: 0 0 1px 1px #ced4da;
-  cursor: pointer;
-  height: 24px;
-  /* Larger thumb */
-  width: 24px;
-  margin-top: 4px;
-  pointer-events: all;
-  position: relative;
-  transition: transform 0.1s ease;
-}
-
-.thumb::-webkit-slider-thumb:hover {
-  transform: scale(1.1);
-  background-color: #fff;
-}
-
-.thumb::-webkit-slider-thumb:active {
-  transform: scale(1.2);
-  cursor: grabbing;
-}
-
-/* For Firefox */
-.thumb::-moz-range-thumb {
-  background-color: #f1f5f7;
-  border: none;
-  border-radius: 50%;
-  box-shadow: 0 0 1px 1px #ced4da;
-  cursor: pointer;
-  height: 24px;
-  width: 24px;
-  margin-top: 4px;
-  pointer-events: all;
-  position: relative;
-  transition: transform 0.1s ease;
-}
-
-.thumb::-moz-range-thumb:hover {
-  transform: scale(1.1);
-  background-color: #fff;
-}
-
-.thumb::-moz-range-thumb:active {
-  transform: scale(1.2);
-  cursor: grabbing;
-}
-
-.slider__left-value,
-.slider__right-value {
-  color: var(--foreground);
-  font-size: 12px;
-  margin-top: 24px;
-  position: absolute;
-  top: 10px;
-  font-weight: 500;
-  pointer-events: none;
-  /* Prevent blocking clicks */
-}
-
-.slider__left-value {
-  left: 0;
-}
-
-.slider__right-value {
-  right: 0;
-}
-
-/* Date Filter Chips */
-.date-filter-container {
-  position: absolute;
-  bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
-  display: flex;
-  gap: 10px;
-  padding: 10px 15px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border-radius: 30px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  overflow-x: auto;
-  max-width: 90%;
-  scrollbar-width: none;
-  /* Firefox */
-  -ms-overflow-style: none;
-  /* IE 10+ */
-}
-
-.date-filter-container::-webkit-scrollbar {
-  display: none;
-  /* Chrome/Safari */
-}
-
-.filter-chip {
-  background: transparent;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--foreground);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.filter-chip:hover {
-  background: rgba(0, 0, 0, 0.05);
-}
-
-.filter-chip.active {
-  /* A shade under the #007bff accent: white text on #007bff is 3.98:1, short of WCAG AA. */
-  background: #0069d9;
-  color: white;
-  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
-}
-
-@media (prefers-color-scheme: dark) {
-  .date-filter-container {
-    background: rgba(0, 0, 0, 0.6);
-  }
-
-  .filter-chip:hover {
-    background: rgba(255, 255, 255, 0.1);
-  }
-}
-
-html[data-theme="dark"] .date-filter-container {
-  background: rgba(0, 0, 0, 0.6);
-}
-
-html[data-theme="dark"] .filter-chip:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-html[data-theme="light"] .date-filter-container {
-  background: rgba(255, 255, 255, 0.8);
-}
-
-html[data-theme="light"] .filter-chip:hover {
-  background: rgba(0, 0, 0, 0.05);
-}
-
-@media (max-width: 768px) {
-  .date-filter-container {
-    bottom: 80px;
-    width: auto;
-    max-width: 95%;
-    justify-content: flex-start;
-  }
-}
-
-.theme-toggle,
-.subscribe-btn,
-.terrain-toggle {
-  position: fixed;
-  top: max(20px, env(safe-area-inset-top));
-  right: 20px;
-  z-index: 1000;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  color: var(--foreground);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, opacity 0.2s ease;
-}
-
-.theme-toggle:hover,
-.subscribe-btn:hover,
-.terrain-toggle:hover {
-  transform: scale(1.08);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.35);
-}
-
-@media (prefers-color-scheme: dark) {
-  .theme-toggle,
-  .subscribe-btn,
-  .terrain-toggle {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.15);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
-  }
-
-  .theme-toggle:hover,
-  .subscribe-btn:hover,
-  .terrain-toggle:hover {
-    background: rgba(255, 255, 255, 0.18);
-  }
-}
-
-html[data-theme="dark"] .theme-toggle,
-html[data-theme="dark"] .subscribe-btn,
-html[data-theme="dark"] .terrain-toggle {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
-}
-
-html[data-theme="dark"] .theme-toggle:hover,
-html[data-theme="dark"] .subscribe-btn:hover,
-html[data-theme="dark"] .terrain-toggle:hover {
-  background: rgba(255, 255, 255, 0.18);
-}
-
-html[data-theme="light"] .theme-toggle,
-html[data-theme="light"] .subscribe-btn,
-html[data-theme="light"] .terrain-toggle {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4);
-}
-
-/* Subscribe: a glass disc under the theme toggle that opens a small glass panel. */
-.subscribe-btn {
-  top: calc(max(20px, env(safe-area-inset-top)) + 56px);
-}
-
-/* Terrain: a third glass disc under subscribe; filled accent when 3D is on. */
-.terrain-toggle {
-  top: calc(max(20px, env(safe-area-inset-top)) + 112px);
-}
-
-.terrain-toggle.terrain-toggle-on {
-  color: #007bff;
-}
-
-html[data-theme="dark"] .terrain-toggle.terrain-toggle-on {
-  color: #5aa9ff;
-}
-
-.terrain-toggle:focus-visible {
-  outline: 2px solid #007bff;
-  outline-offset: 2px;
-}
-
-.subscribe-popover {
-  position: fixed;
-  top: calc(max(20px, env(safe-area-inset-top)) + 112px);
-  right: 20px;
-  z-index: 1000;
-  width: min(320px, calc(100vw - 40px));
-  box-sizing: border-box;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  color: var(--modal-text);
-  font-family: var(--font-geist-sans), sans-serif;
-}
-
-.subscribe-title {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.subscribe-form {
-  display: flex;
-  gap: 8px;
-}
-
-.subscribe-input {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
+  max-width: 320px;
+  margin-top: -8px;
+}
+
+.search-input {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
   font: inherit;
-  font-size: 14px;
-  padding: 8px 12px;
-  border-radius: 20px;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  background: rgba(255, 255, 255, 0.7);
-  color: var(--modal-text);
 }
 
-.subscribe-submit {
-  font: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  padding: 8px 16px;
-  border-radius: 20px;
-  border: none;
-  background: var(--foreground);
-  color: var(--background);
-  cursor: pointer;
-}
-
-.subscribe-submit:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.subscribe-honeypot {
-  position: absolute;
-  left: -9999px;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-}
-
-.subscribe-note,
-.subscribe-error {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.5;
-  opacity: 0.75;
-}
-
-.subscribe-error {
-  color: #e55;
+.search-input::placeholder {
+  color: var(--muted);
   opacity: 1;
 }
 
-.subscribe-rss {
-  font-size: 12px;
-  color: var(--modal-text);
+.search-open-btn {
+  display: none;
 }
 
-.subscribe-input:focus-visible,
-.subscribe-submit:focus-visible,
-.subscribe-rss:focus-visible,
-.subscribe-btn:focus-visible {
-  outline: 2px solid #007bff;
-  outline-offset: 2px;
+.search-list {
+  position: absolute;
+  z-index: 25;
+  left: 0;
+  right: 0;
+  top: 36px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--bg);
+  border: 1px solid var(--ink);
+  border-top: 0;
+  box-shadow: var(--pop-shadow);
+  clip-path: inset(0 var(--pop-reach) 100% var(--pop-reach));
+  visibility: hidden;
+  transition: clip-path 200ms var(--ease), visibility 0s linear 200ms;
 }
 
-@media (prefers-color-scheme: dark) {
-  .subscribe-popover {
-    background: rgba(30, 30, 30, 0.85);
-    border-color: rgba(255, 255, 255, 0.15);
-  }
-
-  .subscribe-input {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.2);
-  }
+.search-list[data-open="true"] {
+  clip-path: inset(0 var(--pop-reach) var(--pop-reach) var(--pop-reach));
+  visibility: visible;
+  transition: clip-path 200ms var(--ease), visibility 0s;
 }
 
-html[data-theme="dark"] .subscribe-popover {
-  background: rgba(30, 30, 30, 0.85);
-  border-color: rgba(255, 255, 255, 0.15);
-}
-
-html[data-theme="dark"] .subscribe-input {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-html[data-theme="light"] .subscribe-popover {
-  background: rgba(255, 255, 255, 0.85);
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-html[data-theme="light"] .subscribe-input {
-  background: rgba(255, 255, 255, 0.7);
-  border-color: rgba(0, 0, 0, 0.15);
-}
-
-/* Location Sidebar */
-.sidebar-toggle-btn {
-  position: fixed;
-  top: max(20px, env(safe-area-inset-top));
-  left: 20px;
-  z-index: 1000;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  color: var(--foreground);
+.search-option {
+  display: block;
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 0;
+  border-top: 1px solid var(--rule);
+  background: none;
+  text-align: left;
   cursor: pointer;
+}
+
+.search-option:hover,
+.search-option[aria-selected="true"] {
+  font-weight: 700;
+}
+
+.search-status {
+  padding: 8px 12px;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+}
+
+@media (max-width: 767px) {
+  .search {
+    position: static;
+    flex: none;
+    max-width: none;
+    margin-top: 0;
+  }
+
+  .search-open-btn {
+    display: block;
+    min-height: 44px;
+  }
+
+  .search-box {
+    position: absolute;
+    z-index: 21;
+    left: 0;
+    right: 0;
+    top: 100%;
+    padding: 12px 0;
+    background: var(--bg);
+    border-bottom: 1px solid var(--ink);
+    box-shadow: var(--pop-shadow);
+    clip-path: inset(0 var(--pop-reach) 100% var(--pop-reach));
+    visibility: hidden;
+    transition: clip-path var(--dur) var(--ease), visibility 0s linear var(--dur);
+  }
+
+  .search[data-open="true"] .search-box {
+    clip-path: inset(0 var(--pop-reach) var(--pop-reach) var(--pop-reach));
+    visibility: visible;
+    transition: clip-path var(--dur) var(--ease), visibility 0s;
+  }
+
+  /* Inside the row rather than hanging below it: the row's unfolding clip would
+     hide anything outside it. */
+  .search-list {
+    position: static;
+    clip-path: none;
+    transition: none;
+  }
+
+  .search-list:not([data-open="true"]) {
+    display: none;
+  }
+
+  .search-list[data-open="true"] {
+    animation: develop 200ms var(--ease);
+  }
+}
+
+/* Year filter: brackets slide to the chosen year. */
+.years {
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+  border-top: 1px solid var(--ink);
+  min-height: 48px;
 }
 
-.sidebar-toggle-btn:hover {
-  transform: scale(1.08);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.5),
-    0 0 0 6px rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.35);
+.years-label {
+  flex: none;
+  width: calc((100% - 11 * var(--col-gap)) / 12 * 2 + 2 * var(--col-gap));
 }
 
-html[data-theme="dark"] .sidebar-toggle-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
-}
-
-html[data-theme="dark"] .sidebar-toggle-btn:hover {
-  background: rgba(255, 255, 255, 0.18);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    0 0 0 6px rgba(255, 255, 255, 0.08);
-}
-
-.location-sidebar {
-  position: fixed;
-  top: 76px;
-  left: 20px;
-  bottom: 20px;
-  width: min(280px, calc(100vw - 40px));
-  z-index: 999;
+.years-list {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-html[data-theme="dark"] .location-sidebar {
-  background: rgba(20, 20, 20, 0.75);
+.years-list::-webkit-scrollbar {
+  display: none;
 }
 
-.location-sidebar-header {
-  padding: 16px 18px 8px;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  opacity: 0.6;
-  color: var(--foreground);
+.years-btn {
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color var(--dur-fast) ease;
 }
 
-.location-sidebar-list {
-  overflow-y: auto;
-  padding: 4px 8px 12px;
+.years-btn[aria-pressed="true"] {
+  color: var(--ink);
+  font-weight: 700;
 }
 
-.location-sidebar-item {
-  width: 100%;
+.years-brackets {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  background: transparent;
-  border: none;
-  border-radius: 10px;
-  padding: 10px 10px;
-  font-size: 14px;
-  color: var(--foreground);
-  cursor: pointer;
+  font-weight: 700;
+  pointer-events: none;
+  transition: transform 220ms var(--ease), width 220ms var(--ease);
+}
+
+@media (max-width: 767px) {
+  .mapshell {
+    row-gap: 12px;
+  }
+
+  .years-label {
+    display: none;
+  }
+}
+
+/* ── Photo page (and the same page over the map) ──────────────────────── */
+
+.pv {
+  position: relative;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  padding: 0 var(--gutter) 40px;
+}
+
+.pv[data-mode="overlay"] {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  height: 100dvh;
+  overflow: hidden auto;
+  overscroll-behavior: contain;
+}
+
+.pv-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--bg);
+}
+
+/* While a photo is dragged down to close, the words around it fade first, following
+   the finger without lag. (The head can't fade as a whole: it's display: contents on
+   phones.) */
+.pv-kicker,
+.pv-title,
+.pv-actions,
+.pv-side {
+  opacity: calc(1 - var(--drag, 0) * 3);
+}
+
+.pv[data-dragging="true"] :is(.pv-kicker, .pv-title, .pv-actions, .pv-side) {
+  transition: none;
+}
+
+.pv-head {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--col-gap);
+  align-items: start;
+  padding: 32px 0 40px;
+}
+
+.pv-bar {
+  display: contents;
+}
+
+.pv-kicker {
+  grid-column: 1 / span 2;
+  grid-row: 1;
+  padding-top: 8px;
+}
+
+.pv-title {
+  grid-column: 3 / span 7;
+  grid-row: 1;
+  margin: 0;
+  font-size: clamp(36px, 4.5vw, 64px);
+  line-height: 0.95;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+
+.pv-title[data-length="mid"] {
+  font-size: clamp(30px, 3.4vw, 48px);
+}
+
+.pv-title[data-length="long"] {
+  font-size: clamp(24px, 2.4vw, 34px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.pv-actions {
+  grid-column: 10 / span 3;
+  grid-row: 1;
+  justify-self: end;
+  display: flex;
+  gap: 32px;
+  font-weight: 700;
+}
+
+.pv-actions > * {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.pv-body {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: var(--col-gap);
+  min-height: 0;
+}
+
+.pv-figure {
+  grid-column: 1 / span 7;
+  position: relative;
+  margin: 0;
+  height: max(320px, calc(100dvh - 330px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pv-frame {
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+  transform-origin: 0 0;
+  -webkit-touch-callout: none;
+  user-select: none;
+  background: var(--map);
+}
+
+/* Trackpad swipe progress: a ring at the cursor that fills as the photo is swiped away,
+   with a cross once it will close. PhotoView sets --swipe (0 to 1) and the cursor's
+   position, and data-swipe-cursor only for trackpad swipes; touch shows nothing. */
+.pv-swipe {
+  position: fixed;
+  left: var(--swipe-x, 50%);
+  top: var(--swipe-y, 50%);
+  z-index: 5;
+  display: none;
+  width: 48px;
+  height: 48px;
+  margin: -24px 0 0 -24px;
+  pointer-events: none;
+  overflow: visible;
+  opacity: clamp(0, calc(var(--swipe, 0) * 6), 1);
+  transform: scale(calc(0.85 + var(--swipe, 0) * 0.15));
+}
+
+.pv[data-swipe-cursor] .pv-swipe {
+  display: block;
+}
+
+.pv-swipe-disc {
+  fill: var(--bg);
+  opacity: 0.88;
+}
+
+.pv-swipe-track,
+.pv-swipe-fill,
+.pv-swipe-arrow {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.pv-swipe-track {
+  stroke: var(--rule);
+}
+
+.pv-swipe-fill {
+  stroke: var(--ink);
+  stroke-dasharray: 1;
+  stroke-dashoffset: calc(1 - var(--swipe, 0));
+  transform: rotate(-90deg);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.pv-swipe-arrow {
+  stroke: var(--ink);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+/* The arrow points to the photo the swipe is heading for. */
+.pv[data-swipe-ready][data-swipe-dir="next"] .pv-swipe-arrow[data-dir="next"],
+.pv[data-swipe-ready][data-swipe-dir="prev"] .pv-swipe-arrow[data-dir="prev"] {
+  opacity: 1;
+}
+
+.pv[data-swipe-ready] .pv-swipe {
+  animation: swipe-ready 220ms var(--ease);
+}
+
+.pv[data-closing="true"] .pv-swipe {
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+@keyframes swipe-ready {
+  50% { transform: scale(1.12); }
+}
+
+/* While a photo is open, a sideways trackpad swipe is the photo's to handle, not the
+   browser's back gesture. */
+html:has(.pv) {
+  overscroll-behavior-x: none;
+}
+
+.pv-noscript {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.pv-frame img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.pv-frame[data-grow="false"] {
+  animation: fade 250ms ease backwards;
+}
+
+/* Previous / Next: the photo alongside waits centred under this one, out of sight until
+   a swipe morphs it in (PhotoView, placeX). While one is moving the figure clips, so the
+   photos slide past each other inside it rather than over the details. */
+.pv-peek {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+  background: var(--map);
+}
+
+.pv-peek img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pv[data-swipe-dir="next"] .pv-peek[data-dir="next"],
+.pv[data-swipe-dir="prev"] .pv-peek[data-dir="prev"] {
+  visibility: visible;
+}
+
+.pv[data-swipe-dir="next"] .pv-figure,
+.pv[data-swipe-dir="prev"] .pv-figure {
+  overflow: hidden;
+}
+
+.pv-large {
+  opacity: 0;
+  transition: opacity var(--dur) ease;
+}
+
+.pv-large[data-loaded="true"] {
+  opacity: 1;
+}
+
+.pv-side {
+  grid-column: 9 / span 4;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.pv-facts {
+  margin: 0;
+}
+
+.pv-fact {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  border-top: 1px solid var(--ink);
+}
+
+.pv-fact:last-child {
+  border-bottom: 1px solid var(--ink);
+}
+
+.pv-fact dt {
+  padding: 8px 0;
+  font-weight: 700;
+}
+
+.pv-fact dd {
+  margin: 0;
+  padding: 8px 0;
+}
+
+.pv-share-wide {
+  display: none;
+}
+
+/* Previous / Next: a row of their own under the facts, one at each end. */
+.pv-steps {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  transition: opacity 300ms ease 200ms;
+}
+
+.pv[data-details="false"] .pv-steps {
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.pv-steps .text-btn {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Entry: the photo first, then the title slides up and the rows draw in. */
+.pv-kicker,
+.pv-title,
+.pv-actions {
+  transition: opacity 400ms ease, transform 500ms var(--ease);
+}
+
+.pv-fact {
+  transform-origin: left;
+  transition: opacity 200ms ease calc(120ms + var(--i) * 50ms),
+    transform 300ms var(--ease) calc(60ms + var(--i) * 50ms);
+}
+
+.pv-share-wide {
+  transition: opacity 300ms ease 200ms;
+}
+
+.pv[data-details="false"] .pv-kicker,
+.pv[data-details="false"] .pv-title,
+.pv[data-details="false"] .pv-actions {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 150ms ease, transform 200ms ease;
+}
+
+.pv[data-details="false"] .pv-fact {
+  opacity: 0;
+  transform: scaleX(0);
+  transition: opacity 150ms ease, transform 200ms ease;
+}
+
+.pv[data-details="false"] .pv-share-wide {
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+/* Over the map: the page fades in under the growing photo, and out on close. */
+.pv[data-mode="overlay"] > .pv-bg,
+.pv[data-mode="overlay"] > .sh {
+  animation: fade 250ms ease backwards;
+}
+
+.pv[data-closing="true"] > .pv-bg,
+.pv[data-closing="true"] > .sh {
+  opacity: 0;
+  transition: opacity 250ms ease 100ms;
+}
+
+/* Landed by a swipe or Previous / Next: the page was already there, so nothing fades in
+   again (the map behind never shows); only the words change, with a short fade. */
+.pv[data-arrived] > .pv-bg,
+.pv[data-arrived] > .sh,
+.pv[data-arrived] .pv-frame {
+  animation: none;
+}
+
+.pv[data-arrived] .pv-large {
+  transition: none;
+}
+
+/* The words morph into the next photo's: the old ones, laid over the new, blur and swell
+   away while the new ones grow in from slightly smaller and sharpen. Unchanged words stay. */
+.pv-title {
+  position: relative;
+}
+
+.pv-title > .pv-new {
+  display: block;
+}
+
+.pv-morph {
+  position: relative;
+  display: inline-block;
+}
+
+.pv-ghost {
+  position: absolute;
+  top: 0;
+  left: 0;
+  white-space: nowrap;
+  pointer-events: none;
+  transform-origin: 0 50%;
+  animation: morph-out 460ms var(--ease) forwards;
+}
+
+.pv-ghost-title {
+  right: 0;
+  white-space: normal;
+  transform-origin: 0 0;
+}
+
+.pv-new[data-morph="true"] {
+  display: inline-block;
+  transform-origin: 0 50%;
+  animation: morph-in 460ms var(--ease) backwards;
+}
+
+.pv-title > .pv-new[data-morph="true"] {
+  display: block;
+  transform-origin: 0 0;
+}
+
+@keyframes morph-out {
+  to {
+    opacity: 0;
+    filter: blur(0.2em);
+    transform: scale(1.05);
+  }
+}
+
+@keyframes morph-in {
+  from {
+    opacity: 0;
+    filter: blur(0.2em);
+    transform: scale(0.94);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-ghost {
+    display: none;
+  }
+
+  .pv-new[data-morph="true"] {
+    animation: none;
+  }
+}
+
+/* Share: a light that turns green and glows once the card is ready, then the label,
+   which changes in place one line at a time. */
+.share-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.share-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.3;
+  transition: background-color var(--dur) ease, opacity var(--dur) ease, box-shadow var(--dur) ease;
+}
+
+.share-dot[data-ready="true"] {
+  background: var(--go);
+  opacity: 1;
+  box-shadow: 0 0 6px 1px color-mix(in srgb, var(--go) 70%, transparent);
+  animation: share-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes share-glow {
+  0%, 100% { box-shadow: 0 0 4px 0 color-mix(in srgb, var(--go) 55%, transparent); }
+  50% { box-shadow: 0 0 10px 3px color-mix(in srgb, var(--go) 80%, transparent); }
+}
+
+.share-reel {
+  display: block;
+  height: 1.35em;
+  line-height: 1.35;
+  overflow: hidden;
+  /* ShareButton sets the width to the line showing. */
+  transition: width 220ms var(--ease);
+}
+
+.share-reel > span {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  transition: transform 220ms var(--ease);
+}
+
+.share-reel > span > span {
+  height: 1.35em;
+  white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+  .pv {
+    display: flex;
+    flex-direction: column;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  .pv-head,
+  .pv-body {
+    display: contents;
+  }
+
+  .pv-bar {
+    order: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+  }
+
+  .pv-kicker {
+    padding-top: 0;
+  }
+
+  .pv-actions .share-btn {
+    display: none;
+  }
+
+  .pv-figure {
+    order: 2;
+    height: clamp(120px, calc((100vw - 2 * var(--gutter)) / var(--ratio, 0.75)), min(56dvh, 520px));
+    margin-bottom: 16px;
+  }
+
+  .pv-title {
+    order: 3;
+    margin-bottom: 16px;
+    font-size: 40px;
+  }
+
+  .pv-title[data-length="mid"] {
+    font-size: 32px;
+  }
+
+  .pv-title[data-length="long"] {
+    font-size: 24px;
+  }
+
+  .pv-side {
+    order: 4;
+    gap: 16px;
+  }
+
+  .pv-share-wide {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 48px;
+  }
+}
+
+/* ── Directory ─────────────────────────────────────────────────────────── */
+
+/* ── Admin: the site's header and rules, tools in a single readable column ── */
+
+.admin {
+  min-height: 100dvh;
+  padding: 0 var(--gutter) 64px;
+}
+
+.admin-head {
+  display: flex;
+  align-items: baseline;
+  gap: 32px;
+  flex-wrap: wrap;
+  padding: 24px 0 16px;
+  border-bottom: 1px solid var(--ink);
+  margin-bottom: 32px;
+}
+
+.admin-head h1 {
+  margin: 0;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 24px;
+}
+
+.admin-tabs [aria-current="page"] {
+  font-weight: 700;
+}
+
+.admin-body {
+  max-width: 720px;
+}
+
+.admin input,
+.admin textarea,
+.admin select,
+.admin button {
+  font: inherit;
+}
+
+.dir {
+  min-height: 100dvh;
+  padding: 0 var(--gutter) 40px;
+}
+
+.dir-head {
+  padding: 24px 0 32px;
+}
+
+.dir-table {
+  position: relative;
+  width: 100%;
+}
+
+.dir-row,
+.dir-cols {
+  position: relative;
+  display: grid;
+  grid-template-columns: 90px minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr);
+  column-gap: var(--col-gap);
+  align-items: center;
+}
+
+.dir-cols {
+  padding: 8px 0;
+  font-weight: 700;
+  animation: rise 300ms var(--ease) both;
+}
+
+.dir-cols::after,
+.dir-item::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-bottom: 1px solid var(--rule);
+  transform-origin: left;
+}
+
+.dir-cols::after {
+  border-bottom-color: var(--ink);
+  animation: draw 350ms var(--ease) both;
+}
+
+/* Rows rule themselves in as they scroll into view (Directory.tsx), a few at a time. */
+.dir-item::after {
+  transform: scaleX(0);
+  transition: transform 350ms var(--ease) calc(var(--i) * 50ms);
+}
+
+.dir-item[data-in="true"]::after {
+  transform: scaleX(1);
+}
+
+.dir-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 15px;
+}
+
+.dir-item {
+  position: relative;
+}
+
+.dir-row {
+  width: 100%;
+  min-height: 52px;
+  padding: 0;
+  border: 0;
+  background: none;
   text-align: left;
-  transition: background 0.15s ease;
+  text-decoration: none;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 300ms ease calc(60ms + var(--i) * 50ms),
+    transform 300ms var(--ease) calc(60ms + var(--i) * 50ms),
+    color var(--dur-fast) ease;
 }
 
-.location-sidebar-item:hover {
-  background: rgba(0, 0, 0, 0.06);
+.dir-item[data-in="true"] .dir-row {
+  opacity: 1;
+  transform: none;
 }
 
-html[data-theme="dark"] .location-sidebar-item:hover {
-  background: rgba(255, 255, 255, 0.1);
+.dir-list[data-hovering="true"] .dir-row {
+  color: var(--muted);
 }
 
-.location-sidebar-name {
+.dir-list[data-hovering="true"] .dir-item[data-hover="true"] .dir-row {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.dir-latest {
+  font-style: italic;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.location-sidebar-count {
-  flex-shrink: 0;
-  font-size: 12px;
-  font-weight: 600;
-  opacity: 0.55;
-}
-
-.location-sidebar-empty {
-  padding: 12px 10px;
-  font-size: 13px;
-  opacity: 0.6;
-  color: var(--foreground);
-}
-
-/* Search: a glass icon that grows in place into the full bar, taking over
-   the hamburger's and theme toggle's slots while they fade via
-   .icon-btn-hidden (see .sidebar-toggle-btn / .theme-toggle). */
-.search-track {
-  position: fixed;
-  top: max(20px, env(safe-area-inset-top));
-  left: 20px;
-  right: 20px;
-  height: 44px;
-  z-index: 1000;
-  pointer-events: none;
-}
-
-.search-shape {
+.dir-preview {
   position: absolute;
+  z-index: 2;
+  left: 52%;
   top: 0;
-  height: 44px;
-  border-radius: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  pointer-events: auto;
+  width: 220px;
+  height: 150px;
+  object-fit: cover;
+  pointer-events: none;
+  box-shadow: 0 8px 24px var(--shadow);
+  opacity: 0;
+  transform: translateY(var(--y, 0px)) scale(0.96);
+  transition: transform 240ms var(--ease), opacity var(--dur-fast) ease;
 }
 
-html[data-theme="dark"] .search-shape {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+.dir-preview[data-on="true"] {
+  opacity: 1;
+  transform: translateY(var(--y, 0px)) scale(1);
 }
 
-.search-shape--collapsed {
-  left: 56px;
-  width: 44px;
+.dir-empty {
+  padding: 16px 0;
+  color: var(--muted);
 }
 
-.search-shape--expanded {
-  left: 0;
-  width: 100%;
-}
+@media (max-width: 767px) {
+  .dir-row,
+  .dir-cols {
+    grid-template-columns: 44px minmax(0, 1fr) 56px;
+  }
 
-/* Wide screens (see useMediaQuery in Map.tsx): a permanent bar in the gap
-   between the hamburger and theme toggle, no grow/shrink. */
-.search-track--inline {
-  left: 76px;
-  right: auto;
-  width: min(320px, calc(100vw - 152px));
-}
-
-.search-shape--inline {
-  left: 0;
-  width: 100%;
-}
-
-.search-shape-icon,
-.search-shape-btn,
-.search-back-btn {
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-  border: none;
-  background: transparent;
-  color: var(--foreground);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.search-shape-icon {
-  cursor: default;
-}
-
-.search-shape-content {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-}
-
-.search-shape-input {
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-  border: none;
-  background: transparent;
-  color: var(--foreground);
-  font-size: 14px;
-  outline: none;
-  padding-right: 16px;
-}
-
-.search-shape-input::placeholder {
-  color: var(--foreground);
-  opacity: 0.5;
-}
-
-@media (prefers-color-scheme: dark) {
-  .search-shape-input::placeholder {
-    opacity: 0.85;
+  .dir-years,
+  .dir-latest,
+  .dir-preview {
+    display: none;
   }
 }
 
-html[data-theme="dark"] .search-shape-input::placeholder {
-  opacity: 0.85;
+@media (hover: none) {
+  .dir-preview {
+    display: none;
+  }
 }
 
-html[data-theme="light"] .search-shape-input::placeholder {
-  opacity: 0.5;
+/* ── Keyframes ─────────────────────────────────────────────────────────── */
+
+@keyframes fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-.search-box-suggestions {
-  position: absolute;
-  top: 52px;
-  left: 0;
-  right: 0;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-radius: 14px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-  pointer-events: auto;
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }
 
-html[data-theme="dark"] .search-box-suggestions {
-  background: rgba(30, 30, 30, 0.9);
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
 }
 
-.search-box-suggestion {
-  display: block;
-  width: 100%;
-  text-align: left;
-  background: transparent;
-  border: none;
-  padding: 10px 14px;
-  font-size: 13px;
-  color: var(--foreground);
-  cursor: pointer;
+@keyframes draw {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
 }
 
-.search-box-suggestion:hover {
-  background: rgba(0, 0, 0, 0.06);
+@keyframes v-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
 }
 
-html[data-theme="dark"] .search-box-suggestion:hover {
-  background: rgba(255, 255, 255, 0.1);
+/* A meridian on a turning globe, face on: its width is -cos(angle). It fades only near
+   the rim, where it would double the outline. */
+@keyframes globe-turn {
+  0% { transform: scaleX(-1.000); opacity: 0.00; }
+  5% { transform: scaleX(-0.988); opacity: 0.47; }
+  10% { transform: scaleX(-0.951); opacity: 0.93; }
+  15% { transform: scaleX(-0.891); opacity: 1.00; }
+  20% { transform: scaleX(-0.809); opacity: 1.00; }
+  25% { transform: scaleX(-0.707); opacity: 1.00; }
+  30% { transform: scaleX(-0.588); opacity: 1.00; }
+  35% { transform: scaleX(-0.454); opacity: 1.00; }
+  40% { transform: scaleX(-0.309); opacity: 1.00; }
+  45% { transform: scaleX(-0.156); opacity: 1.00; }
+  50% { transform: scaleX(-0.020); opacity: 1.00; }
+  55% { transform: scaleX(0.156); opacity: 1.00; }
+  60% { transform: scaleX(0.309); opacity: 1.00; }
+  65% { transform: scaleX(0.454); opacity: 1.00; }
+  70% { transform: scaleX(0.588); opacity: 1.00; }
+  75% { transform: scaleX(0.707); opacity: 1.00; }
+  80% { transform: scaleX(0.809); opacity: 1.00; }
+  85% { transform: scaleX(0.891); opacity: 1.00; }
+  90% { transform: scaleX(0.951); opacity: 0.93; }
+  95% { transform: scaleX(0.988); opacity: 0.47; }
+  100% { transform: scaleX(1.000); opacity: 0.00; }
 }
 
-.search-box-status {
-  padding: 10px 14px;
-  font-size: 13px;
-  opacity: 0.6;
-  color: var(--foreground);
+@keyframes row-in {
+  from { opacity: 0; transform: translateX(-48px); }
+  to { opacity: 1; transform: none; }
 }
 
-.icon-btn-hidden {
-  opacity: 0;
-  pointer-events: none;
-  transform: scale(0.8);
+@keyframes row-dim {
+  from { color: var(--ink); }
+  to { color: var(--row-color); }
 }
 
-/* Admin location picker: keep Mapbox's own controls in step with the theme. */
+@keyframes row-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateX(110%); }
+}
+
+@keyframes develop {
+  from { clip-path: inset(0 0 100% 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+
+@keyframes undevelop {
+  from { clip-path: inset(0 0 0 0); }
+  to { clip-path: inset(100% 0 0 0); }
+}
+
+@keyframes hang {
+  from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Phones zoom the page in on any text field set smaller than 16px. Last in the file so
+   it wins over each field's own size. */
+@media (max-width: 767px), (pointer: coarse) {
+  .search-input,
+  .sub-input {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  .map-loader .cam-line {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+
+  .map-loader .cam-arc {
+    display: none;
+  }
+}
+
+/* ── Admin location picker: keep Mapbox's own controls in step with the theme ── */
+
 .map-picker[data-picker-theme="dark"] .mapboxgl-ctrl-group {
   background: #1c1c1c;
 }
@@ -1167,17 +2199,4 @@ html[data-theme="dark"] .search-box-suggestion:hover {
 
 .map-picker[data-picker-theme="dark"] .mapboxgl-ctrl-group button:not(:disabled):hover {
   background: #2a2a2a;
-}
-
-/* Present for screen readers and crawlers, invisible on screen. */
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }

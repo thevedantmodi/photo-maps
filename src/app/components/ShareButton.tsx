@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
+import { useTheme, type Theme } from "../hooks/useTheme";
 import { shareCardPath } from "@/lib/shareVersion";
 
 interface ShareButtonProps {
@@ -9,6 +10,7 @@ interface ShareButtonProps {
   caption: string;
   /** shareVersion() of the photo: a new value means a new card URL, so no stale CDN hit. */
   version: string;
+  className?: string;
 }
 
 type Status = "idle" | "building" | "ready" | "shared" | "error";
@@ -21,68 +23,71 @@ const LABEL: Record<Status, string> = {
   error: "Something went wrong, try again",
 };
 
-const ShareIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7" />
-    <path d="M16 6l-4-4-4 4" />
-    <path d="M12 2v14" />
-  </svg>
-);
+// Which line of the reel each status shows: Share, Building card…, Link copied, Try again,
+// Card ready (the card landed after the phone stopped honouring the tap).
+const REEL: Record<Status, number> = { idle: 0, building: 1, shared: 2, error: 3, ready: 4 };
 
-const SpinnerIcon = () => (
-  <svg className="icon-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-    <path d="M12 2a10 10 0 0 1 10 10" />
-  </svg>
-);
-
-const CheckIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 6L9 17l-5-5" />
-  </svg>
-);
-
-const ErrorIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 9v4" />
-    <path d="M12 17h.01" />
-    <path d="M10.29 3.86l-8.18 14.18A2 2 0 0 0 3.82 21h16.36a2 2 0 0 0 1.71-3l-8.18-14.14a2 2 0 0 0-3.42 0z" />
-  </svg>
-);
-
-const ICON: Record<Status, () => React.JSX.Element> = {
-  idle: ShareIcon,
-  building: SpinnerIcon,
-  ready: ShareIcon,
-  shared: CheckIcon,
-  error: ErrorIcon,
-};
-
-const ShareButton = ({ slug, caption, version }: ShareButtonProps) => {
+const ShareButton = ({ slug, caption, version, className }: ShareButtonProps) => {
+  const [theme] = useTheme();
   const [status, setStatus] = useState<Status>("idle");
-  const fileRef = useRef<File | null>(null);
-  const pendingRef = useRef<Promise<File> | null>(null);
+  // Which themes' cards are already on the device, for the ready light.
+  const [held, setHeld] = useState<Partial<Record<Theme, true>>>({});
+  // The card follows the theme on screen, so each theme keeps its own file.
+  const files = useRef<Partial<Record<Theme, File>>>({});
+  const pending = useRef<Partial<Record<Theme, Promise<File>>>>({});
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reelRef = useRef<HTMLSpanElement>(null);
 
-  const build = useCallback((): Promise<File> => {
-    if (pendingRef.current) return pendingRef.current;
-    const p = fetch(shareCardPath(slug, version))
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`share image failed: ${res.status}`);
-        const blob = await res.blob();
-        const file = new File([blob], `${slug}.png`, { type: "image/png" });
-        fileRef.current = file;
-        return file;
-      })
-      .catch((err) => {
-        pendingRef.current = null;
-        throw err;
-      });
-    pendingRef.current = p;
-    return p;
-  }, [slug, version]);
+  // The reel is only as wide as the line showing, so the light and label stay centred
+  // together on the wide phone button. Re-measured once the web font has loaded.
+  useLayoutEffect(() => {
+    const reel = reelRef.current;
+    const fit = () => {
+      const line = reel?.firstElementChild?.children[REEL[status]] as HTMLElement | undefined;
+      if (reel && line) reel.style.width = `${line.offsetWidth}px`;
+    };
+    fit();
+    document.fonts?.ready.then(fit);
+  }, [status]);
+
+  useEffect(
+    () => () => {
+      if (resetTimer.current) clearTimeout(resetTimer.current);
+    },
+    [],
+  );
+
+  const settle = useCallback((next: Status, after: number) => {
+    if (resetTimer.current) clearTimeout(resetTimer.current);
+    resetTimer.current = setTimeout(() => setStatus(next), after);
+  }, []);
+
+  const build = useCallback(
+    (t: Theme): Promise<File> => {
+      const existing = pending.current[t];
+      if (existing) return existing;
+      const p = fetch(shareCardPath(slug, version, t))
+        .then(async (res) => {
+          if (!res.ok) throw new Error(`share image failed: ${res.status}`);
+          const blob = await res.blob();
+          const file = new File([blob], `${slug}.png`, { type: "image/png" });
+          files.current[t] = file;
+          setHeld((h) => ({ ...h, [t]: true }));
+          return file;
+        })
+        .catch((err) => {
+          delete pending.current[t];
+          throw err;
+        });
+      pending.current[t] = p;
+      return p;
+    },
+    [slug, version],
+  );
 
   const warm = useCallback(() => {
-    if (!fileRef.current && !pendingRef.current) build().catch(() => {});
-  }, [build]);
+    if (!files.current[theme] && !pending.current[theme]) build(theme).catch(() => {});
+  }, [build, theme]);
 
   // Touch devices never hover, so build the card as soon as the photo opens — otherwise
   // the first tap only builds it and a second tap is needed to actually share.
@@ -95,10 +100,14 @@ const ShareButton = ({ slug, caption, version }: ShareButtonProps) => {
       if (navigator.canShare?.({ files: [file] })) {
         navigator
           .share({ files: [file], text: caption })
-          .then(() => setStatus("shared"))
+          .then(() => {
+            setStatus("shared");
+            settle("idle", 2000);
+          })
           .catch((err: unknown) => {
+            // Share sheet dismissed.
             if (err instanceof DOMException && err.name === "AbortError") {
-              setStatus("ready");
+              setStatus("idle");
               return;
             }
             // Activation lapsed while the card was still building: the next tap shares instantly.
@@ -109,13 +118,15 @@ const ShareButton = ({ slug, caption, version }: ShareButtonProps) => {
             // Share sheet unavailable: fall back to a plain tab.
             window.open(URL.createObjectURL(file), "_blank", "noopener");
             setStatus("shared");
+            settle("idle", 2000);
           });
         return;
       }
       window.open(URL.createObjectURL(file), "_blank", "noopener");
       setStatus("shared");
+      settle("idle", 2000);
     },
-    [caption],
+    [caption, settle],
   );
 
   const onClick = useCallback(
@@ -128,7 +139,7 @@ const ShareButton = ({ slug, caption, version }: ShareButtonProps) => {
       const permalink = `${window.location.origin}/p/${encodeURIComponent(slug)}`;
       navigator.clipboard?.writeText(permalink).catch(() => {});
 
-      const ready = fileRef.current;
+      const ready = files.current[theme];
       if (ready) {
         deliver(ready);
         return;
@@ -137,29 +148,40 @@ const ShareButton = ({ slug, caption, version }: ShareButtonProps) => {
       // Card still in flight: share the moment it lands. Activation usually outlives a
       // short wait; if it doesn't, deliver() drops back to "ready" for one more tap.
       setStatus("building");
-      build()
+      build(theme)
         .then(deliver)
         .catch((err) => {
           console.error(err);
           setStatus("error");
-          setTimeout(() => setStatus("idle"), 2500);
+          settle("idle", 2500);
         });
     },
-    [build, deliver, slug, status],
+    [build, deliver, settle, slug, status, theme],
   );
-
-  const Icon = ICON[status];
 
   return (
     <button
-      className="modal-share-btn"
+      type="button"
+      className={className}
       onClick={onClick}
       onPointerEnter={warm}
       onFocus={warm}
-      disabled={status === "building"}
+      aria-disabled={status === "building"}
       aria-label={LABEL[status]}
     >
-      <Icon />
+      <span className="share-label" aria-hidden="true">
+        {/* Glows green once the card is on the device and one tap will share it. */}
+        <span className="share-dot" data-ready={held[theme] === true} />
+        <span className="share-reel" ref={reelRef}>
+          <span style={{ transform: `translateY(${-1.35 * REEL[status]}em)` }}>
+            <span>Share</span>
+            <span>Building card…</span>
+            <span>Link copied</span>
+            <span>Try again</span>
+            <span>Card ready</span>
+          </span>
+        </span>
+      </span>
     </button>
   );
 };
