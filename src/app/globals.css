@@ -15,6 +15,11 @@
   --echo-2: #959593;
   --echo-3: #b4b4b1;
   --shadow: rgba(0, 0, 0, 0.25);
+  /* Panels that drop down over the page (subscribe, search, the phone menu): a soft
+     shadow underneath so they read as lifted off what's behind. Their unfolding clip
+     is widened on three sides (--pop-reach) so it doesn't cut the shadow off. */
+  --pop-shadow: 0 14px 28px -12px var(--shadow), 0 2px 6px -2px var(--shadow);
+  --pop-reach: -40px;
   --go: #1f9d55;
   color-scheme: light;
 }
@@ -331,13 +336,14 @@ button {
   width: min(488px, calc(100vw - 2 * var(--gutter)));
   padding: 20px 24px 22px;
   background: var(--bg);
-  clip-path: inset(0 0 100% 0);
+  box-shadow: var(--pop-shadow);
+  clip-path: inset(0 var(--pop-reach) 100% var(--pop-reach));
   visibility: hidden;
   transition: clip-path var(--dur) var(--ease), visibility 0s linear var(--dur);
 }
 
 .sub-panel[data-open="true"] {
-  clip-path: inset(0 0 0 0);
+  clip-path: inset(0 var(--pop-reach) var(--pop-reach) var(--pop-reach));
   visibility: visible;
   transition: clip-path var(--dur) var(--ease), visibility 0s;
 }
@@ -471,13 +477,14 @@ button {
     background: var(--bg);
     border-bottom: 1px solid var(--ink);
     font-size: 18px;
-    clip-path: inset(0 0 100% 0);
+    box-shadow: var(--pop-shadow);
+    clip-path: inset(0 var(--pop-reach) 100% var(--pop-reach));
     visibility: hidden;
     transition: clip-path var(--dur) var(--ease), visibility 0s linear var(--dur);
   }
 
   .sh-menu[data-open="true"] {
-    clip-path: inset(0 0 0 0);
+    clip-path: inset(0 var(--pop-reach) var(--pop-reach) var(--pop-reach));
     visibility: visible;
     transition: clip-path var(--dur) var(--ease), visibility 0s;
   }
@@ -1165,13 +1172,14 @@ a:hover > .arrow {
   background: var(--bg);
   border: 1px solid var(--ink);
   border-top: 0;
-  clip-path: inset(0 0 100% 0);
+  box-shadow: var(--pop-shadow);
+  clip-path: inset(0 var(--pop-reach) 100% var(--pop-reach));
   visibility: hidden;
   transition: clip-path 200ms var(--ease), visibility 0s linear 200ms;
 }
 
 .search-list[data-open="true"] {
-  clip-path: inset(0 0 0 0);
+  clip-path: inset(0 var(--pop-reach) var(--pop-reach) var(--pop-reach));
   visibility: visible;
   transition: clip-path 200ms var(--ease), visibility 0s;
 }
@@ -1221,13 +1229,14 @@ a:hover > .arrow {
     padding: 12px 0;
     background: var(--bg);
     border-bottom: 1px solid var(--ink);
-    clip-path: inset(0 0 100% 0);
+    box-shadow: var(--pop-shadow);
+    clip-path: inset(0 var(--pop-reach) 100% var(--pop-reach));
     visibility: hidden;
     transition: clip-path var(--dur) var(--ease), visibility 0s linear var(--dur);
   }
 
   .search[data-open="true"] .search-box {
-    clip-path: inset(0 0 0 0);
+    clip-path: inset(0 var(--pop-reach) var(--pop-reach) var(--pop-reach));
     visibility: visible;
     transition: clip-path var(--dur) var(--ease), visibility 0s;
   }
