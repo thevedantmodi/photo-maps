@@ -12,6 +12,7 @@ import Link from "next/link";
 import { closeTarget, forget, openOrigin, rememberStep, returnFocus, takeStep, type Rect, type Step, type StepWords } from "@/lib/photoTransition";
 import type { PhotoStep } from "@/lib/photoSequence";
 import { yearQuery } from "@/lib/yearParam";
+import { canVibrate, haptic } from "@/lib/haptics";
 import { reverseGeocode } from "@/lib/mapboxGeocode";
 import { shareVersion } from "@/lib/shareVersion";
 import { photoAlt, photoTitle } from "@/lib/alt";
@@ -102,6 +103,20 @@ function morph(
     img.style.filter = blur > 0.2 ? `blur(${blur.toFixed(2)}px)` : "";
     img.style.transform = blur > 0.2 ? `scale(${grow.toFixed(4)})` : "";
   }
+}
+
+/**
+ * Marks the swipe as past the line (the ring and arrows read it) and, the moment it
+ * crosses, ticks like a detent where the device can vibrate mid-gesture (Android).
+ */
+function crossLine(root: HTMLElement, past: boolean) {
+  if (past && !root.hasAttribute("data-swipe-ready") && canVibrate()) haptic(8);
+  root.toggleAttribute("data-swipe-ready", past);
+}
+
+/** A tap as a swipe lets go and commits. On iPhone this is the only moment it can play. */
+function commitTap() {
+  if (!canVibrate()) haptic();
 }
 
 function clearMorph(el: HTMLElement) {
@@ -625,7 +640,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
         // Sideways the finger scrubs the morph to the next photo; the page stays solid.
         placeX(dist);
         root.style.setProperty("--swipe", Math.min(reach / SWIPE_PX, 1).toFixed(3));
-        root.toggleAttribute("data-swipe-ready", reach > SWIPE_PX);
+        crossLine(root, reach > SWIPE_PX);
         return;
       }
       const p = Math.min(reach / 300, 1);
@@ -640,7 +655,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       // The words fade out ahead of the photo and the ring fills (globals.css reads both).
       root.style.setProperty("--drag", p.toFixed(3));
       root.style.setProperty("--swipe", Math.min(reach / SWIPE_PX, 1).toFixed(3));
-      root.toggleAttribute("data-swipe-ready", reach > SWIPE_PX);
+      crossLine(root, reach > SWIPE_PX);
       root.setAttribute("data-swipe-dir", "close");
     },
     [mode, placeX],
@@ -662,6 +677,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       root?.removeAttribute("data-dragging");
       if (!el || !root) return;
       if (axis === "y" && dist > SWIPE_PX) {
+        commitTap();
         close();
         return;
       }
@@ -669,10 +685,12 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
         // Where the release would carry it decides: past the line it steps, else it falls back.
         const projected = dist + (velocity / 1000) * PROJECT_MS;
         if (projected < -SWIPE_PX && dist < 0 && next) {
+          commitTap();
           go(1, false, velocity);
           return;
         }
         if (projected > SWIPE_PX && dist > 0 && prev) {
+          commitTap();
           go(-1, false, velocity);
           return;
         }
