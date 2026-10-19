@@ -40,6 +40,9 @@ const HOLD_SIDE = 0.3; // the outer share of the photo on each side that holds
 const HOLD_DELAY_MS = 250;
 const HOLD_MS = 850;
 const TOUCH_HOLD_MS = 650;
+// A quick tap on a side of the photo (on a phone) doesn't wait out the hold: the ring
+// shows at once and fills in this long, then it steps.
+const TAP_FILL_MS = 200;
 // How far a finger moves before the drag commits to down or left.
 const SWIPE_LOCK_PX = 8;
 // Previous/Next: the photo slides this long on its way out and in.
@@ -641,7 +644,9 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
 
   // Hold to step. One hold at a time; the ring and arrow are the trackpad swipe's, shown
   // at the cursor (above the finger on a phone, where it would otherwise be under it).
-  const holdRef = useRef<{ dir: 1 | -1; raf: number } | null>(null);
+  // p: how full the ring is (0 to 1); wait: what's left of the beat before it shows;
+  // ms: how long a full ring takes at the current pace (a tap speeds it up).
+  const holdRef = useRef<{ dir: 1 | -1; raf: number; p: number; wait: number; ms: number } | null>(null);
   const cancelHold = useCallback(() => {
     const h = holdRef.current;
     if (!h) return;
@@ -661,17 +666,20 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       if (!root || closingRef.current || steppingRef.current || !(dir === 1 ? next : prev)) return;
       root.style.setProperty("--swipe-x", `${x}px`);
       root.style.setProperty("--swipe-y", `${y}px`);
-      const start = performance.now();
+      let last = performance.now();
       const tick = (now: number) => {
         const h = holdRef.current;
         if (!h) return;
-        const t = now - start - HOLD_DELAY_MS;
-        if (t > 0) {
+        const dt = now - last;
+        last = now;
+        if (h.wait > 0) h.wait -= dt;
+        else h.p = Math.min(1, h.p + dt / h.ms);
+        if (h.wait <= 0) {
           root.setAttribute("data-swipe-cursor", "");
           root.setAttribute("data-hold-dir", dir === 1 ? "next" : "prev");
-          root.style.setProperty("--swipe", Math.min(t / ms, 1).toFixed(3));
+          root.style.setProperty("--swipe", h.p.toFixed(3));
         }
-        if (t >= ms) {
+        if (h.p >= 1) {
           // The full ring and its arrow stay up while the photo changes.
           holdRef.current = null;
           if (canVibrate()) haptic();
@@ -680,10 +688,18 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
         }
         h.raf = requestAnimationFrame(tick);
       };
-      holdRef.current = { dir, raf: requestAnimationFrame(tick) };
+      holdRef.current = { dir, raf: requestAnimationFrame(tick), p: 0, wait: HOLD_DELAY_MS, ms };
     },
     [cancelHold, go, next, prev],
   );
+  // A tap let go before the hold was done: show the ring now and fill the rest quickly.
+  const finishHold = useCallback(() => {
+    const h = holdRef.current;
+    if (!h) return false;
+    h.wait = 0;
+    h.ms = TAP_FILL_MS / Math.max(0.05, 1 - h.p);
+    return true;
+  }, []);
   useEffect(() => cancelHold, [cancelHold]);
 
   /** Which side of the photo a point is on, if it's in a holding zone with a photo there. */
@@ -700,8 +716,10 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
     [prev, next],
   );
 
-  // Desktop: the cursor resting on either side of the photo.
-  const onFrameMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+  // Desktop: the cursor resting on either side of the photo. Pointer events, not mouse
+  // ones: a phone fires pretend mouse events after a tap (a mouseleave among them) that
+  // would cancel the tap's ring.
+  const onFrameMouseMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const root = rootRef.current;
     if (!root || root.hasAttribute("data-dragging")) return;
     const dir = holdSide(e.clientX);
@@ -846,6 +864,10 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
   }, [frame]);
 
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === "mouse") {
+      onFrameMouseMove(e);
+      return;
+    }
     const d = drag.current;
     if (!d) return;
     const dx = e.clientX - d.startX;
@@ -872,6 +894,12 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
   const onPointerUp = () => {
     const d = drag.current;
     drag.current = null;
+    // A tap on a side of the photo (no drag): step to that side without waiting out the hold.
+    if (d && !d.axis && finishHold()) {
+      rootRef.current?.removeAttribute("data-dragging");
+      tapOnRelease();
+      return;
+    }
     cancelHold();
     if (!d) {
       rootRef.current?.removeAttribute("data-dragging");
@@ -879,6 +907,12 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
     }
     // The photo carries on at the speed the finger let go at (none if it stopped first).
     endDrag(d.axis ?? "y", d.dist, d.axis === "x" ? speedOf(d.trail) * TOUCH_GAIN : 0, TOUCH_SWIPE_PX);
+  };
+
+  // The browser took the touch (to scroll, say): not a tap, so no step.
+  const onPointerCancel = () => {
+    cancelHold();
+    onPointerUp();
   };
 
   // Trackpad: a two-finger swipe arrives as sideways wheel events. Fingers moving left
@@ -1075,9 +1109,10 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
-              onPointerCancel={onPointerUp}
-              onMouseMove={onFrameMouseMove}
-              onMouseLeave={cancelHold}
+              onPointerCancel={onPointerCancel}
+              onPointerLeave={(e) => {
+                if (e.pointerType === "mouse") cancelHold();
+              }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- R2 thumbnail */}
               <img src={photo.thumb_url} alt="" draggable={false} />
