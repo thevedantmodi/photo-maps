@@ -12,7 +12,7 @@ import Link from "next/link";
 import { closeTarget, forget, openOrigin, rememberStep, returnFocus, takeStep, type Rect, type Step, type StepWords } from "@/lib/photoTransition";
 import type { PhotoStep } from "@/lib/photoSequence";
 import { yearQuery } from "@/lib/yearParam";
-import { canVibrate, haptic } from "@/lib/haptics";
+import { canVibrate, haptic, tapOnRelease } from "@/lib/haptics";
 import { reverseGeocode } from "@/lib/mapboxGeocode";
 import { shareVersion } from "@/lib/shareVersion";
 import { photoAlt, photoTitle } from "@/lib/alt";
@@ -114,9 +114,12 @@ function crossLine(root: HTMLElement, past: boolean) {
   root.toggleAttribute("data-swipe-ready", past);
 }
 
-/** A tap as a swipe lets go and commits. On iPhone this is the only moment it can play. */
+/**
+ * A tap as a swipe lets go and commits. On iPhone this is the only moment it can play;
+ * where the device already ticked at the line (Android), it isn't repeated.
+ */
 function commitTap() {
-  if (!canVibrate()) haptic();
+  if (!canVibrate()) tapOnRelease();
 }
 
 function clearMorph(el: HTMLElement) {
