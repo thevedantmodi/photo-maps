@@ -672,8 +672,8 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
           root.style.setProperty("--swipe", Math.min(t / ms, 1).toFixed(3));
         }
         if (t >= ms) {
+          // The full ring and its arrow stay up while the photo changes.
           holdRef.current = null;
-          root.removeAttribute("data-hold-dir");
           if (canVibrate()) haptic();
           go(dir);
           return;
@@ -998,7 +998,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       <svg className="pv-swipe" viewBox="0 0 48 48" aria-hidden="true">
         <circle className="pv-swipe-disc" cx="24" cy="24" r="23" />
         <circle className="pv-swipe-track" cx="24" cy="24" r="18" />
-        <circle className="pv-swipe-fill" cx="24" cy="24" r="18" pathLength={1} />
+        <circle className="pv-swipe-fill" cx="24" cy="24" r="18" />
         <path className="pv-swipe-arrow" data-dir="next" d="M17 24h14M26 19l5 5-5 5" />
         <path className="pv-swipe-arrow" data-dir="prev" d="M31 24H17M22 19l-5 5 5 5" />
       </svg>
