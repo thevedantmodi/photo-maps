@@ -29,6 +29,17 @@ const DETAILS_DELAY_MS = 220;
 const DETAILS_FALLBACK_MS = 600;
 // Swipe the photo this far and let go: down closes it, sideways steps through the photos.
 const SWIPE_PX = 120;
+// A finger has less room than a trackpad: sideways it needs to travel only this far (or
+// flick), and it moves the morph along this much faster than it moves itself.
+const TOUCH_SWIPE_PX = 56;
+const TOUCH_GAIN = 1.5;
+// Hold to step, like a Kinect button: rest the cursor (or a finger) on the left or right
+// side of the photo and the ring fills; full, it steps. The ring waits a beat before it
+// appears, so a cursor passing through doesn't start one.
+const HOLD_SIDE = 0.3; // the outer share of the photo on each side that holds
+const HOLD_DELAY_MS = 250;
+const HOLD_MS = 850;
+const TOUCH_HOLD_MS = 650;
 // How far a finger moves before the drag commits to down or left.
 const SWIPE_LOCK_PX = 8;
 // Previous/Next: the photo slides this long on its way out and in.
@@ -628,12 +639,82 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
     return () => window.removeEventListener("keydown", onKey);
   }, [close, go]);
 
+  // Hold to step. One hold at a time; the ring and arrow are the trackpad swipe's, shown
+  // at the cursor (above the finger on a phone, where it would otherwise be under it).
+  const holdRef = useRef<{ dir: 1 | -1; raf: number } | null>(null);
+  const cancelHold = useCallback(() => {
+    const h = holdRef.current;
+    if (!h) return;
+    cancelAnimationFrame(h.raf);
+    holdRef.current = null;
+    const root = rootRef.current;
+    if (!root || root.hasAttribute("data-dragging")) return;
+    root.removeAttribute("data-hold-dir");
+    root.removeAttribute("data-swipe-cursor");
+    root.style.removeProperty("--swipe");
+  }, []);
+  const startHold = useCallback(
+    (dir: 1 | -1, x: number, y: number, ms: number) => {
+      const root = rootRef.current;
+      if (holdRef.current?.dir === dir) return;
+      cancelHold();
+      if (!root || closingRef.current || steppingRef.current || !(dir === 1 ? next : prev)) return;
+      root.style.setProperty("--swipe-x", `${x}px`);
+      root.style.setProperty("--swipe-y", `${y}px`);
+      const start = performance.now();
+      const tick = (now: number) => {
+        const h = holdRef.current;
+        if (!h) return;
+        const t = now - start - HOLD_DELAY_MS;
+        if (t > 0) {
+          root.setAttribute("data-swipe-cursor", "");
+          root.setAttribute("data-hold-dir", dir === 1 ? "next" : "prev");
+          root.style.setProperty("--swipe", Math.min(t / ms, 1).toFixed(3));
+        }
+        if (t >= ms) {
+          holdRef.current = null;
+          root.removeAttribute("data-hold-dir");
+          if (canVibrate()) haptic();
+          go(dir);
+          return;
+        }
+        h.raf = requestAnimationFrame(tick);
+      };
+      holdRef.current = { dir, raf: requestAnimationFrame(tick) };
+    },
+    [cancelHold, go, next, prev],
+  );
+  useEffect(() => cancelHold, [cancelHold]);
+
+  /** Which side of the photo a point is on, if it's in a holding zone with a photo there. */
+  const holdSide = useCallback(
+    (clientX: number): 1 | -1 | null => {
+      const r = frameRef.current?.getBoundingClientRect();
+      if (!r || r.width === 0) return null;
+      const f = (clientX - r.left) / r.width;
+      if (f < 0 || f > 1) return null;
+      if (f < HOLD_SIDE && prev) return -1;
+      if (f > 1 - HOLD_SIDE && next) return 1;
+      return null;
+    },
+    [prev, next],
+  );
+
+  // Desktop: the cursor resting on either side of the photo.
+  const onFrameMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const root = rootRef.current;
+    if (!root || root.hasAttribute("data-dragging")) return;
+    const dir = holdSide(e.clientX);
+    if (dir === null) cancelHold();
+    else startHold(dir, e.clientX, e.clientY, HOLD_MS);
+  };
+
   // Swipe the photo left for the next one and right for the one before, like turning pages
   // (a finger on a phone, two fingers on a trackpad); swipe a finger down to close it. The
   // photo follows, shrinking a little as the page fades; short of the line it springs back.
   // On a trackpad a ring at the cursor fills towards the line.
   const dragTo = useCallback(
-    (axis: "x" | "y", dist: number) => {
+    (axis: "x" | "y", dist: number, line = SWIPE_PX) => {
       const el = frameRef.current;
       const root = rootRef.current;
       if (!el || !root) return;
@@ -642,8 +723,8 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       if (axis === "x") {
         // Sideways the finger scrubs the morph to the next photo; the page stays solid.
         placeX(dist);
-        root.style.setProperty("--swipe", Math.min(reach / SWIPE_PX, 1).toFixed(3));
-        crossLine(root, reach > SWIPE_PX);
+        root.style.setProperty("--swipe", Math.min(reach / line, 1).toFixed(3));
+        crossLine(root, reach > line);
         return;
       }
       const p = Math.min(reach / 300, 1);
@@ -674,7 +755,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
   }, []);
 
   const endDrag = useCallback(
-    (axis: "x" | "y", dist: number, velocity = 0) => {
+    (axis: "x" | "y", dist: number, velocity = 0, line = SWIPE_PX) => {
       const el = frameRef.current;
       const root = rootRef.current;
       root?.removeAttribute("data-dragging");
@@ -687,12 +768,12 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       if (axis === "x") {
         // Where the release would carry it decides: past the line it steps, else it falls back.
         const projected = dist + (velocity / 1000) * PROJECT_MS;
-        if (projected < -SWIPE_PX && dist < 0 && next) {
+        if (projected < -line && dist < 0 && next) {
           commitTap();
           go(1, false, velocity);
           return;
         }
-        if (projected > SWIPE_PX && dist > 0 && prev) {
+        if (projected > line && dist > 0 && prev) {
           commitTap();
           go(-1, false, velocity);
           return;
@@ -731,6 +812,10 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
   // Touch: a drag locks to whichever way the finger first moves.
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.pointerType === "mouse" || closingRef.current || steppingRef.current) return;
+    cancelHold();
+    // A finger held still on either side steps too; moving it turns it into a swipe.
+    const side = holdSide(e.clientX);
+    if (side !== null) startHold(side, e.clientX, e.clientY - 72, TOUCH_HOLD_MS);
     startDrag();
     drag.current = {
       base: dragX.current,
@@ -767,30 +852,33 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
     const dy = e.clientY - d.startY;
     if (!d.axis) {
       if (Math.hypot(dx, dy) < SWIPE_LOCK_PX) return;
-      d.axis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+      cancelHold();
+      // A slightly diagonal swipe still counts as sideways; only a clearly downward one closes.
+      d.axis = Math.abs(dx) > Math.abs(dy) * 0.7 ? "x" : "y";
     }
     // Sideways towards a photo that's there it follows the finger; past the first or last
     // it stretches like elastic. Down closes.
     if (d.axis === "y") d.dist = Math.max(0, dy);
     else {
-      const x = d.base + dx;
+      const x = d.base + dx * TOUCH_GAIN;
       d.dist = (x < 0 ? next : prev) ? x : rubber(x, figureRef.current?.clientWidth ?? 0);
     }
     const now = performance.now();
     d.trail.push({ x: e.clientX, t: now });
     while (d.trail.length > 2 && now - d.trail[0].t > 100) d.trail.shift();
-    dragTo(d.axis, d.dist);
+    dragTo(d.axis, d.dist, TOUCH_SWIPE_PX);
   };
 
   const onPointerUp = () => {
     const d = drag.current;
     drag.current = null;
+    cancelHold();
     if (!d) {
       rootRef.current?.removeAttribute("data-dragging");
       return;
     }
     // The photo carries on at the speed the finger let go at (none if it stopped first).
-    endDrag(d.axis ?? "y", d.dist, d.axis === "x" ? speedOf(d.trail) : 0);
+    endDrag(d.axis ?? "y", d.dist, d.axis === "x" ? speedOf(d.trail) * TOUCH_GAIN : 0, TOUCH_SWIPE_PX);
   };
 
   // Trackpad: a two-finger swipe arrives as sideways wheel events. Fingers moving left
@@ -841,12 +929,12 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       e.preventDefault();
       if (!active) {
         active = true;
+        cancelHold();
         startDrag();
-        // The ring appears where the cursor is.
-        root.style.setProperty("--swipe-x", `${e.clientX}px`);
-        root.style.setProperty("--swipe-y", `${e.clientY}px`);
         root.setAttribute("data-swipe-cursor", "");
       }
+      // The ring sits on the cursor, and keeps with it.
+      followCursor(e);
       if (trail.length === 0) dist = dragX.current;
       dist -= e.deltaX * (e.deltaMode === 1 ? 16 : 1);
       shown = (dist < 0 ? next : prev) ? dist : rubber(dist, figureRef.current?.clientWidth ?? 0);
@@ -862,12 +950,22 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       clearTimeout(idle);
       idle = setTimeout(settle, 140);
     };
+    const followCursor = (e: MouseEvent) => {
+      root.style.setProperty("--swipe-x", `${e.clientX}px`);
+      root.style.setProperty("--swipe-y", `${e.clientY}px`);
+    };
+    const onMouseMove = (e: MouseEvent) => {
+      if (root.hasAttribute("data-swipe-cursor")) followCursor(e);
+    };
     root.addEventListener("wheel", onWheel, { passive: false });
+    root.addEventListener("mousemove", onMouseMove, { passive: true });
     return () => {
       clearTimeout(idle);
       root.removeEventListener("wheel", onWheel);
+      root.removeEventListener("mousemove", onMouseMove);
     };
-  }, [dragTo, startDrag, endDrag, next, prev]);
+  }, [dragTo, startDrag, endDrag, next, prev, cancelHold]);
+
 
   const version = shareVersion(photo);
   const share = (className: string) => (
@@ -978,6 +1076,8 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
               onPointerCancel={onPointerUp}
+              onMouseMove={onFrameMouseMove}
+              onMouseLeave={cancelHold}
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- R2 thumbnail */}
               <img src={photo.thumb_url} alt="" draggable={false} />

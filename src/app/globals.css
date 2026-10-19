@@ -1449,8 +1449,8 @@ a:hover > .arrow {
    position, and data-swipe-cursor only for trackpad swipes; touch shows nothing. */
 .pv-swipe {
   position: fixed;
-  left: var(--swipe-x, 50%);
-  top: var(--swipe-y, 50%);
+  left: 0;
+  top: 0;
   z-index: 5;
   display: none;
   width: 48px;
@@ -1459,7 +1459,8 @@ a:hover > .arrow {
   pointer-events: none;
   overflow: visible;
   opacity: clamp(0, calc(var(--swipe, 0) * 6), 1);
-  transform: scale(calc(0.85 + var(--swipe, 0) * 0.15));
+  /* On the cursor (PhotoView keeps --swipe-x/y with it), growing as it fills. */
+  transform: translate(var(--swipe-x, 50vw), var(--swipe-y, 50vh)) scale(calc(0.85 + var(--swipe, 0) * 0.15));
 }
 
 .pv[data-swipe-cursor] .pv-swipe {
@@ -1498,9 +1499,21 @@ a:hover > .arrow {
   transition: opacity 120ms ease;
 }
 
-/* The arrow points to the photo the swipe is heading for. */
+/* The arrow points to the photo the swipe is heading for from the start, inside the ring
+   that fills as it goes; it firms up once the swipe is past the line. */
+.pv[data-swipe-dir="next"] .pv-swipe-arrow[data-dir="next"],
+.pv[data-swipe-dir="prev"] .pv-swipe-arrow[data-dir="prev"] {
+  opacity: 0.5;
+}
+
 .pv[data-swipe-ready][data-swipe-dir="next"] .pv-swipe-arrow[data-dir="next"],
 .pv[data-swipe-ready][data-swipe-dir="prev"] .pv-swipe-arrow[data-dir="prev"] {
+  opacity: 1;
+}
+
+/* Holding on a side of the photo: the same ring, filling with the hold, its arrow firm. */
+.pv[data-hold-dir="next"] .pv-swipe-arrow[data-dir="next"],
+.pv[data-hold-dir="prev"] .pv-swipe-arrow[data-dir="prev"] {
   opacity: 1;
 }
 
