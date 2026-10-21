@@ -55,7 +55,11 @@ export default function SubscribePanel({
       <SubscribeForm ref={inputRef} />
       <p className="sub-note">
         At most once a week, only when there are new photos. Your address is kept by Resend and
-        used for nothing else.
+        used for nothing else. Or follow the{' '}
+        <a href="/feed.xml" className="ul">
+          RSS feed
+        </a>
+        .
       </p>
     </div>
   );

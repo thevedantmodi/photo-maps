@@ -88,9 +88,6 @@ export default function SiteHeader({ current, tools, menuExtra }: SiteHeaderProp
       >
         Subscribe
       </button>
-      <a href="/feed.xml" className="ul">
-        RSS feed
-      </a>
     </>
   );
 

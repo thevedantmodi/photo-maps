@@ -416,6 +416,10 @@ button {
   color: var(--muted);
 }
 
+.sub-note a {
+  color: inherit;
+}
+
 .sub-error {
   margin: 10px 0 0;
   font-size: 12px;
