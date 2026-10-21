@@ -38,6 +38,9 @@ const TOUCH_GAIN = 1.5;
 // appears, so a cursor passing through doesn't start one.
 const HOLD_SIDE = 0.3; // the outer share of the photo on each side that holds (and beyond it)
 const HOLD_DELAY_MS = 250;
+// On a phone, the outer share of the screen on each side also holds, wherever the photo
+// sits: a portrait photo leaves the edges of the screen as bare page.
+const TOUCH_EDGE = 0.25;
 const HOLD_MS = 850;
 const TOUCH_HOLD_MS = 650;
 // A quick tap on a side of the photo (on a phone) doesn't wait out the hold: the ring
@@ -855,7 +858,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
     if (e.pointerType === "mouse" || closingRef.current || steppingRef.current) return;
     cancelHold();
     // A finger held still on either side steps too; moving it turns it into a swipe.
-    const side = holdSide(e.clientX);
+    const side = touchSide(e.clientX);
     if (side !== null) startHold(side, e.clientX, e.clientY - 72, TOUCH_HOLD_MS);
     startDrag();
     drag.current = {
@@ -864,7 +867,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       startY: e.clientY,
       axis: null,
       dist: 0,
-      trail: [{ x: e.clientX, t: performance.now() }],
+      trail: [{ x: e.clientX, t: e.timeStamp }],
     };
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -1019,6 +1022,63 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       root.removeEventListener("mousemove", onMouseMove);
     };
   }, [dragTo, startDrag, endDrag, next, prev, cancelHold]);
+
+  /** A finger's side: the edges of the screen, or the sides of the photo. */
+  const touchSide = useCallback(
+    (clientX: number): 1 | -1 | null => {
+      const w = window.innerWidth;
+      if (clientX < w * TOUCH_EDGE && prev) return -1;
+      if (clientX > w * (1 - TOUCH_EDGE) && next) return 1;
+      return holdSide(clientX);
+    },
+    [holdSide, prev, next],
+  );
+
+  // Phone: a finger held still at either edge of the screen, off the photo (the page beside
+  // a portrait photo, the space above and below it), fills the ring above the finger, then
+  // steps; a quick tap there steps at once. Moving the finger (to scroll) lets go. On the
+  // photo itself the swipe handlers below do the same.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    let down: { id: number; x: number; y: number } | null = null;
+    const onDown = (e: PointerEvent) => {
+      if (e.pointerType === "mouse" || closingRef.current || steppingRef.current) return;
+      const t = e.target instanceof Element ? e.target : null;
+      if (!t || frameRef.current?.contains(t) || t.closest(PLAIN_CURSOR) || ownsText(t)) return;
+      const dir = touchSide(e.clientX);
+      if (dir === null) return;
+      down = { id: e.pointerId, x: e.clientX, y: e.clientY };
+      startHold(dir, e.clientX, e.clientY - 72, TOUCH_HOLD_MS);
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!down || e.pointerId !== down.id) return;
+      if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > SWIPE_LOCK_PX) {
+        down = null;
+        cancelHold();
+      }
+    };
+    const onUp = (e: PointerEvent) => {
+      if (!down || e.pointerId !== down.id) return;
+      down = null;
+      if (finishHold()) tapOnRelease();
+    };
+    const onCancel = (e: PointerEvent) => {
+      if (!down || e.pointerId !== down.id) return;
+      down = null;
+      cancelHold();
+    };
+    root.addEventListener("pointerdown", onDown);
+    root.addEventListener("pointermove", onMove, { passive: true });
+    root.addEventListener("pointerup", onUp);
+    root.addEventListener("pointercancel", onCancel);
+    return () => {
+      root.removeEventListener("pointerdown", onDown);
+      root.removeEventListener("pointermove", onMove);
+      root.removeEventListener("pointerup", onUp);
+      root.removeEventListener("pointercancel", onCancel);
+    };
+  }, [touchSide, startHold, cancelHold, finishHold]);
 
   // Desktop: press and hold on either side, on the photo or the background beside it, and
   // the ring fills, then steps. A quick click steps at once, the ring filling fast, as a tap
