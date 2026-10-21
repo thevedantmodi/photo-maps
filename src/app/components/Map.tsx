@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Map, { AttributionControl, Marker } from "react-map-gl/mapbox";
 import type { MapRef, ViewStateChangeEvent } from "react-map-gl/mapbox";
 import Supercluster from "supercluster";
@@ -91,8 +91,7 @@ const DEFAULT_CAMERA: Camera = {
  * Where the map opens: a place linked from the Directory (?lon=&lat=&z=), else where
  * this tab last left it, else the world.
  */
-function initialCamera(): Camera {
-  const params = new URLSearchParams(window.location.search);
+function initialCamera(params: URLSearchParams): Camera {
   const lon = Number(params.get("lon"));
   const lat = Number(params.get("lat"));
   const z = Number(params.get("z"));
@@ -132,9 +131,14 @@ interface OpenStack {
 
 const MapComponent = ({ photos, places }: MapProps) => {
   const router = useRouter();
+  // The address being navigated to, not window.location: on a client-side visit (a row in
+  // the Directory) the map renders before the browser's address changes, so
+  // window.location would still be the Directory's, without the place or year.
+  const searchParams = useSearchParams();
+  const [openedWith] = useState(() => new URLSearchParams(searchParams.toString()));
   // A ?year= in the address opens the map filtered, if any photo is from that year.
   const [selectedYear, setSelectedYear] = useState<number | null>(() => {
-    const year = parseYear(new URLSearchParams(window.location.search).get("year"));
+    const year = parseYear(openedWith.get("year"));
     return year !== null && photos.some((p) => yearOf(p) === year) ? year : null;
   });
   // While set, photos not in this year fade out; then the filter applies.
@@ -142,7 +146,7 @@ const MapComponent = ({ photos, places }: MapProps) => {
   // Cluster ids are only stable within one zoom level, so anything that
   // changes zoom or the point set closes the stack.
   const [openStack, setOpenStack] = useState<OpenStack | null>(null);
-  const [viewState, setViewState] = useState(initialCamera);
+  const [viewState, setViewState] = useState(() => initialCamera(openedWith));
   const [bounds, setBounds] = useState<[number, number, number, number]>([
     -180, -85, 180, 85,
   ]);
@@ -410,9 +414,8 @@ const MapComponent = ({ photos, places }: MapProps) => {
   useEffect(() => {
     if (!mapLoaded || revealedOnLoad.current) return;
     revealedOnLoad.current = true;
-    const params = new URLSearchParams(window.location.search);
-    if (selectedYear !== null && !params.has("lon")) revealYear(selectedYear);
-  }, [mapLoaded, selectedYear, revealYear]);
+    if (selectedYear !== null && !openedWith.has("lon")) revealYear(selectedYear);
+  }, [mapLoaded, selectedYear, revealYear, openedWith]);
 
   const changeYear = useCallback(
     (year: number | null) => {

@@ -411,7 +411,10 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
     };
   }, [photo.lat, photo.lon, places]);
 
-  const mapHref = hasCoords ? `/map?lon=${photo.lon}&lat=${photo.lat}&z=12` : "/map";
+  // Back to the map at the photo, still filtered to the year it was stepped through.
+  const mapHref = hasCoords
+    ? `/map?lon=${photo.lon}&lat=${photo.lat}&z=12${yearQuery(filterYear)}`
+    : `/map${yearQuery(filterYear, true)}`;
 
   const close = useCallback(() => {
     if (closingRef.current) return;
