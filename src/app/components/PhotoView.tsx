@@ -43,9 +43,6 @@ const HOLD_DELAY_MS = 250;
 const TOUCH_EDGE = 0.25;
 const HOLD_MS = 850;
 const TOUCH_HOLD_MS = 650;
-// A quick tap on a side of the photo (on a phone) doesn't wait out the hold: the ring
-// shows at once and fills in this long, then it steps.
-const TAP_FILL_MS = 200;
 // How far a finger moves before the drag commits to down or left.
 const SWIPE_LOCK_PX = 8;
 // Previous/Next: the photo slides this long on its way out and in.
@@ -728,14 +725,6 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
     },
     [cancelHold, go, next, prev],
   );
-  // A tap let go before the hold was done: show the ring now and fill the rest quickly.
-  const finishHold = useCallback(() => {
-    const h = holdRef.current;
-    if (!h) return false;
-    h.wait = 0;
-    h.ms = TAP_FILL_MS / Math.max(0.05, 1 - h.p);
-    return true;
-  }, []);
   useEffect(() => cancelHold, [cancelHold]);
 
   /** Which side a point is on, if it's in a holding zone with a photo there: the outer part
@@ -917,12 +906,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
   const onPointerUp = () => {
     const d = drag.current;
     drag.current = null;
-    // A tap on a side of the photo (no drag): step to that side without waiting out the hold.
-    if (d && !d.axis && finishHold()) {
-      rootRef.current?.removeAttribute("data-dragging");
-      tapOnRelease();
-      return;
-    }
+    // Let go before the ring was full: no step. Only a full hold steps, not a tap.
     cancelHold();
     if (!d) {
       rootRef.current?.removeAttribute("data-dragging");
@@ -1036,58 +1020,57 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
 
   // Phone: a finger held still at either edge of the screen, off the photo (the page beside
   // a portrait photo, the space above and below it), fills the ring above the finger, then
-  // steps; a quick tap there steps at once. Moving the finger (to scroll) lets go. On the
+  // steps. Letting go before it's full, or moving the finger (to scroll), lets go. On the
   // photo itself the swipe handlers below do the same.
+  // Kept outside the effect: it re-subscribes whenever the photos either side finish
+  // loading, and a finger already down must still be let go of.
+  const edgeDown = useRef<{ id: number; x: number; y: number } | null>(null);
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    let down: { id: number; x: number; y: number } | null = null;
     const onDown = (e: PointerEvent) => {
       if (e.pointerType === "mouse" || closingRef.current || steppingRef.current) return;
       const t = e.target instanceof Element ? e.target : null;
       if (!t || frameRef.current?.contains(t) || t.closest(PLAIN_CURSOR) || ownsText(t)) return;
       const dir = touchSide(e.clientX);
       if (dir === null) return;
-      down = { id: e.pointerId, x: e.clientX, y: e.clientY };
+      edgeDown.current = { id: e.pointerId, x: e.clientX, y: e.clientY };
       startHold(dir, e.clientX, e.clientY - 72, TOUCH_HOLD_MS);
     };
     const onMove = (e: PointerEvent) => {
+      const down = edgeDown.current;
       if (!down || e.pointerId !== down.id) return;
       if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > SWIPE_LOCK_PX) {
-        down = null;
+        edgeDown.current = null;
         cancelHold();
       }
     };
+    // Let go (or taken by the browser) before the ring was full: no step.
     const onUp = (e: PointerEvent) => {
-      if (!down || e.pointerId !== down.id) return;
-      down = null;
-      if (finishHold()) tapOnRelease();
-    };
-    const onCancel = (e: PointerEvent) => {
-      if (!down || e.pointerId !== down.id) return;
-      down = null;
+      if (edgeDown.current?.id !== e.pointerId) return;
+      edgeDown.current = null;
       cancelHold();
     };
     root.addEventListener("pointerdown", onDown);
     root.addEventListener("pointermove", onMove, { passive: true });
     root.addEventListener("pointerup", onUp);
-    root.addEventListener("pointercancel", onCancel);
+    root.addEventListener("pointercancel", onUp);
     return () => {
       root.removeEventListener("pointerdown", onDown);
       root.removeEventListener("pointermove", onMove);
       root.removeEventListener("pointerup", onUp);
-      root.removeEventListener("pointercancel", onCancel);
+      root.removeEventListener("pointercancel", onUp);
     };
-  }, [touchSide, startHold, cancelHold, finishHold]);
+  }, [touchSide, startHold, cancelHold]);
 
   // Desktop: press and hold on either side, on the photo or the background beside it, and
-  // the ring fills, then steps. A quick click steps at once, the ring filling fast, as a tap
-  // does on a phone. Sliding to the other side switches; to the middle lets go. Pointer
-  // events, not mouse ones: a phone fires pretend mouse events after a tap.
+  // the ring fills, then steps; letting go before it's full doesn't. Sliding to the other
+  // side switches; to the middle lets go. Pointer events, not mouse ones: a phone fires
+  // pretend mouse events after a tap.
+  const pressed = useRef(false);
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    let pressed = false;
     const sideAt = (e: PointerEvent) => {
       const t = e.target instanceof Element ? e.target : null;
       if (!t || t.closest(PLAIN_CURSOR) || ownsText(t)) return null;
@@ -1099,23 +1082,23 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       if (dir === null) return;
       // No text selection or image drag from the press.
       e.preventDefault();
-      pressed = true;
+      pressed.current = true;
       startHold(dir, e.clientX, e.clientY, HOLD_MS);
     };
     const onMove = (e: PointerEvent) => {
-      if (!pressed || e.pointerType !== "mouse") return;
+      if (!pressed.current || e.pointerType !== "mouse") return;
       const dir = holdSide(e.clientX);
       if (dir === null) cancelHold();
       else startHold(dir, e.clientX, e.clientY, HOLD_MS);
     };
     const onUp = (e: PointerEvent) => {
-      if (!pressed || e.pointerType !== "mouse") return;
-      pressed = false;
-      finishHold();
+      if (!pressed.current || e.pointerType !== "mouse") return;
+      pressed.current = false;
+      cancelHold();
     };
     const onLeave = () => {
-      if (!pressed) return;
-      pressed = false;
+      if (!pressed.current) return;
+      pressed.current = false;
       cancelHold();
     };
     root.addEventListener("pointerdown", onDown);
@@ -1128,7 +1111,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       window.removeEventListener("pointerup", onUp);
       root.removeEventListener("pointerleave", onLeave);
     };
-  }, [holdSide, startHold, cancelHold, finishHold]);
+  }, [holdSide, startHold, cancelHold]);
 
   // With a mouse the ring is the cursor: it follows the pointer anywhere on the view, an
   // arrow inside on either side (where pressing steps: the photo's outer part and the
