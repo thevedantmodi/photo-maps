@@ -43,6 +43,8 @@ const HOLD_DELAY_MS = 250;
 const TOUCH_EDGE = 0.25;
 const HOLD_MS = 850;
 const TOUCH_HOLD_MS = 650;
+// How long a ring let go of early takes to fade (match .pv[data-hold-fade] in globals.css).
+const HOLD_FADE_MS = 220;
 // How far a finger moves before the drag commits to down or left.
 const SWIPE_LOCK_PX = 8;
 // Previous/Next: the photo slides this long on its way out and in.
@@ -680,6 +682,14 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
   // p: how full the ring is (0 to 1); wait: what's left of the beat before it shows;
   // ms: how long a full ring takes at the current pace (a tap speeds it up).
   const holdRef = useRef<{ dir: 1 | -1; raf: number; p: number; wait: number; ms: number } | null>(null);
+  // A hold let go before it was full fades its ring out (globals.css) rather than popping
+  // it away; anything that shows the ring again first cuts the fade short.
+  const fadeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stopFade = useCallback(() => {
+    if (fadeTimer.current) clearTimeout(fadeTimer.current);
+    fadeTimer.current = null;
+    rootRef.current?.removeAttribute("data-hold-fade");
+  }, []);
   const cancelHold = useCallback(() => {
     const h = holdRef.current;
     if (!h) return;
@@ -687,15 +697,26 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
     holdRef.current = null;
     const root = rootRef.current;
     if (!root || root.hasAttribute("data-dragging")) return;
-    root.removeAttribute("data-hold-dir");
-    root.removeAttribute("data-swipe-cursor");
-    root.style.removeProperty("--swipe");
-  }, []);
+    const clear = () => {
+      root.removeAttribute("data-hold-fade");
+      root.removeAttribute("data-hold-dir");
+      root.removeAttribute("data-swipe-cursor");
+      root.style.removeProperty("--swipe");
+    };
+    if (!root.hasAttribute("data-swipe-cursor") || reducedMotion()) return clear();
+    stopFade();
+    root.setAttribute("data-hold-fade", "");
+    fadeTimer.current = setTimeout(() => {
+      fadeTimer.current = null;
+      if (root.hasAttribute("data-hold-fade")) clear();
+    }, HOLD_FADE_MS);
+  }, [stopFade]);
   const startHold = useCallback(
     (dir: 1 | -1, x: number, y: number, ms: number) => {
       const root = rootRef.current;
       if (holdRef.current?.dir === dir) return;
       cancelHold();
+      stopFade();
       if (!root || closingRef.current || steppingRef.current || !(dir === 1 ? next : prev)) return;
       root.style.setProperty("--swipe-x", `${x}px`);
       root.style.setProperty("--swipe-y", `${y}px`);
@@ -723,7 +744,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       };
       holdRef.current = { dir, raf: requestAnimationFrame(tick), p: 0, wait: HOLD_DELAY_MS, ms };
     },
-    [cancelHold, go, next, prev],
+    [cancelHold, stopFade, go, next, prev],
   );
   useEffect(() => cancelHold, [cancelHold]);
 
@@ -784,8 +805,9 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
     springRef.current?.stop();
     springRef.current = null;
     frameRef.current?.getAnimations().forEach((a) => a.cancel());
+    stopFade();
     rootRef.current?.setAttribute("data-dragging", "true");
-  }, []);
+  }, [stopFade]);
 
   const endDrag = useCallback(
     (axis: "x" | "y", dist: number, velocity = 0, line = SWIPE_PX) => {

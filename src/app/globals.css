@@ -1533,6 +1533,18 @@ a:hover > .arrow {
   opacity: 1;
 }
 
+/* A hold let go before it was full: the ring fades away rather than popping off (PhotoView
+   keeps it shown for HOLD_FADE_MS). Where the ring is the cursor, only the fill fades. */
+.pv[data-hold-fade] .pv-swipe {
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.pv[data-hold-fade] .pv-swipe-fill {
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
 /* The ring as the cursor: on the view wherever there's nothing to click or read, an
    arrow inside on a side of the photo with a photo that way (data-aim), else a dot. */
 .pv-swipe-dot {
@@ -1547,7 +1559,8 @@ a:hover > .arrow {
     cursor: none;
   }
 
-  .pv[data-cursor] .pv-swipe {
+  .pv[data-cursor] .pv-swipe,
+  .pv[data-cursor][data-hold-fade] .pv-swipe {
     display: block;
     opacity: 1;
   }
