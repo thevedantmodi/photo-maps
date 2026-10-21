@@ -36,7 +36,7 @@ const TOUCH_GAIN = 1.5;
 // Hold to step, like a Kinect button: rest the cursor (or a finger) on the left or right
 // side of the photo and the ring fills; full, it steps. The ring waits a beat before it
 // appears, so a cursor passing through doesn't start one.
-const HOLD_SIDE = 0.3; // the outer share of the photo on each side that holds
+const HOLD_SIDE = 0.3; // the outer share of the photo on each side that holds (and beyond it)
 const HOLD_DELAY_MS = 250;
 const HOLD_MS = 850;
 const TOUCH_HOLD_MS = 650;
@@ -729,13 +729,13 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
   }, []);
   useEffect(() => cancelHold, [cancelHold]);
 
-  /** Which side of the photo a point is on, if it's in a holding zone with a photo there. */
+  /** Which side a point is on, if it's in a holding zone with a photo there: the outer part
+   *  of the photo on each side and the background beyond it. */
   const holdSide = useCallback(
     (clientX: number): 1 | -1 | null => {
       const r = frameRef.current?.getBoundingClientRect();
       if (!r || r.width === 0) return null;
       const f = (clientX - r.left) / r.width;
-      if (f < 0 || f > 1) return null;
       if (f < HOLD_SIDE && prev) return -1;
       if (f > 1 - HOLD_SIDE && next) return 1;
       return null;
@@ -743,16 +743,6 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
     [prev, next],
   );
 
-  // Desktop: the cursor resting on either side of the photo. Pointer events, not mouse
-  // ones: a phone fires pretend mouse events after a tap (a mouseleave among them) that
-  // would cancel the tap's ring.
-  const onFrameMouseMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    const root = rootRef.current;
-    if (!root || root.hasAttribute("data-dragging")) return;
-    const dir = holdSide(e.clientX);
-    if (dir === null) cancelHold();
-    else startHold(dir, e.clientX, e.clientY, HOLD_MS);
-  };
 
   // Swipe the photo left for the next one and right for the one before, like turning pages
   // (a finger on a phone, two fingers on a trackpad); swipe a finger down to close it. The
@@ -891,10 +881,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
   }, [frame]);
 
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType === "mouse") {
-      onFrameMouseMove(e);
-      return;
-    }
+    if (e.pointerType === "mouse") return;
     const d = drag.current;
     if (!d) return;
     const dx = e.clientX - d.startX;
@@ -1027,10 +1014,61 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
     };
   }, [dragTo, startDrag, endDrag, next, prev, cancelHold]);
 
+  // Desktop: press and hold on either side, on the photo or the background beside it, and
+  // the ring fills, then steps. A quick click steps at once, the ring filling fast, as a tap
+  // does on a phone. Sliding to the other side switches; to the middle lets go. Pointer
+  // events, not mouse ones: a phone fires pretend mouse events after a tap.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    let pressed = false;
+    const sideAt = (e: PointerEvent) => {
+      const t = e.target instanceof Element ? e.target : null;
+      if (!t || t.closest(PLAIN_CURSOR) || ownsText(t)) return null;
+      return holdSide(e.clientX);
+    };
+    const onDown = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse" || e.button !== 0 || root.hasAttribute("data-dragging")) return;
+      const dir = sideAt(e);
+      if (dir === null) return;
+      // No text selection or image drag from the press.
+      e.preventDefault();
+      pressed = true;
+      startHold(dir, e.clientX, e.clientY, HOLD_MS);
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!pressed || e.pointerType !== "mouse") return;
+      const dir = holdSide(e.clientX);
+      if (dir === null) cancelHold();
+      else startHold(dir, e.clientX, e.clientY, HOLD_MS);
+    };
+    const onUp = (e: PointerEvent) => {
+      if (!pressed || e.pointerType !== "mouse") return;
+      pressed = false;
+      finishHold();
+    };
+    const onLeave = () => {
+      if (!pressed) return;
+      pressed = false;
+      cancelHold();
+    };
+    root.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("pointerup", onUp);
+    root.addEventListener("pointerleave", onLeave);
+    return () => {
+      root.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      root.removeEventListener("pointerleave", onLeave);
+    };
+  }, [holdSide, startHold, cancelHold, finishHold]);
+
   // With a mouse the ring is the cursor: it follows the pointer anywhere on the view, an
-  // arrow inside on either side of the photo (where holding steps), a dot elsewhere. Over
-  // anything to click or read it gives way to the usual cursor. globals.css hides the
-  // system one while data-cursor is set, and only on a fine pointer that hovers.
+  // arrow inside on either side (where pressing steps: the photo's outer part and the
+  // background beyond it), a dot in the middle. Over anything to click or read it gives way
+  // to the usual cursor. globals.css hides the system one while data-cursor is set, and
+  // only on a fine pointer that hovers.
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
@@ -1045,7 +1083,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       root.style.setProperty("--swipe-y", `${y}px`);
       if (!t || !root.contains(t) || t.closest(PLAIN_CURSOR) || ownsText(t)) return hide();
       root.setAttribute("data-cursor", "");
-      const over = frameRef.current?.contains(t) ? holdSide(x) : null;
+      const over = holdSide(x);
       if (over === null) root.removeAttribute("data-aim");
       else root.setAttribute("data-aim", over === 1 ? "next" : "prev");
     };
@@ -1176,9 +1214,6 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
               onPointerCancel={onPointerCancel}
-              onPointerLeave={(e) => {
-                if (e.pointerType === "mouse") cancelHold();
-              }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element -- R2 thumbnail */}
               <img src={photo.thumb_url} alt="" draggable={false} />
