@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 
+import RssIcon from './RssIcon';
 import SubscribeForm from './SubscribeForm';
 
 /** Unfolds under the header menu. Double opt-in through /api/subscribe, as before. */
@@ -56,7 +57,8 @@ export default function SubscribePanel({
       <p className="sub-note">
         At most once a week, only when there are new photos. Your address is kept by Resend and
         used for nothing else. Or follow the{' '}
-        <a href="/feed.xml" className="ul">
+        <a href="/feed.xml" className="ul sub-rss">
+          <RssIcon />
           RSS feed
         </a>
         .

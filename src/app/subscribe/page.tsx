@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+import RssIcon from '@/app/components/RssIcon';
 import SiteHeader from '@/app/components/SiteHeader';
 import SubscribeForm from '@/app/components/SubscribeForm';
 import { RSS_ALTERNATE, SITE_NAME } from '@/lib/site';
@@ -38,6 +39,7 @@ export default function SubscribePage() {
             See the map →
           </Link>
           <a className={`${styles.link} ul`} href="/feed.xml">
+            <RssIcon />
             RSS feed
           </a>
         </div>
