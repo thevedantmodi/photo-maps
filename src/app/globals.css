@@ -1944,16 +1944,30 @@ html:has(.pv) {
   width: 100%;
 }
 
+.dir-sum {
+  margin: 6px 0 0;
+  font-size: 15px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Trips (Directory.tsx): the year each began on the left, its trips on the right. The
+   column heads span both, so the row's four columns line up under theirs. */
+.dir-table {
+  --trip-year: 160px;
+}
+
 .dir-row,
 .dir-cols {
   position: relative;
   display: grid;
-  grid-template-columns: 90px minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2fr);
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) 64px minmax(0, 4fr);
   column-gap: var(--col-gap);
   align-items: center;
 }
 
 .dir-cols {
+  grid-template-columns: var(--trip-year) minmax(0, 2fr) minmax(0, 3fr) 64px minmax(0, 4fr);
   padding: 8px 0;
   font-weight: 700;
   animation: rise 300ms var(--ease) both;
@@ -1985,11 +1999,35 @@ html:has(.pv) {
   transform: scaleX(1);
 }
 
+.dir-item:last-child::after {
+  display: none;
+}
+
+.trip-year {
+  display: grid;
+  grid-template-columns: var(--trip-year) minmax(0, 1fr);
+  column-gap: var(--col-gap);
+  align-items: start;
+  border-bottom: 1px solid var(--ink);
+}
+
+.trip-year-name {
+  margin: 0;
+  padding-top: 10px;
+  font-size: 40px;
+  line-height: 0.95;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  animation: rise 300ms var(--ease) both;
+}
+
 .dir-list {
   margin: 0;
   padding: 0;
   list-style: none;
   font-size: 15px;
+  font-variant-numeric: tabular-nums;
 }
 
 .dir-item {
@@ -1998,7 +2036,7 @@ html:has(.pv) {
 
 .dir-row {
   width: 100%;
-  min-height: 52px;
+  min-height: 56px;
   padding: 0;
   border: 0;
   background: none;
@@ -2018,40 +2056,46 @@ html:has(.pv) {
   transform: none;
 }
 
-.dir-list[data-hovering="true"] .dir-row {
+[data-hovering="true"] .dir-row {
   color: var(--muted);
 }
 
-.dir-list[data-hovering="true"] .dir-item[data-hover="true"] .dir-row {
+[data-hovering="true"] .dir-item[data-hover="true"] .dir-row {
   color: var(--ink);
   font-weight: 700;
 }
 
-.dir-latest {
-  font-style: italic;
+.trip-place {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.dir-preview {
-  position: absolute;
-  z-index: 2;
-  left: 52%;
-  top: 0;
-  width: 220px;
-  height: 150px;
-  object-fit: cover;
-  pointer-events: none;
-  box-shadow: 0 8px 24px var(--shadow);
-  opacity: 0;
-  transform: translateY(var(--y, 0px)) scale(0.96);
-  transition: transform 240ms var(--ease), opacity var(--dur-fast) ease;
+.trip-strip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0;
 }
 
-.dir-preview[data-on="true"] {
-  opacity: 1;
-  transform: translateY(var(--y, 0px)) scale(1);
+.trip-strip img {
+  display: block;
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  transition: width 220ms var(--ease);
+}
+
+/* The row in hand opens its photographs out to their landscape crop; the row keeps its height. */
+.dir-item[data-hover="true"] .trip-strip img {
+  width: 64px;
+}
+
+.trip-more {
+  margin-left: 6px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--muted);
 }
 
 .dir-empty {
@@ -2059,22 +2103,69 @@ html:has(.pv) {
   color: var(--muted);
 }
 
+/* A phone: the year over its trips; each trip its first photograph, the place over the
+   dates, and the count. */
 @media (max-width: 767px) {
-  .dir-row,
   .dir-cols {
-    grid-template-columns: 44px minmax(0, 1fr) 56px;
-  }
-
-  .dir-years,
-  .dir-latest,
-  .dir-preview {
     display: none;
   }
-}
 
-@media (hover: none) {
-  .dir-preview {
+  .trip-year {
+    display: block;
+    padding-bottom: 4px;
+  }
+
+  .trip-year-name {
+    margin: 14px 0 6px;
+    padding: 0;
+    font-size: 32px;
+  }
+
+  .dir-row {
+    min-height: 64px;
+    grid-template-columns: 56px minmax(0, 1fr) auto;
+    grid-template-areas:
+      "strip place count"
+      "strip when count";
+    column-gap: 12px;
+    row-gap: 0;
+    align-content: center;
+  }
+
+  .trip-strip {
+    grid-area: strip;
+    padding: 0;
+  }
+
+  .trip-strip img,
+  .dir-item[data-hover="true"] .trip-strip img {
+    width: 56px;
+    height: 44px;
+  }
+
+  .trip-strip img ~ img,
+  .trip-more {
     display: none;
+  }
+
+  .trip-place {
+    grid-area: place;
+    font-weight: 700;
+    align-self: end;
+  }
+
+  .trip-when {
+    grid-area: when;
+    color: var(--muted);
+    align-self: start;
+  }
+
+  .dir-row > span:nth-child(3) {
+    grid-area: count;
+  }
+
+  [data-hovering="true"] .dir-row {
+    color: inherit;
   }
 }
 
