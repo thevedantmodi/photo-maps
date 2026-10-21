@@ -1050,12 +1050,22 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
+    // While a finger is down in a holding zone (on the photo too), the page can't select
+    // text or show the long-press menu: iOS would otherwise pick out the nearest words
+    // ("Place") half a second into the hold. globals.css reads data-pressing.
+    const release = () => {
+      root.removeAttribute("data-pressing");
+    };
     const onDown = (e: PointerEvent) => {
       if (e.pointerType === "mouse" || closingRef.current || steppingRef.current) return;
       const t = e.target instanceof Element ? e.target : null;
-      if (!t || frameRef.current?.contains(t) || t.closest(PLAIN_CURSOR) || ownsText(t)) return;
+      if (!t || t.closest(PLAIN_CURSOR)) return;
       const dir = touchSide(e.clientX);
       if (dir === null) return;
+      root.setAttribute("data-pressing", "");
+      window.getSelection()?.removeAllRanges();
+      // On the photo the swipe handlers hold; off it, here (over words at the edge too).
+      if (frameRef.current?.contains(t)) return;
       edgeDown.current = { id: e.pointerId, x: e.clientX, y: e.clientY };
       startHold(dir, e.clientX, e.clientY - 72, TOUCH_HOLD_MS);
     };
@@ -1064,24 +1074,31 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       if (!down || e.pointerId !== down.id) return;
       if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > SWIPE_LOCK_PX) {
         edgeDown.current = null;
+        release();
         cancelHold();
       }
     };
     // Let go (or taken by the browser) before the ring was full: no step.
     const onUp = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") release();
       if (edgeDown.current?.id !== e.pointerId) return;
       edgeDown.current = null;
       cancelHold();
+    };
+    const onMenu = (e: Event) => {
+      if (root.hasAttribute("data-pressing")) e.preventDefault();
     };
     root.addEventListener("pointerdown", onDown);
     root.addEventListener("pointermove", onMove, { passive: true });
     root.addEventListener("pointerup", onUp);
     root.addEventListener("pointercancel", onUp);
+    root.addEventListener("contextmenu", onMenu);
     return () => {
       root.removeEventListener("pointerdown", onDown);
       root.removeEventListener("pointermove", onMove);
       root.removeEventListener("pointerup", onUp);
       root.removeEventListener("pointercancel", onUp);
+      root.removeEventListener("contextmenu", onMenu);
     };
   }, [touchSide, startHold, cancelHold]);
 

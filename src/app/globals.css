@@ -1533,6 +1533,15 @@ a:hover > .arrow {
   opacity: 1;
 }
 
+/* A finger down in a holding zone (PhotoView): no text selection or long-press menu, so
+   holding at the edge steps instead of picking out the words there. */
+.pv[data-pressing],
+.pv[data-pressing] * {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
 /* A hold let go before it was full: the ring fades away rather than popping off (PhotoView
    keeps it shown for HOLD_FADE_MS). Where the ring is the cursor, only the fill fades. */
 .pv[data-hold-fade] .pv-swipe {
