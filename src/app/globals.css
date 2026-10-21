@@ -2052,6 +2052,22 @@ html:has(.pv) {
   animation: rise 300ms var(--ease) both;
 }
 
+.trip-year-name button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: opacity var(--dur-fast) ease;
+}
+
+.trip-year-name button:hover {
+  opacity: 0.65;
+}
+
 .dir-list {
   margin: 0;
   padding: 0;

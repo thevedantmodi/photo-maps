@@ -151,7 +151,21 @@ export default function Directory({ photos, places, initialYear }: DirectoryProp
                 className="trip-year"
                 aria-label={y.year === UNDATED ? "Undated" : `Trips in ${y.year}`}
               >
-                <h2 className="trip-year-name">{y.year === UNDATED ? "Undated" : y.year}</h2>
+                <h2 className="trip-year-name">
+                  {/* The heading is the year filter too: it narrows to its year, or back to all. */}
+                  <button
+                    type="button"
+                    aria-pressed={year === y.year}
+                    aria-label={
+                      year === y.year
+                        ? "Show every year"
+                        : `Show only ${y.year === UNDATED ? "undated photos" : y.year}`
+                    }
+                    onClick={() => changeYear(year === y.year ? null : y.year)}
+                  >
+                    {y.year === UNDATED ? "Undated" : y.year}
+                  </button>
+                </h2>
                 <ol className="dir-list">
                   {y.trips.map((trip) => {
                     const name = names[trip.placeId];
