@@ -1446,7 +1446,8 @@ a:hover > .arrow {
 
 /* Progress for a trackpad swipe or a hold: a ring on the cursor with an arrow inside,
    its outline traced round as the swipe or hold goes on. PhotoView sets --swipe (0 to 1),
-   the cursor's position (--swipe-x/y) and data-swipe-cursor to show it. */
+   the cursor's position (--swipe-x/y) and data-swipe-cursor to show it. With a mouse it
+   is the cursor itself (data-cursor, below). */
 .pv-swipe {
   position: fixed;
   left: 0;
@@ -1518,6 +1519,35 @@ a:hover > .arrow {
 .pv[data-hold-dir="next"] .pv-swipe-arrow[data-dir="next"],
 .pv[data-hold-dir="prev"] .pv-swipe-arrow[data-dir="prev"] {
   opacity: 1;
+}
+
+/* The ring as the cursor: on the view wherever there's nothing to click or read, an
+   arrow inside on a side of the photo with a photo that way (data-aim), else a dot. */
+.pv-swipe-dot {
+  fill: var(--ink);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pv[data-cursor],
+  .pv[data-cursor] * {
+    cursor: none;
+  }
+
+  .pv[data-cursor] .pv-swipe {
+    display: block;
+    opacity: 1;
+  }
+
+  .pv[data-cursor]:not([data-aim], [data-hold-dir], [data-swipe-dir]) .pv-swipe-dot {
+    opacity: 1;
+  }
+
+  .pv[data-aim="next"]:not([data-swipe-dir]) .pv-swipe-arrow[data-dir="next"],
+  .pv[data-aim="prev"]:not([data-swipe-dir]) .pv-swipe-arrow[data-dir="prev"] {
+    opacity: 0.5;
+  }
 }
 
 .pv[data-closing="true"] .pv-swipe {

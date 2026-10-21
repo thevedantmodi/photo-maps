@@ -80,6 +80,30 @@ function fitIn(box: { w: number; h: number }, ratio: number) {
   return box.w / box.h > ratio ? { w: box.h * ratio, h: box.h } : { w: box.w, h: box.w / ratio };
 }
 
+// Where the ring-cursor steps aside for the usual one: things to click, and the header.
+const PLAIN_CURSOR = "a, button, input, select, textarea, label, summary, [role=button], header";
+
+// Where the mouse is (null for none, or a finger), kept from the first photo opened on, so
+// a photo mounted under a mouse resting still (after a step) can put the ring there at once.
+let lastPointer: { x: number; y: number } | null = null;
+let trackingPointer = false;
+function trackPointer() {
+  if (trackingPointer) return;
+  trackingPointer = true;
+  window.addEventListener(
+    "pointermove",
+    (e) => (lastPointer = e.pointerType === "mouse" ? { x: e.clientX, y: e.clientY } : null),
+    { passive: true },
+  );
+  document.documentElement.addEventListener("pointerleave", () => (lastPointer = null));
+}
+
+/** Whether an element holds words of its own (a title, a caption, a fact). */
+function ownsText(el: Element): boolean {
+  for (const n of el.childNodes) if (n.nodeType === Node.TEXT_NODE && n.textContent?.trim()) return true;
+  return false;
+}
+
 function formatDate(iso: string | null): string | null {
   if (!iso) return null;
   const d = new Date(iso);
@@ -1000,6 +1024,43 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
     };
   }, [dragTo, startDrag, endDrag, next, prev, cancelHold]);
 
+  // With a mouse the ring is the cursor: it follows the pointer anywhere on the view, an
+  // arrow inside on either side of the photo (where holding steps), a dot elsewhere. Over
+  // anything to click or read it gives way to the usual cursor. globals.css hides the
+  // system one while data-cursor is set, and only on a fine pointer that hovers.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const fine = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const hide = () => {
+      root.removeAttribute("data-cursor");
+      root.removeAttribute("data-aim");
+    };
+    const place = (x: number, y: number, t: Element | null) => {
+      // Placed before it shows, so it never starts out anywhere but the pointer.
+      root.style.setProperty("--swipe-x", `${x}px`);
+      root.style.setProperty("--swipe-y", `${y}px`);
+      if (!t || !root.contains(t) || t.closest(PLAIN_CURSOR) || ownsText(t)) return hide();
+      root.setAttribute("data-cursor", "");
+      const over = frameRef.current?.contains(t) ? holdSide(x) : null;
+      if (over === null) root.removeAttribute("data-aim");
+      else root.setAttribute("data-aim", over === 1 ? "next" : "prev");
+    };
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse" || !fine.matches) return hide();
+      place(e.clientX, e.clientY, e.target instanceof Element ? e.target : null);
+    };
+    trackPointer();
+    if (lastPointer && fine.matches) place(lastPointer.x, lastPointer.y, document.elementFromPoint(lastPointer.x, lastPointer.y));
+    root.addEventListener("pointermove", onMove, { passive: true });
+    // Leaving the view (or the window) takes it away.
+    root.addEventListener("pointerleave", hide);
+    return () => {
+      root.removeEventListener("pointermove", onMove);
+      root.removeEventListener("pointerleave", hide);
+    };
+  }, [holdSide]);
+
 
   const version = shareVersion(photo);
   const share = (className: string) => (
@@ -1028,13 +1089,15 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       tabIndex={mode === "overlay" ? -1 : undefined}
     >
       <div className="pv-bg" ref={bgRef} />
-      {/* Trackpad swipes only: sits at the cursor and fills as the swipe nears the next photo. */}
+      {/* At the cursor: the cursor itself with a mouse, and the progress of a swipe or hold,
+          filling as it nears the next photo. */}
       <svg className="pv-swipe" viewBox="0 0 48 48" aria-hidden="true">
         <circle className="pv-swipe-disc" cx="24" cy="24" r="23" />
         <circle className="pv-swipe-track" cx="24" cy="24" r="18" />
         <circle className="pv-swipe-fill" cx="24" cy="24" r="18" />
         <path className="pv-swipe-arrow" data-dir="next" d="M17 24h14M26 19l5 5-5 5" />
         <path className="pv-swipe-arrow" data-dir="prev" d="M31 24H17M22 19l-5 5 5 5" />
+        <circle className="pv-swipe-dot" cx="24" cy="24" r="2" />
       </svg>
       <SiteHeader current="photo" />
 
