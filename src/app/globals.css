@@ -1736,10 +1736,11 @@ html:has(.pv) {
   transition: opacity 250ms ease 100ms;
 }
 
-/* Landed by a swipe or Previous / Next: the page was already there, so nothing fades in
-   again (the map behind never shows); only the words change, with a short fade. */
-.pv[data-arrived] > .pv-bg,
-.pv[data-arrived] > .sh,
+/* Arrived by a swipe or Previous / Next: the page was already there, so it never fades in
+   again (the map behind never shows), even when the photo couldn't slide into place first
+   (the next one hadn't loaded yet). Only the words change, with a short fade. */
+.pv[data-stepped] > .pv-bg,
+.pv[data-stepped] > .sh,
 .pv[data-arrived] .pv-frame {
   animation: none;
 }

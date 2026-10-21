@@ -261,6 +261,12 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
   const [box, setBox] = useState<{ w: number; h: number } | null>(null);
   const [sideRatio, setSideRatio] = useState<{ prev?: number; next?: number }>({});
   const [largeLoaded, setLargeLoaded] = useState(false);
+  // A step lands on a photo whose large image is already in the cache (it was the one
+  // alongside). Shown from the first frame, rather than one frame of the blurry thumbnail
+  // until onLoad fires.
+  const showIfCached = useCallback((img: HTMLImageElement | null) => {
+    if (img?.complete && img.naturalWidth > 0) setLargeLoaded(true);
+  }, [setLargeLoaded]);
   // Seeded from the step that led here, when it had already looked the place up.
   const [place, setPlace] = useState<string | null>(() => {
     const handed = arrived?.words?.facts.Place;
@@ -1123,6 +1129,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       data-mode={mode}
       data-details={details}
       data-closing={closing}
+      data-stepped={arrived ? true : undefined}
       data-arrived={landed || undefined}
       role={mode === "overlay" ? "dialog" : undefined}
       aria-modal={mode === "overlay" ? true : undefined}
@@ -1219,6 +1226,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
               <img src={photo.thumb_url} alt="" draggable={false} />
               {/* eslint-disable-next-line @next/next/no-img-element -- R2 rendition, already sized */}
               <img
+                ref={showIfCached}
                 className="pv-large"
                 data-loaded={largeLoaded}
                 src={photo.large_url}
