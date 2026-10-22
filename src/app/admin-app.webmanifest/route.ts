@@ -11,7 +11,7 @@ export function GET() {
       short_name: 'Photo Admin',
       id: '/admin',
       start_url: '/admin',
-      scope: '/admin/',
+      scope: '/admin',
       display: 'standalone',
       background_color: '#ededeb',
       theme_color: '#e8b04a',
