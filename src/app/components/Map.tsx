@@ -28,7 +28,7 @@ import SearchBox from "./SearchBox";
 import Mark from "./Mark";
 import { PlaceSuggestion } from "@/lib/mapboxGeocode";
 import type { CustomPlace } from "@/lib/customPlaces";
-import { HOME_ZOOM_MIN, type HomeView } from "@/lib/homeView";
+import { HOME_ZOOM_MIN, frameZoom, type HomeView } from "@/lib/homeView";
 import { Photo } from "../types";
 
 /**
@@ -91,7 +91,7 @@ const MIN_ZOOM = HOME_ZOOM_MIN;
  * Where the map opens: a place linked from the Directory (?lon=&lat=&z=), else where
  * this tab last left it, else home (set in the admin).
  */
-function initialCamera(params: URLSearchParams, home: HomeView): Camera {
+function initialCamera(params: URLSearchParams, home: HomeView): Camera | null {
   const lon = Number(params.get("lon"));
   const lat = Number(params.get("lat"));
   const z = Number(params.get("z"));
@@ -116,9 +116,9 @@ function initialCamera(params: URLSearchParams, home: HomeView): Camera {
       return { longitude: saved.longitude, latitude: saved.latitude, zoom: saved.zoom };
     }
   } catch {
-    // Unreadable or unavailable; start from home.
+    // Unreadable or unavailable; start from home (null).
   }
-  return { longitude: home.longitude, latitude: home.latitude, zoom: home.zoom };
+  return null;
 }
 
 interface OpenStack {
@@ -146,7 +146,17 @@ const MapComponent = ({ photos, places, home }: MapProps) => {
   // Cluster ids are only stable within one zoom level, so anything that
   // changes zoom or the point set closes the stack.
   const [openStack, setOpenStack] = useState<OpenStack | null>(null);
-  const [viewState, setViewState] = useState(() => initialCamera(openedWith, home));
+  // Home is framed for a desktop-sized map: until the map has its size, judge by the window;
+  // onMapLoad then fits it to the map itself.
+  const [openedHome] = useState(() => initialCamera(openedWith, home) === null);
+  const [viewState, setViewState] = useState<Camera>(
+    () =>
+      initialCamera(openedWith, home) ?? {
+        longitude: home.longitude,
+        latitude: home.latitude,
+        zoom: frameZoom(home.zoom, window.innerWidth, window.innerHeight * 0.75),
+      },
+  );
   const [bounds, setBounds] = useState<[number, number, number, number]>([
     -180, -85, 180, 85,
   ]);
@@ -245,13 +255,19 @@ const MapComponent = ({ photos, places, home }: MapProps) => {
     };
     restore();
     map.on("style.load", restore);
+    let zoom = map.getZoom();
+    if (openedHome) {
+      const box = map.getContainer();
+      zoom = frameZoom(home.zoom, box.clientWidth, box.clientHeight);
+      setViewState((v) => ({ ...v, zoom }));
+    }
     // Remember where the map opened, too: arriving from a link and leaving without moving
     // should still come back to the same place.
-    saveCamera(map.getCenter().lng, map.getCenter().lat, map.getZoom());
+    saveCamera(map.getCenter().lng, map.getCenter().lat, zoom);
     updateBounds();
     setMapLoaded(true);
     setTimeout(() => setHanging(false), HANG_MAX_MS + 400);
-  }, [updateBounds, saveCamera]);
+  }, [updateBounds, saveCamera, openedHome, home.zoom]);
 
   useEffect(() => {
     terrainRef.current = terrainEnabled;

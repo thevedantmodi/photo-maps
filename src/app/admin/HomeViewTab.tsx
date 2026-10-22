@@ -4,7 +4,14 @@ import { useCallback, useEffect, useState } from "react";
 import Map, { NavigationControl, type ViewStateChangeEvent } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { MAP_STYLES } from "@/lib/mapStyles";
-import { DEFAULT_HOME_VIEW, HOME_ZOOM_MAX, HOME_ZOOM_MIN, type HomeView } from "@/lib/homeView";
+import {
+  DEFAULT_HOME_VIEW,
+  HOME_ZOOM_MAX,
+  HOME_ZOOM_MIN,
+  frameZoom,
+  homeZoom,
+  type HomeView,
+} from "@/lib/homeView";
 import { colors, type Theme } from "./theme";
 
 const round = (n: number, places: number) => Math.round(n * 10 ** places) / 10 ** places;
@@ -20,6 +27,13 @@ function describe(v: HomeView) {
  * (a globe, the same style), and save. Directory links and a view a tab remembers still
  * take precedence there.
  */
+// The preview's size, so it shows the same stretch of the world as the public map does
+// (home zooms are framed for a desktop-sized map; see frameZoom).
+const PREVIEW_W = 900;
+const PREVIEW_H = 420;
+const toPreview = (v: HomeView): HomeView => ({ ...v, zoom: frameZoom(v.zoom, PREVIEW_W, PREVIEW_H) });
+const fromPreview = (v: HomeView): HomeView => ({ ...v, zoom: homeZoom(v.zoom, PREVIEW_W, PREVIEW_H) });
+
 export default function HomeViewTab({ theme }: { theme: Theme }) {
   const c = colors(theme);
   const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -39,12 +53,12 @@ export default function HomeViewTab({ theme }: { theme: Theme }) {
         if (cancelled) return;
         setSaved(data.view);
         setIsDefault(data.isDefault);
-        setView(data.view);
+        setView(toPreview(data.view));
       } catch (err: unknown) {
         if (cancelled) return;
         // Still usable: start from New York, and saving will say what's wrong.
         setSaved(DEFAULT_HOME_VIEW);
-        setView(DEFAULT_HOME_VIEW);
+        setView(toPreview(DEFAULT_HOME_VIEW));
         setStatus({ kind: "error", text: `Couldn't load the saved view (${err instanceof Error ? err.message : String(err)}).` });
       }
     })();
@@ -59,6 +73,7 @@ export default function HomeViewTab({ theme }: { theme: Theme }) {
     setStatus((s) => (s.kind === "saved" ? { kind: "idle" } : s));
   }, []);
 
+  // `next` is a stored home view (not the preview's own zoom).
   const save = async (next: HomeView) => {
     setStatus({ kind: "saving" });
     try {
@@ -76,7 +91,7 @@ export default function HomeViewTab({ theme }: { theme: Theme }) {
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
       setSaved(data.view);
       setIsDefault(false);
-      setView(data.view);
+      setView(toPreview(data.view));
       setStatus({ kind: "saved", text: "Saved. New visitors open here." });
     } catch (err: unknown) {
       setStatus({ kind: "error", text: `Not saved: ${err instanceof Error ? err.message : String(err)}` });
@@ -85,10 +100,11 @@ export default function HomeViewTab({ theme }: { theme: Theme }) {
 
   if (!view || !saved) return <p style={{ color: c.muted, fontSize: 14 }}>Loading…</p>;
 
+  const framed = fromPreview(view);
   const changed =
-    Math.abs(view.longitude - saved.longitude) > 1e-4 ||
-    Math.abs(view.latitude - saved.latitude) > 1e-4 ||
-    Math.abs(view.zoom - saved.zoom) > 0.01;
+    Math.abs(framed.longitude - saved.longitude) > 1e-4 ||
+    Math.abs(framed.latitude - saved.latitude) > 1e-4 ||
+    Math.abs(framed.zoom - saved.zoom) > 0.01;
 
   const btn = (primary: boolean, disabled = false): React.CSSProperties => ({
     padding: "10px 20px",
@@ -110,7 +126,7 @@ export default function HomeViewTab({ theme }: { theme: Theme }) {
       </p>
 
       {token ? (
-        <div style={{ position: "relative", height: 420, background: c.mapBg }}>
+        <div style={{ position: "relative", width: "100%", maxWidth: PREVIEW_W, height: PREVIEW_H, background: c.mapBg }}>
           <Map
             {...view}
             onMove={onMove}
@@ -142,7 +158,7 @@ export default function HomeViewTab({ theme }: { theme: Theme }) {
       )}
 
       <div style={{ fontSize: 13, color: c.text, fontVariantNumeric: "tabular-nums" }}>
-        {describe(view)}
+        {describe(framed)}
         <span style={{ color: c.muted }}>
           {" "}
           — saved: {isDefault ? "New York (the default)" : describe(saved)}
@@ -154,11 +170,11 @@ export default function HomeViewTab({ theme }: { theme: Theme }) {
           type="button"
           style={btn(true, !changed || status.kind === "saving")}
           disabled={!changed || status.kind === "saving"}
-          onClick={() => save(view)}
+          onClick={() => save(framed)}
         >
           {status.kind === "saving" ? "Saving…" : "Open the map here"}
         </button>
-        <button type="button" style={btn(false, !changed)} disabled={!changed} onClick={() => setView(saved)}>
+        <button type="button" style={btn(false, !changed)} disabled={!changed} onClick={() => setView(toPreview(saved))}>
           Back to saved
         </button>
         <button
