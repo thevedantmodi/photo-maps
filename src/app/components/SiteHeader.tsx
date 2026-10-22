@@ -67,7 +67,7 @@ export default function SiteHeader({ current, tools, menuExtra }: SiteHeaderProp
   const navLinks = (
     <>
       <Link href="/map" className="ul" aria-current={current === 'map' ? 'page' : undefined}>
-        Galleries
+        Map
       </Link>
       <Link
         href="/directory"
