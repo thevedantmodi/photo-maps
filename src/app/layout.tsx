@@ -3,6 +3,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { Geist } from "next/font/google";
 import { getBaseUrl } from "@/lib/baseUrl";
 import { AUTHOR, RSS_ALTERNATE, SITE_DESCRIPTION, SITE_NAME } from "@/lib/site";
+import ServiceWorker from "./components/ServiceWorker";
 import "./globals.css";
 
 // Fallback face for devices without Helvetica Neue; see --font-sans in globals.css.
@@ -18,6 +19,9 @@ export async function generateMetadata(): Promise<Metadata> {
     description: SITE_DESCRIPTION,
     authors: [{ name: AUTHOR }],
     alternates: { types: RSS_ALTERNATE },
+    applicationName: SITE_NAME,
+    appleWebApp: { capable: true, title: 'Photo Maps', statusBarStyle: 'default' },
+    icons: { apple: '/icons/apple-touch-icon.png' },
     openGraph: {
       siteName: SITE_NAME,
       title: SITE_NAME,
@@ -62,6 +66,7 @@ export default function RootLayout({
       <body>
         {children}
         <div className="lights" aria-hidden="true" />
+        <ServiceWorker />
         <Analytics />
       </body>
     </html>
