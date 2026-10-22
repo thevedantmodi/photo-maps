@@ -28,7 +28,7 @@ export default function SubscribePage() {
       <div className={styles.card}>
         <h1 className={styles.title}>New photos by email</h1>
         <p className={styles.body}>
-          At most once a week, only when there are new photos. Your address is kept by our email
+          At most once a week, only when there are new photos. Your address is kept by my email
           service and used for nothing else, and every email has an unsubscribe link.
         </p>
         <div className={styles.form}>
