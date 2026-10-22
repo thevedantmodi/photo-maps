@@ -77,6 +77,11 @@ const PLACE_NAME_MS = 1500;
 const FLY_MS = 1000;
 
 const CAMERA_KEY = "photo-maps:camera";
+/**
+ * With ?intro in the address (for screen recordings), the loader stays up this long after
+ * the map is ready, so it plays in full even on a fast connection, and the map opens at home.
+ */
+const INTRO_HOLD_MS = 2200;
 
 interface Camera {
   longitude: number;
@@ -89,9 +94,10 @@ const MIN_ZOOM = HOME_ZOOM_MIN;
 
 /**
  * Where the map opens: a place linked from the Directory (?lon=&lat=&z=), else where
- * this tab last left it, else home (set in the admin).
+ * this tab last left it, else home (set in the admin). ?intro always opens at home.
  */
 function initialCamera(params: URLSearchParams, home: HomeView): Camera | null {
+  if (params.has("intro")) return null;
   const lon = Number(params.get("lon"));
   const lat = Number(params.get("lat"));
   const z = Number(params.get("z"));
@@ -265,9 +271,13 @@ const MapComponent = ({ photos, places, home }: MapProps) => {
     // should still come back to the same place.
     saveCamera(map.getCenter().lng, map.getCenter().lat, zoom);
     updateBounds();
-    setMapLoaded(true);
-    setTimeout(() => setHanging(false), HANG_MAX_MS + 400);
-  }, [updateBounds, saveCamera, openedHome, home.zoom]);
+    const reveal = () => {
+      setMapLoaded(true);
+      setTimeout(() => setHanging(false), HANG_MAX_MS + 400);
+    };
+    if (openedWith.has("intro")) setTimeout(reveal, INTRO_HOLD_MS);
+    else reveal();
+  }, [updateBounds, saveCamera, openedHome, home.zoom, openedWith]);
 
   useEffect(() => {
     terrainRef.current = terrainEnabled;

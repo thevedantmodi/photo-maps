@@ -73,12 +73,14 @@ export default function Landing({ photo, years, recent }: LandingProps) {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
     e.preventDefault();
     if (leaving) return;
+    // ?intro (for screen recordings) carries through to the map, which then plays its loader in full.
+    const href = new URLSearchParams(window.location.search).has('intro') ? '/map?intro' : '/map';
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      router.push('/map');
+      router.push(href);
       return;
     }
     setLeaving(true);
-    window.setTimeout(() => router.push('/map'), LEAVE_MS);
+    window.setTimeout(() => router.push(href), LEAVE_MS);
   };
 
   const span = years ? (years.from === years.to ? String(years.from) : `${years.from}–${years.to}`) : null;

@@ -23,7 +23,7 @@ type Versioned = {
  * Bumped whenever the card's design changes, so every card re-renders in the new look
  * instead of serving the old one from R2 or the CDN.
  */
-const CARD_DESIGN = 'museum-4';
+const CARD_DESIGN = 'museum-5'; // museum-5: re-rendered for the move to vedant.photos
 
 export type CardTheme = 'dark' | 'light';
 
