@@ -5,7 +5,7 @@ export interface HomeView {
   zoom: number;
 }
 
-export const DEFAULT_HOME_VIEW: HomeView = { longitude: -73.98, latitude: 40.73, zoom: 9.5 };
+export const DEFAULT_HOME_VIEW: HomeView = { longitude: -73.98, latitude: 40.73, zoom: 8 };
 
 export const HOME_ZOOM_MIN = 0.5;
 export const HOME_ZOOM_MAX = 16;
