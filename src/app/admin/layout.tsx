@@ -5,6 +5,10 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Admin',
   robots: { index: false, follow: false },
+  // Replaces the public manifest, so /admin installs as its own app.
+  manifest: '/admin-app.webmanifest',
+  icons: { apple: '/icons/admin-192.png' },
+  appleWebApp: { capable: true, title: 'Photo Admin', statusBarStyle: 'default' },
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
