@@ -878,7 +878,7 @@ function ManageTab({ theme }: { theme: Theme }) {
   );
 
   const grouped = useMemo(
-    () => groupPhotos(sortPhotos(listed, view.sort, view.dir, placeOf), view.group, view.sort, view.dir, placeOf),
+    () => groupPhotos(sortPhotos(listed, view.sort, view.dir, placeOf), view.group, view.dir, placeOf),
     [listed, view, placeOf],
   );
 

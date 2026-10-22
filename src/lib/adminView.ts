@@ -120,14 +120,14 @@ function groupOf(p: ViewPhoto, key: GroupKey, placeOf: PlaceOf): { key: string; 
 }
 
 /**
- * The sorted photos in groups. Dated groups run in the sort's direction when sorting by
- * date taken (newest year first for a newest-first sort), otherwise A to Z; the group of
- * photos without the field comes last.
+ * The sorted photos in groups. Years and months run the same way as the sort (newest
+ * first, or oldest); places and what's missing come in the order of their first photo in
+ * the sort, so a newest-first sort leads with the place photographed most recently. The
+ * group of photos without the field comes last.
  */
 export function groupPhotos<P extends ViewPhoto>(
   sorted: P[],
   key: GroupKey,
-  sort: SortKey,
   dir: Dir,
   placeOf: PlaceOf,
 ): Group<P>[] {
@@ -138,9 +138,12 @@ export function groupPhotos<P extends ViewPhoto>(
     if (!entry) map.set(g.key, (entry = { key: g.key, label: g.label, photos: [] }));
     entry.photos.push(p);
   }
-  const sign = (key === "year" || key === "month") && sort === "taken" && dir === "desc" ? -1 : 1;
-  return [...map.values()].sort((a, b) => {
-    if (a.key === "~" || b.key === "~") return a.key === b.key ? 0 : a.key === "~" ? 1 : -1;
-    return sign * a.key.localeCompare(b.key, undefined, { numeric: true });
-  });
+  const groups = [...map.values()];
+  const last = groups.filter((g) => g.key === "~");
+  const rest = groups.filter((g) => g.key !== "~");
+  if (key === "year" || key === "month") {
+    const sign = dir === "desc" ? -1 : 1;
+    rest.sort((a, b) => sign * a.key.localeCompare(b.key, undefined, { numeric: true }));
+  }
+  return [...rest, ...last];
 }
