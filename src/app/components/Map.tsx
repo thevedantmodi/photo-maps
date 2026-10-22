@@ -81,17 +81,47 @@ interface Camera {
   zoom: number;
 }
 
-const DEFAULT_CAMERA: Camera = {
-  longitude: -96.40442327908295,
-  latitude: 39.206117736168125,
-  zoom: 2,
-};
+// Facing North America, before there are photos to face.
+const WORLD_CENTER = { longitude: -96.4, latitude: 39.2 };
+// How much of the map's shorter side the whole globe spans when the map opens on the world:
+// all of it in view, with a margin of space around it, on any screen.
+const GLOBE_SPAN = 0.88;
+// Low enough that the whole globe fits a phone's width.
+const MIN_ZOOM = 0.5;
+
+/** Zoom at which the globe is `diameter` px across: its circumference is 512·2^z px. */
+function zoomForGlobe(diameter: number) {
+  return Math.max(MIN_ZOOM, Math.log2((Math.PI * diameter) / 512));
+}
+
+/**
+ * The world, turned to face the photos (the middle of their longitudes taken round the
+ * circle, so a spread across the date line doesn't average out to the wrong ocean, and
+ * their average latitude) and sized to the window for now. Once the map has its real size,
+ * onMapLoad sizes the globe to it exactly.
+ */
+function worldCamera(photos: Photo[]): Camera {
+  const located = photos.filter((p) => p.lat != null && p.lon != null);
+  let center = WORLD_CENTER;
+  if (located.length > 0) {
+    const toRad = Math.PI / 180;
+    const x = located.reduce((n, p) => n + Math.cos(p.lon! * toRad), 0);
+    const y = located.reduce((n, p) => n + Math.sin(p.lon! * toRad), 0);
+    const lat = located.reduce((n, p) => n + p.lat!, 0) / located.length;
+    center = {
+      longitude: Math.hypot(x, y) > 1e-6 ? Math.atan2(y, x) / toRad : WORLD_CENTER.longitude,
+      // Kept off the poles, where the globe would show mostly ice.
+      latitude: Math.max(-35, Math.min(45, lat)),
+    };
+  }
+  return { ...center, zoom: zoomForGlobe(GLOBE_SPAN * Math.min(window.innerWidth, window.innerHeight * 0.7)) };
+}
 
 /**
  * Where the map opens: a place linked from the Directory (?lon=&lat=&z=), else where
- * this tab last left it, else the world.
+ * this tab last left it; null for the world (worldCamera).
  */
-function initialCamera(params: URLSearchParams): Camera {
+function initialCamera(params: URLSearchParams): Camera | null {
   const lon = Number(params.get("lon"));
   const lat = Number(params.get("lat"));
   const z = Number(params.get("z"));
@@ -118,7 +148,7 @@ function initialCamera(params: URLSearchParams): Camera {
   } catch {
     // Unreadable or unavailable; start from the world.
   }
-  return DEFAULT_CAMERA;
+  return null;
 }
 
 interface OpenStack {
@@ -146,7 +176,8 @@ const MapComponent = ({ photos, places }: MapProps) => {
   // Cluster ids are only stable within one zoom level, so anything that
   // changes zoom or the point set closes the stack.
   const [openStack, setOpenStack] = useState<OpenStack | null>(null);
-  const [viewState, setViewState] = useState(() => initialCamera(openedWith));
+  const [openedOnWorld] = useState(() => initialCamera(openedWith) === null);
+  const [viewState, setViewState] = useState(() => initialCamera(openedWith) ?? worldCamera(photos));
   const [bounds, setBounds] = useState<[number, number, number, number]>([
     -180, -85, 180, 85,
   ]);
@@ -245,13 +276,29 @@ const MapComponent = ({ photos, places }: MapProps) => {
     };
     restore();
     map.on("style.load", restore);
+    // Opening on the world: size the globe to the map exactly. The point a quarter of the
+    // way round the equator from the centre's meridian is always on the globe's edge, so
+    // its distance from the centre is the radius as drawn.
+    let zoom = map.getZoom();
+    if (openedOnWorld) {
+      const c = map.getCenter();
+      const middle = map.project(c);
+      const edge = map.project([c.lng + 90, 0]);
+      const radius = Math.hypot(edge.x - middle.x, edge.y - middle.y);
+      const box = map.getContainer();
+      const want = (GLOBE_SPAN * Math.min(box.clientWidth, box.clientHeight)) / 2;
+      if (radius > 0 && want > 0) {
+        zoom = Math.max(MIN_ZOOM, zoom + Math.log2(want / radius));
+        setViewState((v) => ({ ...v, zoom }));
+      }
+    }
     // Remember where the map opened, too: arriving from a link and leaving without moving
     // should still come back to the same place.
-    saveCamera(map.getCenter().lng, map.getCenter().lat, map.getZoom());
+    saveCamera(map.getCenter().lng, map.getCenter().lat, zoom);
     updateBounds();
     setMapLoaded(true);
     setTimeout(() => setHanging(false), HANG_MAX_MS + 400);
-  }, [updateBounds, saveCamera]);
+  }, [updateBounds, saveCamera, openedOnWorld]);
 
   useEffect(() => {
     terrainRef.current = terrainEnabled;
@@ -552,7 +599,7 @@ const MapComponent = ({ photos, places }: MapProps) => {
           styleDiffing={false}
           mapboxAccessToken={mapboxToken}
           projection="globe"
-          minZoom={1}
+          minZoom={MIN_ZOOM}
           // Mapbox's logo and credits are required; both sit top right, out of the way of
           // thumbs, with the credits folded behind a small (i) until it's tapped.
           logoPosition="top-right"
