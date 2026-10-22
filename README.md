@@ -13,10 +13,12 @@ An interactive map of geotagged travel photos. Photos are hung on a Mapbox map l
 - **Sharing** — `/api/share/<slug>?theme=dark|light` serves a 1080×1920 story card in the theme on screen (rendered with `next/og`, both themes precomputed into R2 at upload/edit time, falling back to a live render). Link previews use the dark card.
 - **Light | Dark** — follows the system until chosen; switching dims the page like gallery lights while the map restyles.
 - **Follow** — `/feed.xml` RSS feed of recent photos, and an email signup under Subscribe in the menu (double opt-in through Resend) with a weekly digest that only goes out when there are new photos.
-- **Admin** at `/admin` (HTTP Basic Auth) with three tabs:
+- **Admin** at `/admin` (HTTP Basic Auth) with five tabs:
   - **Upload** — upload photos (including HEIC) with caption, location, and date.
   - **Manage** — edit, rotate, and delete photos.
   - **Places** — add, edit, and remove custom place labels without a redeploy.
+  - **Home view** — frame where the map opens for a first visit.
+  - **Landing photo** — keep the newest upload in front of the title or pin one, and pick the focal point its crop keeps in view.
 
 ## Design
 
@@ -42,7 +44,7 @@ src/
     map/                     the map, plus @modal/(..)p: the photo page drawn over it
     directory/               every place, as a table
     p/[friendly_name]/       per-photo page (standalone)
-    admin/                   admin UI (Upload / Manage / Places)
+    admin/                   admin UI (Upload / Manage / Places / Home view / Landing photo)
     api/
       upload/                presigned R2 upload URL
       admin/process/         EXIF + resize + DB insert for an uploaded original

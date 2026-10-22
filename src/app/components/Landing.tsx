@@ -20,7 +20,8 @@ export interface RecentPhoto {
 }
 
 interface LandingProps {
-  photoUrl: string | null;
+  /** The photo in front of the title, and the object-position that crops it. */
+  photo: { url: string; position: string } | null;
   years: { from: number; to: number } | null;
   recent: RecentPhoto[];
 }
@@ -46,7 +47,7 @@ function CropMarks() {
  * scroll animations are CSS (globals.css, "Landing" and "Scroll reveals"); this component
  * handles leaving for the map.
  */
-export default function Landing({ photoUrl, years, recent }: LandingProps) {
+export default function Landing({ photo, years, recent }: LandingProps) {
   const router = useRouter();
   const [leaving, setLeaving] = useState(false);
 
@@ -104,9 +105,9 @@ export default function Landing({ photoUrl, years, recent }: LandingProps) {
             Enter <span className="arrow" aria-hidden="true">→</span>
           </Link>
 
-          {photoUrl && (
+          {photo && (
             // eslint-disable-next-line @next/next/no-img-element -- served from R2, already sized
-            <img className="landing-photo" src={photoUrl} alt="" />
+            <img className="landing-photo" src={photo.url} alt="" style={{ objectPosition: photo.position }} />
           )}
         </section>
 
