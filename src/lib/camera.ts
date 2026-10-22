@@ -47,6 +47,17 @@ const MAKES: Record<string, string> = {
   gopro: "GoPro",
 };
 
+// DJI drones report a camera module code as the model.
+const DJI_MODELS: Record<string, string> = {
+  FC3170: "Mavic Air 2",
+  FC3411: "Air 2S",
+  FC3582: "Mini 3 Pro",
+  FC8482: "Mini 4 Pro",
+  L1D: "Mavic 2 Pro",
+  "L2D-20C": "Mavic 3",
+  FC4170: "Air 3",
+};
+
 // Sony's EXIF gives model codes; the names on the camera are friendlier.
 const SONY_MODELS: Record<string, string> = {
   "ILCE-7CM2": "α7C II",
@@ -80,6 +91,7 @@ export function cameraName(make: unknown, model: unknown): string | null {
   let rawModel = str(model);
   const brand = rawMake ? (MAKES[rawMake.toLowerCase()] ?? rawMake) : null;
   if (brand === "Sony" && rawModel && SONY_MODELS[rawModel.toUpperCase()]) rawModel = SONY_MODELS[rawModel.toUpperCase()];
+  if (brand === "DJI" && rawModel && DJI_MODELS[rawModel.toUpperCase()]) rawModel = DJI_MODELS[rawModel.toUpperCase()];
   if (!rawModel) return brand;
   if (!brand) return rawModel;
   // The model often repeats the make ("Canon EOS R5", "NIKON Z 6_2").

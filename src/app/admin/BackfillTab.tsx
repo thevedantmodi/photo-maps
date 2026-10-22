@@ -14,6 +14,7 @@ import {
 } from "@/lib/backfill";
 import { extractCamera } from "@/lib/camera";
 import { EXIF_PARSE_OPTIONS, exifDateInputValue, extractExifDate, extractGps } from "@/lib/gps";
+import CameraPicker from "./CameraPicker";
 import { colors, type Theme } from "./theme";
 
 interface ListPhoto extends BackfillPhoto {
@@ -335,6 +336,13 @@ export default function BackfillTab({ theme }: { theme: Theme }) {
           </div>
         </>
       )}
+
+      <hr style={{ border: 0, borderTop: `1px solid ${c.border}`, margin: "8px 0" }} />
+      <CameraPicker
+        theme={theme}
+        photos={photos}
+        onSaved={(id, body) => setPhotos((ps) => ps && ps.map((p) => (p.id === id ? { ...p, ...body } : p)))}
+      />
 
       {stillMissing.length > 0 && rows.some((r) => r.result === "saved") && (
         <details>
