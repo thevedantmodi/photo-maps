@@ -28,8 +28,9 @@ export default function SubscribePage() {
       <div className={styles.card}>
         <h1 className={styles.title}>New photos by email</h1>
         <p className={styles.body}>
-          At most once a week, only when there are new photos. Your address is kept by Resend and
-          used for nothing else, and every email has an unsubscribe link.
+          At most once a week, only when there are new photos. Your address is kept by Resend, the
+          service that sends the emails, and used for nothing else. Every email has an unsubscribe
+          link.
         </p>
         <div className={styles.form}>
           <SubscribeForm />
