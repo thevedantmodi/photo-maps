@@ -167,7 +167,7 @@ export default function Landing({ photo, years, recent }: LandingProps) {
       <section className="landing-cta">
         <Reveal variant="draw">
           <Link href="/map" className="cta-enter" onClick={enter}>
-            Enter the galleries <span className="arrow" aria-hidden="true">→</span>
+            Enter the map <span className="arrow" aria-hidden="true">→</span>
           </Link>
         </Reveal>
         <Reveal variant="rise" delay={120}>
