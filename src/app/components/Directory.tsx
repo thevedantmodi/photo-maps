@@ -105,7 +105,6 @@ export default function Directory({ photos, places, initialYear }: DirectoryProp
     };
   }, [placeList, places]);
 
-  const works = trips.reduce((n, t) => n + t.photos.length, 0);
   let index = 0;
 
   return (
@@ -119,7 +118,7 @@ export default function Directory({ photos, places, initialYear }: DirectoryProp
         {trips.length > 0 && (
           <p className="dir-sum">
             {trips.length} {trips.length === 1 ? "trip" : "trips"} · {placeList.length}{" "}
-            {placeList.length === 1 ? "place" : "places"} · {works} {works === 1 ? "work" : "works"}
+            {placeList.length === 1 ? "place" : "places"}
           </p>
         )}
       </div>
@@ -131,8 +130,8 @@ export default function Directory({ photos, places, initialYear }: DirectoryProp
           <span>Year</span>
           <span>When</span>
           <span>Place</span>
-          <span>Works</span>
-          <span className="trip-strip">Photographs</span>
+          <span>Photos</span>
+          <span className="trip-strip" />
         </div>
 
         {trips.length === 0 ? (
