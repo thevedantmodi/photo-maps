@@ -55,8 +55,8 @@ export default function SubscribePanel({
       <p className="sub-title">New photos by email.</p>
       <SubscribeForm ref={inputRef} />
       <p className="sub-note">
-        At most once a week, only when there are new photos. Your address is kept by Resend, the
-        service that sends the emails, and used for nothing else. Or follow the{' '}
+        At most once a week, only when there are new photos. Your address is kept by our email
+        service and used for nothing else. Or follow the{' '}
         <a href="/feed.xml" className="ul sub-rss">
           <RssIcon />
           RSS feed
