@@ -83,6 +83,50 @@ const CAMERA_KEY = "photo-maps:camera";
  */
 const INTRO_HOLD_MS = 2200;
 
+/**
+ * The ?intro entrance: the globe comes in spinning fast from the west, slightly tilted
+ * south and zoomed out, then settles into a slow drift past home. Spin speed decays from
+ * FAST to SLOW degrees a second (time constant TAU seconds) while the zoom and latitude
+ * ease in; the start is set back by the distance the decay covers, so it glides through
+ * home rather than overshooting it. Any touch, click or scroll stops it.
+ */
+const INTRO_SPIN = { FAST: 40, SLOW: 1.5, TAU: 1.1, EASE_MS: 3400, DROP_LAT: 12, DROP_ZOOM: 0.8 };
+
+function introStart(target: Camera): Camera {
+  const { FAST, SLOW, TAU, DROP_LAT, DROP_ZOOM } = INTRO_SPIN;
+  return {
+    longitude: target.longitude - (FAST - SLOW) * TAU,
+    latitude: target.latitude - DROP_LAT,
+    zoom: target.zoom - DROP_ZOOM,
+  };
+}
+
+/** Runs the intro spin on the map; returns a function that stops it. */
+function spinIntro(map: ReturnType<MapRef["getMap"]>, target: Camera): () => void {
+  const { FAST, SLOW, TAU, EASE_MS } = INTRO_SPIN;
+  const start = introStart(target);
+  let raf = 0;
+  let t0: number | null = null;
+  const frame = (now: number) => {
+    t0 ??= now;
+    const t = (now - t0) / 1000;
+    const k = Math.min(1, (now - t0) / EASE_MS);
+    const e = 1 - Math.pow(1 - k, 3);
+    map.jumpTo({
+      center: [start.longitude + SLOW * t + (FAST - SLOW) * TAU * (1 - Math.exp(-t / TAU)), start.latitude + (target.latitude - start.latitude) * e],
+      zoom: start.zoom + (target.zoom - start.zoom) * e,
+    });
+    raf = requestAnimationFrame(frame);
+  };
+  const stop = () => {
+    cancelAnimationFrame(raf);
+    for (const ev of ["mousedown", "touchstart", "wheel"] as const) map.off(ev, stop);
+  };
+  for (const ev of ["mousedown", "touchstart", "wheel"] as const) map.on(ev, stop);
+  raf = requestAnimationFrame(frame);
+  return stop;
+}
+
 interface Camera {
   longitude: number;
   latitude: number;
@@ -175,6 +219,8 @@ const MapComponent = ({ photos, places, home }: MapProps) => {
   const placeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const yearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mapRef = useRef<MapRef>(null);
+  const stopIntro = useRef<(() => void) | null>(null);
+  useEffect(() => () => stopIntro.current?.(), []);
   const [theme] = useTheme();
   const [terrainEnabled, toggleTerrain] = useTerrainPreference();
   // Read by the style.load listener, which outlives any one render.
@@ -275,8 +321,18 @@ const MapComponent = ({ photos, places, home }: MapProps) => {
       setMapLoaded(true);
       setTimeout(() => setHanging(false), HANG_MAX_MS + 400);
     };
-    if (openedWith.has("intro")) setTimeout(reveal, INTRO_HOLD_MS);
-    else reveal();
+    if (!openedWith.has("intro")) {
+      reveal();
+      return;
+    }
+    // Behind the loader, move to where the spin starts; it begins as the loader lifts.
+    const target = { longitude: map.getCenter().lng, latitude: map.getCenter().lat, zoom };
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!still) setViewState((v) => ({ ...v, ...introStart(target) }));
+    setTimeout(() => {
+      reveal();
+      if (!still) stopIntro.current = spinIntro(map, target);
+    }, INTRO_HOLD_MS);
   }, [updateBounds, saveCamera, openedHome, home.zoom, openedWith]);
 
   useEffect(() => {
