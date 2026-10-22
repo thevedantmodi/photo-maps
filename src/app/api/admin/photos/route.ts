@@ -14,6 +14,7 @@ export async function GET() {
     thumb_url: getPublicUrl(row.thumb_name),
     thumb_name: row.thumb_name,
     large_name: row.large_name,
+    large_url: getPublicUrl(row.large_name),
     date: row.date?.toISOString() ?? null,
     created_at: row.created_at?.toISOString() ?? null,
     lat: row.lat ?? null,

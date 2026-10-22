@@ -5,6 +5,8 @@ import type { Metadata } from 'next';
 import Landing, { type RecentPhoto } from './components/Landing';
 import { getPublishedPhotos } from '@/lib/photos';
 import { photoTitle } from '@/lib/alt';
+import { focusFor, objectPosition } from '@/lib/landingPhoto';
+import { getLandingPhoto } from '@/lib/landingPhotoStore';
 import { RSS_ALTERNATE, SITE_DESCRIPTION, SITE_NAME } from '@/lib/site';
 
 export const metadata: Metadata = {
@@ -21,9 +23,10 @@ export const metadata: Metadata = {
 const RECENT_COUNT = 8;
 
 export default async function Home() {
-  const photos = await getPublishedPhotos();
+  const [photos, landing] = await Promise.all([getPublishedPhotos(), getLandingPhoto()]);
 
-  // Newest uploads first: the first stands in front of the title, the rest hang below.
+  // Newest uploads first. The one pinned in the admin, or else the newest, stands in front
+  // of the title; the newest hang below.
   const byUpload = [...photos].sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''));
   const recent: RecentPhoto[] = byUpload.slice(0, RECENT_COUNT).map((p) => ({
     slug: p.friendly_name,
@@ -40,5 +43,11 @@ export default async function Home() {
       ? { from: Math.min(...years), to: Math.max(...years) }
       : null;
 
-  return <Landing photoUrl={byUpload[0]?.large_url ?? null} years={span} recent={recent} />;
+  // A pinned photo since deleted or unpublished gives way to the newest.
+  const featured = (landing.photoId && photos.find((p) => p.id === landing.photoId)) || byUpload[0];
+  const photo = featured
+    ? { url: featured.large_url, position: objectPosition(focusFor(landing, featured.id)) }
+    : null;
+
+  return <Landing photo={photo} years={span} recent={recent} />;
 }
