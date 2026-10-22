@@ -8,6 +8,7 @@ export async function GET() {
   return NextResponse.json(rows.map(row => ({
     id: row.id,
     friendly_name: row.friendly_name,
+    original_name: row.original_name,
     caption: row.caption,
     alt_text: row.alt_text,
     status: row.status,

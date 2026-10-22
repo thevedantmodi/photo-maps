@@ -8,6 +8,7 @@ import { colors, type Theme } from "./theme";
 import { Hint, Kbd, useModKey } from "./Kbd";
 import LocationSection from "./LocationSection";
 import PlacesTab from "./PlacesTab";
+import BackfillTab from "./BackfillTab";
 // Mapbox needs the browser; the tab only mounts once picked.
 const HomeViewTab = dynamic(() => import("./HomeViewTab"), { ssr: false });
 import { photoAlt } from "@/lib/alt";
@@ -19,23 +20,13 @@ import type { CustomPlace } from "@/lib/customPlaces";
 import type { Photo } from "../types";
 import {
   EXIF_PARSE_OPTIONS,
+  exifDateInputValue,
   extractExifDate,
   extractGps,
   formatCoord,
   parseLat,
   parseLon,
-  type ExifDate,
 } from "@/lib/gps";
-
-// The datetime-local value the server will end up storing for an EXIF date.
-// Camera dates are wall-clock times that exifr revives in the browser's zone
-// but the server reads as UTC, so the local reading is what gets saved; the
-// GPS stamp is true UTC either way.
-function exifDateInputValue({ date, utc }: ExifDate): string {
-  if (utc) return date.toISOString().slice(0, 16);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
 
 interface AdminPhoto {
   id: string;
@@ -1221,6 +1212,7 @@ const TABS = [
   { id: "manage", label: "Manage" },
   { id: "places", label: "Places" },
   { id: "home", label: "Home view" },
+  { id: "backfill", label: "Camera backfill" },
 ] as const;
 
 export default function AdminPage() {
@@ -1251,6 +1243,7 @@ export default function AdminPage() {
         {tab === "manage" && <ManageTab theme={theme} />}
         {tab === "places" && <PlacesTab theme={theme} />}
         {tab === "home" && <HomeViewTab theme={theme} />}
+        {tab === "backfill" && <BackfillTab theme={theme} />}
       </div>
     </main>
   );
