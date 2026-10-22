@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 import MapWrapper from '../components/MapWrapper';
 import { getPublishedPhotos } from '@/lib/photos';
 import { getPlaces } from '@/lib/places';
+import { getHomeView } from '@/lib/homeViewStore';
 import { RSS_ALTERNATE } from '@/lib/site';
 
 export const metadata: Metadata = {
@@ -13,11 +14,11 @@ export const metadata: Metadata = {
 };
 
 export default async function MapPage() {
-  const [photos, places] = await Promise.all([getPublishedPhotos(), getPlaces()]);
+  const [photos, places, home] = await Promise.all([getPublishedPhotos(), getPlaces(), getHomeView()]);
   return (
     <>
       <h1 className="sr-only">Galleries</h1>
-      <MapWrapper photos={photos} places={places} />
+      <MapWrapper photos={photos} places={places} home={home} />
     </>
   );
 }

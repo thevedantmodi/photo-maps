@@ -28,6 +28,7 @@ import SearchBox from "./SearchBox";
 import Mark from "./Mark";
 import { PlaceSuggestion } from "@/lib/mapboxGeocode";
 import type { CustomPlace } from "@/lib/customPlaces";
+import { HOME_ZOOM_MIN, type HomeView } from "@/lib/homeView";
 import { Photo } from "../types";
 
 /**
@@ -43,6 +44,8 @@ type ClusterProps = {
 interface MapProps {
   photos: Photo[];
   places: CustomPlace[];
+  /** Where a first visit opens, as set in the admin. */
+  home: HomeView;
 }
 
 // Screen-pixel shift for flyTo/fitBounds; positive y lands the target below center.
@@ -81,16 +84,14 @@ interface Camera {
   zoom: number;
 }
 
-// Home: New York, close enough to see the city.
-const HOME_CAMERA: Camera = { longitude: -73.98, latitude: 40.73, zoom: 9.5 };
 // Low enough that the whole globe fits a phone's width.
-const MIN_ZOOM = 0.5;
+const MIN_ZOOM = HOME_ZOOM_MIN;
 
 /**
  * Where the map opens: a place linked from the Directory (?lon=&lat=&z=), else where
- * this tab last left it, else home in New York.
+ * this tab last left it, else home (set in the admin).
  */
-function initialCamera(params: URLSearchParams): Camera {
+function initialCamera(params: URLSearchParams, home: HomeView): Camera {
   const lon = Number(params.get("lon"));
   const lat = Number(params.get("lat"));
   const z = Number(params.get("z"));
@@ -117,7 +118,7 @@ function initialCamera(params: URLSearchParams): Camera {
   } catch {
     // Unreadable or unavailable; start from home.
   }
-  return HOME_CAMERA;
+  return { longitude: home.longitude, latitude: home.latitude, zoom: home.zoom };
 }
 
 interface OpenStack {
@@ -128,7 +129,7 @@ interface OpenStack {
 }
 
 
-const MapComponent = ({ photos, places }: MapProps) => {
+const MapComponent = ({ photos, places, home }: MapProps) => {
   const router = useRouter();
   // The address being navigated to, not window.location: on a client-side visit (a row in
   // the Directory) the map renders before the browser's address changes, so
@@ -145,7 +146,7 @@ const MapComponent = ({ photos, places }: MapProps) => {
   // Cluster ids are only stable within one zoom level, so anything that
   // changes zoom or the point set closes the stack.
   const [openStack, setOpenStack] = useState<OpenStack | null>(null);
-  const [viewState, setViewState] = useState(() => initialCamera(openedWith));
+  const [viewState, setViewState] = useState(() => initialCamera(openedWith, home));
   const [bounds, setBounds] = useState<[number, number, number, number]>([
     -180, -85, 180, 85,
   ]);

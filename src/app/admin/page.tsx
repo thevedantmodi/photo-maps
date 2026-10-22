@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { Fragment, useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useTheme } from "../hooks/useTheme";
 import SiteHeader from "../components/SiteHeader";
@@ -7,6 +8,8 @@ import { colors, type Theme } from "./theme";
 import { Hint, Kbd, useModKey } from "./Kbd";
 import LocationSection from "./LocationSection";
 import PlacesTab from "./PlacesTab";
+// Mapbox needs the browser; the tab only mounts once picked.
+const HomeViewTab = dynamic(() => import("./HomeViewTab"), { ssr: false });
 import { photoAlt } from "@/lib/alt";
 import { GROUPS, SORTS, groupPhotos, sortPhotos, type Dir, type GroupKey, type SortKey } from "@/lib/adminView";
 import { getLocationGroups } from "@/lib/locationGroups";
@@ -1123,6 +1126,7 @@ const TABS = [
   { id: "upload", label: "Upload" },
   { id: "manage", label: "Manage" },
   { id: "places", label: "Places" },
+  { id: "home", label: "Home view" },
 ] as const;
 
 export default function AdminPage() {
@@ -1152,6 +1156,7 @@ export default function AdminPage() {
         {tab === "upload" && <UploadTab theme={theme} />}
         {tab === "manage" && <ManageTab theme={theme} />}
         {tab === "places" && <PlacesTab theme={theme} />}
+        {tab === "home" && <HomeViewTab theme={theme} />}
       </div>
     </main>
   );
