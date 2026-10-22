@@ -532,7 +532,7 @@ button {
     display: flex;
     flex-direction: column;
     gap: 14px;
-    padding: 16px 0 20px;
+    padding: 16px 16px 20px;
     background: var(--bg);
     border-bottom: 1px solid var(--ink);
     font-size: 18px;
