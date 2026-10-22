@@ -13,6 +13,7 @@ import { closeTarget, forget, openOrigin, rememberStep, returnFocus, takeStep, t
 import type { PhotoStep } from "@/lib/photoSequence";
 import { yearQuery } from "@/lib/yearParam";
 import { canVibrate, haptic, tapOnRelease } from "@/lib/haptics";
+import { cameraLine, exposureLine, type CameraDetails } from "@/lib/camera";
 import { reverseGeocode } from "@/lib/mapboxGeocode";
 import { shareVersion } from "@/lib/shareVersion";
 import { photoAlt, photoTitle } from "@/lib/alt";
@@ -181,7 +182,7 @@ interface Words {
 
 /** The words beside a photo: its title, the year above it, and the rows of facts. */
 function wordsOf(
-  p: { title: string; date: string | null; lat: number | null; lon: number | null },
+  p: { title: string; date: string | null; lat: number | null; lon: number | null } & Partial<CameraDetails>,
   place: string | null,
 ): Words {
   const year = p.date ? new Date(p.date).getFullYear() : null;
@@ -195,6 +196,11 @@ function wordsOf(
   }
   if (date) facts.push({ label: "Date", value: date });
   if (p.lat != null && p.lon != null) facts.push({ label: "Coordinates", value: formatCoords(p.lat, p.lon) });
+  // What it was taken with, and how; each row left out when the file didn't say.
+  const camera = cameraLine(p);
+  if (camera) facts.push({ label: "Camera", value: camera });
+  const exposure = exposureLine(p);
+  if (exposure) facts.push({ label: "Exposure", value: exposure });
   return { title: p.title, kicker: year !== null ? `(${year})` : "", facts };
 }
 
@@ -1198,7 +1204,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
   );
 
   // This photo's words, or the next one's once a step has committed.
-  const shown = showing ?? wordsOf({ title, date: photo.date, lat: photo.lat, lon: photo.lon }, place);
+  const shown = showing ?? wordsOf({ ...photo, title }, place);
   const shownKey = JSON.stringify(shown);
   useEffect(() => {
     wordsRef.current = JSON.parse(shownKey) as Words;

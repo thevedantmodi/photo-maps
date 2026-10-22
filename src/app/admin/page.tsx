@@ -11,6 +11,7 @@ import PlacesTab from "./PlacesTab";
 // Mapbox needs the browser; the tab only mounts once picked.
 const HomeViewTab = dynamic(() => import("./HomeViewTab"), { ssr: false });
 import { photoAlt } from "@/lib/alt";
+import { exposureLine, formatShutter, parseShutter } from "@/lib/camera";
 import { GROUPS, SORTS, groupPhotos, sortPhotos, type Dir, type GroupKey, type SortKey } from "@/lib/adminView";
 import { getLocationGroups } from "@/lib/locationGroups";
 import { reverseGeocode } from "@/lib/mapboxGeocode";
@@ -47,6 +48,12 @@ interface AdminPhoto {
   created_at: string | null;
   lat: number | null;
   lon: number | null;
+  camera: string | null;
+  lens: string | null;
+  focal_length_mm: number | null;
+  f_number: number | null;
+  exposure_s: number | null;
+  iso: number | null;
 }
 
 // The Manage grid's sort and grouping, remembered in this browser.
@@ -510,6 +517,13 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
   const [rotating, setRotating] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
   const [thumbUrl, setThumbUrl] = useState(photo.thumb_url);
+  // Camera details, as typed (numbers are checked on save).
+  const [cameraName, setCameraName] = useState(photo.camera ?? "");
+  const [lens, setLens] = useState(photo.lens ?? "");
+  const [focal, setFocal] = useState(photo.focal_length_mm != null ? String(photo.focal_length_mm) : "");
+  const [fNumber, setFNumber] = useState(photo.f_number != null ? String(photo.f_number) : "");
+  const [shutter, setShutter] = useState(photo.exposure_s != null ? formatShutter(photo.exposure_s).replace(/ s$/, "") : "");
+  const [iso, setIso] = useState(photo.iso != null ? String(photo.iso) : "");
 
   const inputStyle: React.CSSProperties = {
     width: "100%",
@@ -538,7 +552,22 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
     (lon.trim() !== "" && lonNum === null) ||
     (latNum === null) !== (lonNum === null);
 
+  const positive = (t: string) => {
+    if (!t.trim()) return null;
+    const n = Number(t.trim().replace(/^f\//i, "").replace(/\s*mm$/i, ""));
+    return Number.isFinite(n) && n > 0 ? n : undefined;
+  };
+  const focalNum = positive(focal);
+  const fNum = positive(fNumber);
+  const isoNum = positive(iso);
+  const shutterNum = parseShutter(shutter);
+  const cameraInvalid = [focalNum, fNum, isoNum, shutterNum].includes(undefined);
+
   const handleSave = useCallback(async () => {
+    if (cameraInvalid) {
+      setStatusMsg("Error: focal length, aperture, shutter and ISO must be numbers (shutter like 1/250), or empty.");
+      return;
+    }
     if (coordsInvalid) {
       setStatusMsg(
         "Error: enter a valid latitude and longitude, or clear both.",
@@ -554,6 +583,12 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
         lat: latNum,
         lon: lonNum,
         date: date || null,
+        camera: cameraName.trim() || null,
+        lens: lens.trim() || null,
+        focal_length_mm: focalNum ?? null,
+        f_number: fNum ?? null,
+        exposure_s: shutterNum ?? null,
+        iso: isoNum != null ? Math.round(isoNum) : null,
       };
       const res = await fetch(`/api/admin/photos/${photo.id}`, {
         method: "PATCH",
@@ -571,6 +606,12 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
         lat: latNum,
         lon: lonNum,
         date: date || null,
+        camera: (body.camera as string | null) ?? null,
+        lens: (body.lens as string | null) ?? null,
+        focal_length_mm: (body.focal_length_mm as number | null) ?? null,
+        f_number: (body.f_number as number | null) ?? null,
+        exposure_s: (body.exposure_s as number | null) ?? null,
+        iso: (body.iso as number | null) ?? null,
       });
       onClose();
     } catch (err: unknown) {
@@ -578,7 +619,7 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
     } finally {
       setSaving(false);
     }
-  }, [altText, caption, coordsInvalid, date, latNum, lonNum, onClose, onSaved, photo]);
+  }, [altText, caption, coordsInvalid, date, latNum, lonNum, onClose, onSaved, photo, cameraInvalid, cameraName, lens, focalNum, fNum, shutterNum, isoNum]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -758,6 +799,59 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
           type="datetime-local"
           style={{ ...inputStyle, marginBottom: 20 }}
         />
+
+        {/* From the file at upload; shown on the photo page as Camera and Exposure rows. */}
+        <label style={labelStyle} htmlFor="edit-camera">
+          Camera
+        </label>
+        <input
+          id="edit-camera"
+          value={cameraName}
+          onChange={(e) => setCameraName(e.target.value)}
+          placeholder="e.g. Sony α7C II"
+          style={{ ...inputStyle, marginBottom: 12 }}
+        />
+        <label style={labelStyle} htmlFor="edit-lens">
+          Lens
+        </label>
+        <input
+          id="edit-lens"
+          value={lens}
+          onChange={(e) => setLens(e.target.value)}
+          placeholder="e.g. FE 40mm F2.5 G"
+          style={{ ...inputStyle, marginBottom: 12 }}
+        />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 8, marginBottom: 4 }}>
+          {[
+            { id: "edit-focal", label: "Focal (mm)", value: focal, set: setFocal, bad: focalNum === undefined, hint: "40" },
+            { id: "edit-fnumber", label: "Aperture (f/)", value: fNumber, set: setFNumber, bad: fNum === undefined, hint: "2.8" },
+            { id: "edit-shutter", label: "Shutter (s)", value: shutter, set: setShutter, bad: shutterNum === undefined, hint: "1/250" },
+            { id: "edit-iso", label: "ISO", value: iso, set: setIso, bad: isoNum === undefined, hint: "100" },
+          ].map((f) => (
+            <div key={f.id}>
+              <label style={{ ...labelStyle, fontSize: 12 }} htmlFor={f.id}>
+                {f.label}
+              </label>
+              <input
+                id={f.id}
+                value={f.value}
+                onChange={(e) => f.set(e.target.value)}
+                placeholder={f.hint}
+                inputMode="decimal"
+                aria-invalid={f.bad || undefined}
+                style={{ ...inputStyle, borderColor: f.bad ? c.danger : c.inputBorder }}
+              />
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize: 11, color: c.muted, marginBottom: 20 }}>
+          {exposureLine({
+            focal_length_mm: focalNum ?? null,
+            f_number: fNum ?? null,
+            exposure_s: shutterNum ?? null,
+            iso: isoNum ?? null,
+          }) ?? "No exposure details."}
+        </div>
 
         {statusMsg && (
           <p style={{ fontSize: 13, color: statusMsg.startsWith("Error") ? c.danger : c.muted, marginBottom: 12 }}>

@@ -16,6 +16,12 @@ export async function GET() {
     large_name: row.large_name,
     date: row.date?.toISOString() ?? null,
     created_at: row.created_at?.toISOString() ?? null,
+    camera: row.camera,
+    lens: row.lens,
+    focal_length_mm: row.focal_length_mm,
+    f_number: row.f_number,
+    exposure_s: row.exposure_s,
+    iso: row.iso,
     lat: row.lat ?? null,
     lon: row.lon ?? null,
   })));

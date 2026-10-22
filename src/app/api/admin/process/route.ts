@@ -6,6 +6,7 @@ import { photos } from '@/db/schema';
 import sharp from 'sharp';
 import exifr from 'exifr';
 import { EXIF_PARSE_OPTIONS, coercePair, extractExifDate, extractGps } from '@/lib/gps';
+import { extractCamera } from '@/lib/camera';
 import { getBaseUrl } from '@/lib/baseUrl';
 import { generateAndStoreShareCard } from '@/lib/shareCardStore';
 import { toSharpInput } from '@/lib/heic';
@@ -58,6 +59,8 @@ export async function POST(req: NextRequest) {
 
     const gps = pinnedGps ?? (gps_cleared ? null : extractGps(exifData));
     const dateTaken = extractExifDate(exifData)?.date ?? manualDate;
+    // What it was taken with: the original is deleted below, so this is the one chance.
+    const camera = extractCamera(exifData);
 
     console.log(`[process] key=${key} gps=${JSON.stringify(gps)} date=${dateTaken} bufLen=${buffer.length}`);
 
@@ -77,6 +80,7 @@ export async function POST(req: NextRequest) {
       lat: gps?.latitude ?? null,
       lon: gps?.longitude ?? null,
       date: dateTaken,
+      ...camera,
       status: 'published',
     }).onConflictDoUpdate({
       target: photos.friendly_name,
@@ -88,6 +92,7 @@ export async function POST(req: NextRequest) {
         lat: gps?.latitude ?? null,
         lon: gps?.longitude ?? null,
         date: dateTaken,
+        ...camera,
         status: 'published',
       },
     });

@@ -1,4 +1,5 @@
 import { photoTitle } from '@/lib/alt';
+import type { CameraDetails } from '@/lib/camera';
 import { yearOf } from '@/lib/yearParam';
 import type { Photo } from '@/app/types';
 
@@ -6,7 +7,7 @@ import type { Photo } from '@/app/types';
  * Enough of a neighbouring photo to link to it, load it ahead of time, and show its words
  * the moment a swipe commits to it, before its page has arrived.
  */
-export interface PhotoStep {
+export interface PhotoStep extends CameraDetails {
   slug: string;
   title: string;
   largeUrl: string;
@@ -49,6 +50,12 @@ export function photoNeighbours(
           date: p.date,
           lat: p.lat,
           lon: p.lon,
+          camera: p.camera,
+          lens: p.lens,
+          focal_length_mm: p.focal_length_mm,
+          f_number: p.f_number,
+          exposure_s: p.exposure_s,
+          iso: p.iso,
         }
       : null;
   // The year rides along in the links only while the walk is actually inside it.

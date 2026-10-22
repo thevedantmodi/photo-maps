@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { photos } from '@/db/schema';
 import { deleteObject, getPublicUrl } from '@/lib/r2';
 import { isValidLat, isValidLon } from '@/lib/gps';
+import { parseCameraUpdate } from '@/lib/camera';
 import { getBaseUrl } from '@/lib/baseUrl';
 import {
   CARD_THEMES,
@@ -47,6 +48,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   if ('date' in body) update.date = body.date ? new Date(body.date) : null;
+
+  const camera = parseCameraUpdate(body);
+  if (typeof camera === 'string') return NextResponse.json({ error: camera }, { status: 400 });
+  Object.assign(update, camera);
 
   if (Object.keys(update).length === 0) {
     return NextResponse.json({ error: 'No fields to update' }, { status: 400 });

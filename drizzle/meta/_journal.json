@@ -29,6 +29,13 @@
       "when": 1792638790690,
       "tag": "0003_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792640296349,
+      "tag": "0004_camera_details",
+      "breakpoints": true
     }
   ]
 }
