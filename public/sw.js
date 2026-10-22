@@ -1,6 +1,7 @@
-// Minimal service worker: makes the site installable, caches static assets, and shows an
-// offline page when a navigation fails. Photos and API responses are never cached here.
-const VERSION = 'v1';
+// Minimal service worker: makes the site installable and shows an offline page when a
+// navigation fails. It caches nothing else: the browser's HTTP cache already handles the
+// hashed build assets, and a second cache layer risked serving stale chunks to the map.
+const VERSION = 'v2';
 const STATIC = `static-${VERSION}`;
 const OFFLINE_URL = '/offline.html';
 
@@ -8,7 +9,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(STATIC)
-      .then((cache) => cache.addAll([OFFLINE_URL, '/icons/icon-192.png']))
+      .then((cache) => cache.addAll([OFFLINE_URL]))
       .then(() => self.skipWaiting()),
   );
 });
@@ -27,27 +28,7 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  if (request.mode !== 'navigate') return;
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/admin')) return;
-
-  if (request.mode === 'navigate') {
-    event.respondWith(fetch(request).catch(() => caches.match(OFFLINE_URL)));
-    return;
-  }
-
-  // Hashed build assets never change, so serve them from the cache once seen.
-  if (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/icons/')) {
-    event.respondWith(
-      caches.match(request).then(
-        (hit) =>
-          hit ||
-          fetch(request).then((res) => {
-            if (res.ok) {
-              const copy = res.clone();
-              caches.open(STATIC).then((c) => c.put(request, copy));
-            }
-            return res;
-          }),
-      ),
-    );
-  }
+  event.respondWith(fetch(request).catch(() => caches.match(OFFLINE_URL)));
 });
