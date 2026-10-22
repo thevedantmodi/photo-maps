@@ -8,7 +8,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: 'Photo Maps',
     description: SITE_DESCRIPTION,
     id: '/',
-    start_url: '/map',
+    start_url: '/',
     scope: '/',
     display: 'standalone',
     background_color: '#ededeb',
