@@ -84,39 +84,36 @@ const CAMERA_KEY = "photo-maps:camera";
 const INTRO_HOLD_MS = 2200;
 
 /**
- * The ?intro entrance: the globe comes in spinning fast from the west, slightly tilted
- * south and zoomed out, then settles into a slow drift past home. Spin speed decays from
- * FAST to SLOW degrees a second (time constant TAU seconds) while the zoom and latitude
- * ease in; the start is set back by the distance the decay covers, so it glides through
- * home rather than overshooting it. Any touch, click or scroll stops it.
+ * The ?intro entrance: one full turn of the globe, zoomed out and tilted south, that
+ * picks up speed, whips round and slows onto home (ease-in-out, so it peaks at about
+ * 150° a second). Any touch, click or scroll stops it.
  */
-const INTRO_SPIN = { FAST: 40, SLOW: 1.5, TAU: 1.1, EASE_MS: 3400, DROP_LAT: 12, DROP_ZOOM: 0.8 };
+const INTRO_SPIN = { TURN_MS: 3600, DROP_LAT: 12, DROP_ZOOM: 0.8 };
 
 function introStart(target: Camera): Camera {
-  const { FAST, SLOW, TAU, DROP_LAT, DROP_ZOOM } = INTRO_SPIN;
   return {
-    longitude: target.longitude - (FAST - SLOW) * TAU,
-    latitude: target.latitude - DROP_LAT,
-    zoom: target.zoom - DROP_ZOOM,
+    longitude: target.longitude,
+    latitude: target.latitude - INTRO_SPIN.DROP_LAT,
+    zoom: target.zoom - INTRO_SPIN.DROP_ZOOM,
   };
 }
 
 /** Runs the intro spin on the map; returns a function that stops it. */
 function spinIntro(map: ReturnType<MapRef["getMap"]>, target: Camera): () => void {
-  const { FAST, SLOW, TAU, EASE_MS } = INTRO_SPIN;
   const start = introStart(target);
   let raf = 0;
   let t0: number | null = null;
   const frame = (now: number) => {
     t0 ??= now;
-    const t = (now - t0) / 1000;
-    const k = Math.min(1, (now - t0) / EASE_MS);
-    const e = 1 - Math.pow(1 - k, 3);
+    const k = Math.min(1, (now - t0) / INTRO_SPIN.TURN_MS);
+    const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+    // Longitude wraps, so a full turn ends back on home.
     map.jumpTo({
-      center: [start.longitude + SLOW * t + (FAST - SLOW) * TAU * (1 - Math.exp(-t / TAU)), start.latitude + (target.latitude - start.latitude) * e],
+      center: [start.longitude - 360 + 360 * e, start.latitude + (target.latitude - start.latitude) * e],
       zoom: start.zoom + (target.zoom - start.zoom) * e,
     });
-    raf = requestAnimationFrame(frame);
+    if (k < 1) raf = requestAnimationFrame(frame);
+    else stop();
   };
   const stop = () => {
     cancelAnimationFrame(raf);
