@@ -1,9 +1,11 @@
+import { after } from 'next/server';
+
 import { getBaseUrl } from '@/lib/baseUrl';
 import { getPhotoBySlug } from '@/lib/photos';
 import { getPublicUrl } from '@/lib/r2';
 import { renderShareCardPng } from '@/lib/shareCard';
-import { shareCardKey } from '@/lib/shareCardStore';
-import { shareVersion } from '@/lib/shareVersion';
+import { generateAndStoreShareCard, shareCardKey } from '@/lib/shareCardStore';
+import { shareVersion, type CardTheme } from '@/lib/shareVersion';
 
 // sharp and font reads both need Node (used by the live-render fallback).
 export const runtime = 'nodejs';
@@ -11,11 +13,18 @@ export const maxDuration = 30;
 
 const CACHE_CONTROL = 'public, s-maxage=86400, stale-while-revalidate=604800';
 
+// Slugs whose cards this instance is already storing, so a burst of requests for a
+// stale card stores it once.
+const storing = new Set<string>();
+
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
+  // ?theme=light|dark — the Share button asks for the one matching the screen. Anything
+  // else (old links, link-preview crawlers) gets the dark card.
+  const theme: CardTheme = new URL(req.url).searchParams.get('theme') === 'light' ? 'light' : 'dark';
   const base = await getBaseUrl(req.headers);
   const photo = await getPhotoBySlug(slug);
   if (!photo) return new Response('Not found', { status: 404 });
@@ -26,7 +35,7 @@ export async function GET(
   // render again. Proxied (not redirected) so link-preview crawlers that don't follow
   // redirects on og:image still get bytes directly at this URL.
   if (photo.share_card_version === version) {
-    const stored = await fetch(getPublicUrl(shareCardKey(slug)));
+    const stored = await fetch(getPublicUrl(shareCardKey(slug, theme)));
     if (stored.ok) {
       return new Response(stored.body, {
         headers: { 'Content-Type': 'image/png', 'Cache-Control': CACHE_CONTROL },
@@ -35,8 +44,17 @@ export async function GET(
     // Version matched but the object is missing (deleted out-of-band, etc.) — fall through.
   }
 
+  // The stored cards are missing or stale (a new card design, or an edit whose
+  // regeneration failed). Store fresh ones once this response is sent, so the next
+  // request is a quick proxy instead of another live render: a share that waits on a
+  // render outlasts the tap that asked for it, and the phone wants a second tap.
+  if (!storing.has(slug)) {
+    storing.add(slug);
+    after(() => generateAndStoreShareCard(photo, base).finally(() => storing.delete(slug)));
+  }
+
   try {
-    const png = await renderShareCardPng(photo, base);
+    const png = await renderShareCardPng(photo, base, theme);
     return new Response(new Uint8Array(png), {
       headers: { 'Content-Type': 'image/png', 'Cache-Control': CACHE_CONTROL },
     });

@@ -1,26 +1,39 @@
 'use client';
 
 interface TerrainToggleProps {
-    enabled: boolean;
-    onToggle: () => void;
-    hidden?: boolean;
+  enabled: boolean;
+  onChange: (enabled: boolean) => void;
+  /** A short note under the switch, e.g. that the relief needs a closer zoom. */
+  note?: string | null;
+  className?: string;
 }
 
-export default function TerrainToggle({ enabled, onToggle, hidden }: TerrainToggleProps) {
-    return (
-        <button
-            className={`terrain-toggle${enabled ? ' terrain-toggle-on' : ''}${hidden ? ' icon-btn-hidden' : ''}`}
-            onClick={onToggle}
-            aria-label="3D terrain"
-            aria-pressed={enabled}
-            aria-hidden={hidden}
-            tabIndex={hidden ? -1 : 0}
-            title={enabled ? 'Turn off 3D terrain' : 'Turn on 3D terrain'}
-        >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
-                <path d="M3 20l6.5-11 4 6.5L16 12l5 8z" />
-                <path d="M7.6 12.2l1.9 1.3 1.6-1.2" />
-            </svg>
-        </button>
-    );
+/** 2D | 3D, set like Light | Dark: the current one is bold. The map tilts in Map.tsx. */
+export default function TerrainToggle({ enabled, onChange, note, className }: TerrainToggleProps) {
+  return (
+    <div
+      role="group"
+      aria-label="Terrain"
+      className={['theme-switch', 'terrain-switch', className].filter(Boolean).join(' ')}
+    >
+      <button type="button" className="text-btn" aria-pressed={!enabled} onClick={() => onChange(false)}>
+        2D
+      </button>
+      <span className="sep" aria-hidden="true">
+        |
+      </span>
+      <button
+        type="button"
+        className="text-btn"
+        aria-pressed={enabled}
+        title="3D terrain: relief, and a tilt once you zoom in"
+        onClick={() => onChange(true)}
+      >
+        3D
+      </button>
+      <span className="terrain-note" role="status" data-in={Boolean(note)}>
+        {note}
+      </span>
+    </div>
+  );
 }

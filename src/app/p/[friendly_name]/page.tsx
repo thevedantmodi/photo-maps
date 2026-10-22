@@ -1,32 +1,30 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
+import PhotoView from '@/app/components/PhotoView';
 import type { Photo } from '@/app/types';
-import { photoAlt } from '@/lib/alt';
+import { photoAlt, photoTitle } from '@/lib/alt';
 import { getBaseUrl } from '@/lib/baseUrl';
-import { getPhotoBySlug } from '@/lib/photos';
+import { getPhotoBySlug, getPublishedPhotos } from '@/lib/photos';
+import { photoNeighbours } from '@/lib/photoSequence';
+import { parseYear } from '@/lib/yearParam';
+import { getPlaces } from '@/lib/places';
 import { CARD } from '@/lib/shareTokens';
 import { AUTHOR, RSS_ALTERNATE, SITE_NAME } from '@/lib/site';
 import { shareCardPath, shareVersion } from '@/lib/shareVersion';
-import styles from './photo.module.css';
 
 export const dynamic = 'force-dynamic';
 
-type Props = { params: Promise<{ friendly_name: string }> };
+type Props = {
+  params: Promise<{ friendly_name: string }>;
+  searchParams: Promise<{ year?: string | string[] }>;
+};
 
 function formatDate(iso: string | null): string | null {
   if (!iso) return null;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-}
-
-// original_name is the uploaded filename ("IMG_4021.HEIC"), so an uncaptioned photo is
-// titled by when it was taken instead.
-function photoTitle(photo: Photo): string {
-  if (photo.caption) return photo.caption;
-  const date = formatDate(photo.date);
-  return date ? `Photo from ${date}` : 'Untitled photo';
 }
 
 function photoDescription(photo: Photo): string {
@@ -45,7 +43,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = photoTitle(photo);
   const description = photoDescription(photo);
   const path = `/p/${encodeURIComponent(friendly_name)}`;
-  const card = shareCardPath(friendly_name, shareVersion(photo));
+  // Link previews can't know the viewer's theme; the dark card reads best in most apps.
+  const card = shareCardPath(friendly_name, shareVersion(photo), 'dark');
 
   return {
     title,
@@ -107,28 +106,26 @@ function jsonLd(photo: Photo, base: string) {
   };
 }
 
-export default async function PhotoPage({ params }: Props) {
-  const { friendly_name } = await params;
-  const photo = await getPhotoBySlug(friendly_name);
+export default async function PhotoPage({ params, searchParams }: Props) {
+  const [{ friendly_name }, query] = await Promise.all([params, searchParams]);
+  const [photo, places, all] = await Promise.all([
+    getPhotoBySlug(friendly_name),
+    getPlaces(),
+    getPublishedPhotos(),
+  ]);
   if (!photo) notFound();
 
-  const date = formatDate(photo.date);
+  const year = parseYear(query.year);
+  const steps = photoNeighbours(all, friendly_name, year);
+
   const base = await getBaseUrl();
   // Escape "<" so a caption containing "</script>" can't close the tag early.
   const ld = JSON.stringify(jsonLd(photo, base)).replace(/</g, '\\u003c');
 
   return (
-    <main className={styles.page}>
+    <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ld }} />
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className={styles.photo} src={photo.large_url} alt={photoAlt(photo)} />
-      <div className={styles.caption}>
-        <h1 className={styles.title}>{photoTitle(photo)}</h1>
-        {date && <span className={styles.date}>{date}</span>}
-      </div>
-      <a className={styles.mapLink} href={`/#${encodeURIComponent(photo.friendly_name)}`}>
-        Open on the map
-      </a>
-    </main>
+      <PhotoView key={photo.id} photo={photo} places={places} mode="page" prev={steps.prev} next={steps.next} year={steps.year} />
+    </>
   );
 }

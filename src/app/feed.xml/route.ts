@@ -1,4 +1,4 @@
-import { photoAlt } from '@/lib/alt';
+import { photoAlt, photoTitle } from '@/lib/alt';
 import { getBaseUrl } from '@/lib/baseUrl';
 import { getRecentPublishedPhotos } from '@/lib/photos';
 
@@ -31,7 +31,7 @@ export async function GET(req: Request) {
   const photos = await getRecentPublishedPhotos(ITEM_LIMIT);
 
   const items = photos.map((photo) => {
-    const title = photo.caption || photo.original_name;
+    const title = photoTitle(photo);
     const link = `${base}/p/${encodeURIComponent(photo.friendly_name)}`;
     const taken = formatDate(photo.date);
     // created_at is when the photo was uploaded and published, which is what "new" means

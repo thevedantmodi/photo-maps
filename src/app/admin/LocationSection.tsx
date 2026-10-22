@@ -11,7 +11,7 @@ const MapPicker = dynamic(() => import("./MapPicker"), {
     <div
       style={{
         height: 220,
-        borderRadius: 8,
+        borderRadius: 0,
         background: "rgba(128,128,128,0.12)",
         display: "flex",
         alignItems: "center",
@@ -80,7 +80,7 @@ export default function LocationSection({
     width: "100%",
     padding: "8px 12px",
     border: `1px solid ${invalid ? c.danger : c.inputBorder}`,
-    borderRadius: 6,
+    borderRadius: 0,
     fontSize: 14,
     boxSizing: "border-box",
     background: c.input,
@@ -116,7 +116,7 @@ export default function LocationSection({
               style={{
                 fontSize: 11,
                 padding: "2px 7px",
-                borderRadius: 10,
+                borderRadius: 0,
                 background: c.chipBg,
                 color: c.chipText,
               }}

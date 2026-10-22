@@ -50,6 +50,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           caption: row.caption,
           original_name: row.original_name,
           date: row.date?.toISOString() ?? null,
+          lat: row.lat,
+          lon: row.lon,
           large_name: row.large_name,
           large_url: getPublicUrl(row.large_name),
         },

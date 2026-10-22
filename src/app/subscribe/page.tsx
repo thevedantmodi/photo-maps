@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 
+import RssIcon from '@/app/components/RssIcon';
+import SiteHeader from '@/app/components/SiteHeader';
 import SubscribeForm from '@/app/components/SubscribeForm';
 import { RSS_ALTERNATE, SITE_NAME } from '@/lib/site';
 import styles from './subscribe.module.css';
@@ -18,25 +20,29 @@ export const metadata: Metadata = {
   twitter: { card: 'summary', title: TITLE, description: DESCRIPTION },
 };
 
-// A standalone version of the map's subscribe popover, so there's a link to hand people.
+// The header's subscribe panel as a page of its own, so there's a link to hand people.
 export default function SubscribePage() {
   return (
     <main className={styles.page}>
+      <SiteHeader current="subscribe" />
       <div className={styles.card}>
-        <h1 className={styles.title}>Get new photos by email</h1>
+        <h1 className={styles.title}>New photos by email</h1>
         <p className={styles.body}>
-          A weekly email from {SITE_NAME}, only when there are new photos. Your address is stored with Resend and
-          used for nothing else. Unsubscribe from any email.
+          At most once a week, only when there are new photos. Your address is kept by my email
+          service and used for nothing else, and every email has an unsubscribe link.
         </p>
         <div className={styles.form}>
           <SubscribeForm />
         </div>
-        <a className={styles.link} href="/feed.xml">
-          Or follow the RSS feed
-        </a>
-        <Link className={styles.link} href="/">
-          See the map
-        </Link>
+        <div className={styles.links}>
+          <Link className={`${styles.link} ul`} href="/map">
+            See the map →
+          </Link>
+          <a className={`${styles.link} ul`} href="/feed.xml">
+            <RssIcon />
+            RSS feed
+          </a>
+        </div>
       </div>
     </main>
   );

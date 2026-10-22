@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { photoTitle } from '@/lib/alt';
 
 import type { Photo } from '@/app/types';
 import type { DigestPhoto } from '@/emails/DigestEmail';
@@ -31,7 +32,7 @@ export async function GET(req: Request) {
   const more = photos.length - shown.length;
 
   const toDigest = (p: Photo, imageUrl: string): DigestPhoto => ({
-    title: p.caption || p.original_name,
+    title: photoTitle(p),
     url: `${base}/p/${encodeURIComponent(p.friendly_name)}`,
     imageUrl,
     date: formatDate(p.date),

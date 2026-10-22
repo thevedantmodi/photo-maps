@@ -13,7 +13,8 @@ import { toSharpInput } from '@/lib/heic';
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
-  const { key, friendly_name, original_name, caption, lat, lon, gps_cleared, date } = await req.json();
+  const { key, friendly_name, original_name, caption, alt_text, lat, lon, gps_cleared, date } = await req.json();
+  const altText = typeof alt_text === 'string' && alt_text.trim() ? alt_text.trim() : null;
 
   if (!key || !friendly_name) {
     return NextResponse.json({ error: 'key and friendly_name required' }, { status: 400 });
@@ -72,6 +73,7 @@ export async function POST(req: NextRequest) {
       large_name: largeName,
       original_name: original_name ?? key,
       caption: caption || null,
+      alt_text: altText,
       lat: gps?.latitude ?? null,
       lon: gps?.longitude ?? null,
       date: dateTaken,
@@ -82,6 +84,7 @@ export async function POST(req: NextRequest) {
         thumb_name: thumbName,
         large_name: largeName,
         caption: caption || null,
+        alt_text: altText,
         lat: gps?.latitude ?? null,
         lon: gps?.longitude ?? null,
         date: dateTaken,
@@ -97,6 +100,8 @@ export async function POST(req: NextRequest) {
           caption: caption || null,
           original_name: original_name ?? key,
           date: dateTaken?.toISOString() ?? null,
+          lat: gps?.latitude ?? null,
+          lon: gps?.longitude ?? null,
           large_name: largeName,
           large_url: getPublicUrl(largeName),
         },

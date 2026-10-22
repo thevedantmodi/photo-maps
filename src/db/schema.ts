@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, doublePrecision, timestamp, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, doublePrecision, timestamp, index, jsonb } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 export const photos = pgTable(
@@ -44,3 +44,11 @@ export const places = pgTable('places', {
 });
 
 export type PlaceRow = typeof places.$inferSelect;
+
+// Site-wide settings edited in the admin, one row per setting (e.g. "home_view": where
+// the map opens). Values are JSON, validated by the code that reads them.
+export const settings = pgTable('settings', {
+  key: text('key').primaryKey(),
+  value: jsonb('value').notNull(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).default(sql`now()`),
+});
