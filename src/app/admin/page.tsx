@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { Fragment, useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useTheme } from "../hooks/useTheme";
 import SiteHeader from "../components/SiteHeader";
 import { colors, type Theme } from "./theme";
@@ -8,6 +8,11 @@ import { Hint, Kbd, useModKey } from "./Kbd";
 import LocationSection from "./LocationSection";
 import PlacesTab from "./PlacesTab";
 import { photoAlt } from "@/lib/alt";
+import { GROUPS, SORTS, groupPhotos, sortPhotos, type Dir, type GroupKey, type SortKey } from "@/lib/adminView";
+import { getLocationGroups } from "@/lib/locationGroups";
+import { reverseGeocode } from "@/lib/mapboxGeocode";
+import type { CustomPlace } from "@/lib/customPlaces";
+import type { Photo } from "../types";
 import {
   EXIF_PARSE_OPTIONS,
   extractExifDate,
@@ -36,9 +41,37 @@ interface AdminPhoto {
   status: string;
   thumb_url: string;
   date: string | null;
+  created_at: string | null;
   lat: number | null;
   lon: number | null;
 }
+
+// The Manage grid's sort and grouping, remembered in this browser.
+const VIEW_KEY = "photo-maps:admin-view";
+interface ManageView {
+  sort: SortKey;
+  dir: Dir;
+  group: GroupKey;
+}
+const DEFAULT_VIEW: ManageView = { sort: "taken", dir: "desc", group: "none" };
+function loadView(): ManageView {
+  try {
+    const v = JSON.parse(localStorage.getItem(VIEW_KEY) ?? "null");
+    if (v && v.sort in SORTS && v.group in GROUPS && (v.dir === "asc" || v.dir === "desc")) return v;
+  } catch {
+    // Unreadable or blocked storage: the default view.
+  }
+  return DEFAULT_VIEW;
+}
+// How each sort reads either way, for the button that reverses it.
+const DIR_LABEL: Record<SortKey, [asc: string, desc: string]> = {
+  taken: ["Oldest first", "Newest first"],
+  uploaded: ["Oldest first", "Newest first"],
+  name: ["A–Z", "Z–A"],
+  caption: ["A–Z", "Z–A"],
+  place: ["A–Z", "Z–A"],
+  alt: ["A–Z", "Z–A"],
+};
 
 function UploadTab({ theme }: { theme: Theme }) {
   const c = colors(theme);
@@ -789,6 +822,66 @@ function ManageTab({ theme }: { theme: Theme }) {
   const anyUndated = photos.some((p) => p.date == null);
   const listed = onlyUndated && anyUndated ? photos.filter((p) => p.date == null) : photos;
 
+  const [view, setView] = useState<ManageView>(DEFAULT_VIEW);
+  useEffect(() => setView(loadView()), []);
+  const changeView = (next: Partial<ManageView>) => {
+    setView((v) => {
+      const merged = { ...v, ...next };
+      try {
+        localStorage.setItem(VIEW_KEY, JSON.stringify(merged));
+      } catch {
+        // Not remembered; it still applies now.
+      }
+      return merged;
+    });
+  };
+
+  // Place names, by the same groups the map and Directory use, looked up only once a sort
+  // or grouping by place needs them (custom places first, then Mapbox, cached).
+  const usesPlace = view.sort === "place" || view.group === "place";
+  const placeGroups = useMemo(() => {
+    const byPhoto = new Map<string, string>();
+    const groups = getLocationGroups(photos as unknown as Photo[]);
+    for (const g of groups) for (const id of g.photoIds) byPhoto.set(id, g.id);
+    return { byPhoto, groups };
+  }, [photos]);
+  const [placeNames, setPlaceNames] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+    if (!usesPlace || !token) return;
+    let cancelled = false;
+    (async () => {
+      const places: CustomPlace[] = await fetch("/api/admin/places")
+        .then((r) => (r.ok ? r.json() : []))
+        .catch(() => []);
+      let next = 0;
+      const worker = async () => {
+        while (!cancelled && next < placeGroups.groups.length) {
+          const g = placeGroups.groups[next++];
+          const name = await reverseGeocode(g.longitude, g.latitude, token, places);
+          if (cancelled) return;
+          setPlaceNames((prev) => ({ ...prev, [g.id]: name }));
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(3, placeGroups.groups.length) }, worker));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [usesPlace, placeGroups]);
+  const placeOf = useCallback(
+    (p: { id: string }) => {
+      const g = placeGroups.byPhoto.get(p.id);
+      return g ? (placeNames[g] ?? null) : null;
+    },
+    [placeGroups, placeNames],
+  );
+
+  const grouped = useMemo(
+    () => groupPhotos(sortPhotos(listed, view.sort, view.dir, placeOf), view.group, view.sort, view.dir, placeOf),
+    [listed, view, placeOf],
+  );
+
   // loading starts true, so there is nothing to set before the fetch resolves.
   useEffect(() => {
     let cancelled = false;
@@ -849,125 +942,179 @@ function ManageTab({ theme }: { theme: Theme }) {
           </button>
         </div>
       )}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-          gap: 12,
-        }}
-      >
-        {listed.map((photo) => (
+      <div className="admin-view">
+        <label className="admin-view-field">
+          <span className="label">Sort</span>
+          <select value={view.sort} onChange={(e) => changeView({ sort: e.target.value as SortKey })}>
+            {(Object.keys(SORTS) as SortKey[]).map((k) => (
+              <option key={k} value={k}>
+                {SORTS[k]}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            className="text-btn"
+            onClick={() => changeView({ dir: view.dir === "asc" ? "desc" : "asc" })}
+            aria-label={`${DIR_LABEL[view.sort][view.dir === "asc" ? 0 : 1]}. Reverse the order`}
+          >
+            {DIR_LABEL[view.sort][view.dir === "asc" ? 0 : 1]} ↕
+          </button>
+        </label>
+        <div className="admin-view-field">
+          <span className="label" id="group-by">
+            Group
+          </span>
+          <div role="group" aria-labelledby="group-by" className="theme-switch filter-switch">
+            {(Object.keys(GROUPS) as GroupKey[]).map((k, i) => (
+              <Fragment key={k}>
+                {i > 0 && (
+                  <span className="sep" aria-hidden="true">
+                    |
+                  </span>
+                )}
+                <button
+                  type="button"
+                  className="text-btn"
+                  aria-pressed={view.group === k}
+                  onClick={() => changeView({ group: k })}
+                >
+                  {GROUPS[k]}
+                </button>
+              </Fragment>
+            ))}
+          </div>
+        </div>
+      </div>
+      {grouped.map((g) => (
+        <section key={g.key} className="admin-group" aria-label={g.label || "Photos"}>
+          {view.group !== "none" && (
+            <h2 className="admin-group-head">
+              <span>{g.label}</span>
+              <span className="admin-group-count">{g.photos.length}</span>
+            </h2>
+          )}
           <div
-            key={photo.id}
             style={{
-              position: "relative",
-              borderRadius: 0,
-              overflow: "hidden",
-              background: c.cardBg,
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+              gap: 12,
             }}
           >
-            <img
-              src={photo.thumb_url}
-              alt={photoAlt(photo)}
-              style={{
-                width: "100%",
-                aspectRatio: "1",
-                objectFit: "cover",
-                display: "block",
-              }}
-            />
-            <div style={{ padding: "8px 10px" }}>
+            {g.photos.map((photo) => (
               <div
+                key={photo.id}
                 style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  lineHeight: 1.4,
-                  marginBottom: 2,
-                  color: c.text,
+                  position: "relative",
+                  borderRadius: 0,
+                  overflow: "hidden",
+                  background: c.cardBg,
                 }}
               >
-                {photo.friendly_name}
-              </div>
-              {photo.caption && (
-                <div
-                  style={{ fontSize: 11, color: c.captionText, lineHeight: 1.4 }}
+                <img
+                  src={photo.thumb_url}
+                  alt={photoAlt(photo)}
+                  style={{
+                    width: "100%",
+                    aspectRatio: "1",
+                    objectFit: "cover",
+                    display: "block",
+                  }}
+                />
+                <div style={{ padding: "8px 10px" }}>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      lineHeight: 1.4,
+                      marginBottom: 2,
+                      color: c.text,
+                    }}
+                  >
+                    {photo.friendly_name}
+                  </div>
+                  {photo.caption && (
+                    <div
+                      style={{ fontSize: 11, color: c.captionText, lineHeight: 1.4 }}
+                    >
+                      {photo.caption}
+                    </div>
+                  )}
+                  <div style={{ fontSize: 10, color: c.muted, lineHeight: 1.4, marginTop: 2 }}>
+                    {photo.lat != null && photo.lon != null
+                      ? `${photo.lat.toFixed(5)}, ${photo.lon.toFixed(5)}`
+                      : "No GPS"}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 10,
+                      lineHeight: 1.4,
+                      marginTop: 2,
+                      // Missing, it stands out: an undated photo drops out of every year filter.
+                      color: photo.date != null ? c.muted : c.danger,
+                      fontWeight: photo.date != null ? undefined : 600,
+                    }}
+                  >
+                    {photo.date != null ? new Date(photo.date).toLocaleDateString() : "No date"}
+                  </div>
+                  {!photo.alt_text && !photo.caption && (
+                    <div style={{ fontSize: 10, color: c.muted, lineHeight: 1.4, marginTop: 2 }}>
+                      No alt text
+                    </div>
+                  )}
+                </div>
+                {/* Edit button */}
+                <button
+                  onClick={() => setEditing(photo)}
+                  style={{
+                    position: "absolute",
+                    top: 6,
+                    right: 34,
+                    background: "rgba(0,0,0,0.6)",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 0,
+                    width: 24,
+                    height: 24,
+                    cursor: "pointer",
+                    fontSize: 13,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  title="Edit"
                 >
-                  {photo.caption}
-                </div>
-              )}
-              <div style={{ fontSize: 10, color: c.muted, lineHeight: 1.4, marginTop: 2 }}>
-                {photo.lat != null && photo.lon != null
-                  ? `${photo.lat.toFixed(5)}, ${photo.lon.toFixed(5)}`
-                  : "No GPS"}
+                  ✎
+                </button>
+                {/* Delete button */}
+                <button
+                  onClick={() => handleDelete(photo)}
+                  disabled={deleting === photo.id}
+                  style={{
+                    position: "absolute",
+                    top: 6,
+                    right: 6,
+                    background: "rgba(0,0,0,0.6)",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 0,
+                    width: 24,
+                    height: 24,
+                    cursor: "pointer",
+                    fontSize: 14,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  title="Delete"
+                >
+                  {deleting === photo.id ? "…" : "×"}
+                </button>
               </div>
-              <div
-                style={{
-                  fontSize: 10,
-                  lineHeight: 1.4,
-                  marginTop: 2,
-                  // Missing, it stands out: an undated photo drops out of every year filter.
-                  color: photo.date != null ? c.muted : c.danger,
-                  fontWeight: photo.date != null ? undefined : 600,
-                }}
-              >
-                {photo.date != null ? new Date(photo.date).toLocaleDateString() : "No date"}
-              </div>
-              {!photo.alt_text && !photo.caption && (
-                <div style={{ fontSize: 10, color: c.muted, lineHeight: 1.4, marginTop: 2 }}>
-                  No alt text
-                </div>
-              )}
-            </div>
-            {/* Edit button */}
-            <button
-              onClick={() => setEditing(photo)}
-              style={{
-                position: "absolute",
-                top: 6,
-                right: 34,
-                background: "rgba(0,0,0,0.6)",
-                color: "#fff",
-                border: "none",
-                borderRadius: 0,
-                width: 24,
-                height: 24,
-                cursor: "pointer",
-                fontSize: 13,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-              title="Edit"
-            >
-              ✎
-            </button>
-            {/* Delete button */}
-            <button
-              onClick={() => handleDelete(photo)}
-              disabled={deleting === photo.id}
-              style={{
-                position: "absolute",
-                top: 6,
-                right: 6,
-                background: "rgba(0,0,0,0.6)",
-                color: "#fff",
-                border: "none",
-                borderRadius: 0,
-                width: 24,
-                height: 24,
-                cursor: "pointer",
-                fontSize: 14,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-              title="Delete"
-            >
-              {deleting === photo.id ? "…" : "×"}
-            </button>
+            ))}
           </div>
-        ))}
-      </div>
+        </section>
+      ))}
     </>
   );
 }

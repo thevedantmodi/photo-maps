@@ -15,6 +15,7 @@ export async function GET() {
     thumb_name: row.thumb_name,
     large_name: row.large_name,
     date: row.date?.toISOString() ?? null,
+    created_at: row.created_at?.toISOString() ?? null,
     lat: row.lat ?? null,
     lon: row.lon ?? null,
   })));

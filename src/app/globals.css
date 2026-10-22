@@ -303,6 +303,53 @@ button {
   position: relative;
 }
 
+/* Admin, Manage: sort and grouping above the grid, then a ruled head per group. */
+.admin-view {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 32px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.admin-view-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-view-field select {
+  padding: 2px 0;
+  border: 0;
+  border-bottom: 1px solid var(--ink);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+}
+
+.admin-group + .admin-group {
+  margin-top: 28px;
+}
+
+.admin-group-head {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--ink);
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-group-count {
+  font-weight: 400;
+  color: var(--muted);
+}
+
 /* Hangs under the switch so the header never shifts. */
 .terrain-note {
   position: absolute;
