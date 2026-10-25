@@ -116,6 +116,17 @@ export function extractExifDate(exifData: Record<string, unknown> | null | undef
   return gps ? { date: gps, utc: true } : null;
 }
 
+/**
+ * The datetime-local value the server will end up storing for an EXIF date. Camera dates
+ * are wall-clock times that exifr revives in the browser's zone but the server reads as
+ * UTC, so the local reading is what gets saved; the GPS stamp is true UTC either way.
+ */
+export function exifDateInputValue({ date, utc }: ExifDate): string {
+  if (utc) return date.toISOString().slice(0, 16);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 /** exifr options that match what the server reads, so client and server agree. */
 export const EXIF_PARSE_OPTIONS = {
   gps: true,

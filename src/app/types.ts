@@ -10,6 +10,12 @@ export interface Photo {
   caption: string | null;
   alt_text: string | null;
   date: string | null;
+  camera: string | null;
+  lens: string | null;
+  focal_length_mm: number | null;
+  f_number: number | null;
+  exposure_s: number | null;
+  iso: number | null;
   status: string;
   created_at: string | null;
   share_card_version: string | null;

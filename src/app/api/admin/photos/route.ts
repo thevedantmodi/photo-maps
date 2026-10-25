@@ -8,6 +8,7 @@ export async function GET() {
   return NextResponse.json(rows.map(row => ({
     id: row.id,
     friendly_name: row.friendly_name,
+    original_name: row.original_name,
     caption: row.caption,
     alt_text: row.alt_text,
     status: row.status,
@@ -17,6 +18,12 @@ export async function GET() {
     large_url: getPublicUrl(row.large_name),
     date: row.date?.toISOString() ?? null,
     created_at: row.created_at?.toISOString() ?? null,
+    camera: row.camera,
+    lens: row.lens,
+    focal_length_mm: row.focal_length_mm,
+    f_number: row.f_number,
+    exposure_s: row.exposure_s,
+    iso: row.iso,
     lat: row.lat ?? null,
     lon: row.lon ?? null,
   })));

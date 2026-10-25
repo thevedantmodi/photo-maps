@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, doublePrecision, timestamp, index, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, doublePrecision, timestamp, index, jsonb, integer } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 export const photos = pgTable(
@@ -16,6 +16,14 @@ export const photos = pgTable(
     // see photoAlt() in src/lib/alt.ts.
     alt_text: text('alt_text'),
     date: timestamp('date', { withTimezone: true }),
+    // Camera details from the file's EXIF (see src/lib/camera.ts), editable in the admin.
+    // Each is null when the file didn't say.
+    camera: text('camera'),
+    lens: text('lens'),
+    focal_length_mm: doublePrecision('focal_length_mm'),
+    f_number: doublePrecision('f_number'),
+    exposure_s: doublePrecision('exposure_s'),
+    iso: integer('iso'),
     status: text('status').notNull().default('pending'),
     // shareVersion() value baked into the precomputed share card currently in R2, so the
     // read path can tell a fresh card from a stale/never-generated one. Null means "not
