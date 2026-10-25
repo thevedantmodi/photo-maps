@@ -22,7 +22,7 @@ export default function NotFound() {
         </p>
         <div className={styles.links}>
           <Link className={`${styles.link} ul`} href="/map">
-            Enter the galleries →
+            Enter the map →
           </Link>
           <Link className={`${styles.link} ul`} href="/directory">
             Directory

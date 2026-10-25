@@ -9,7 +9,7 @@ import { getHomeView } from '@/lib/homeViewStore';
 import { RSS_ALTERNATE } from '@/lib/site';
 
 export const metadata: Metadata = {
-  title: 'Galleries',
+  title: 'Map',
   alternates: { canonical: '/map', types: RSS_ALTERNATE },
 };
 
@@ -17,7 +17,7 @@ export default async function MapPage() {
   const [photos, places, home] = await Promise.all([getPublishedPhotos(), getPlaces(), getHomeView()]);
   return (
     <>
-      <h1 className="sr-only">Galleries</h1>
+      <h1 className="sr-only">Map</h1>
       <MapWrapper photos={photos} places={places} home={home} />
     </>
   );

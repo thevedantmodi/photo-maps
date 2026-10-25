@@ -9,6 +9,7 @@ import { Hint, Kbd, useModKey } from "./Kbd";
 import LocationSection from "./LocationSection";
 import PlacesTab from "./PlacesTab";
 import BackfillTab from "./BackfillTab";
+import LandingPhotoTab from "./LandingPhotoTab";
 // Mapbox needs the browser; the tab only mounts once picked.
 const HomeViewTab = dynamic(() => import("./HomeViewTab"), { ssr: false });
 import { photoAlt } from "@/lib/alt";
@@ -1213,6 +1214,7 @@ const TABS = [
   { id: "places", label: "Places" },
   { id: "home", label: "Home view" },
   { id: "backfill", label: "Camera backfill" },
+  { id: "landing", label: "Landing photo" },
 ] as const;
 
 export default function AdminPage() {
@@ -1244,6 +1246,7 @@ export default function AdminPage() {
         {tab === "places" && <PlacesTab theme={theme} />}
         {tab === "home" && <HomeViewTab theme={theme} />}
         {tab === "backfill" && <BackfillTab theme={theme} />}
+        {tab === "landing" && <LandingPhotoTab theme={theme} />}
       </div>
     </main>
   );
