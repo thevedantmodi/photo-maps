@@ -3,6 +3,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { Geist } from "next/font/google";
 import { getBaseUrl } from "@/lib/baseUrl";
 import { AUTHOR, RSS_ALTERNATE, SITE_DESCRIPTION, SITE_NAME } from "@/lib/site";
+import { preconnect } from "react-dom";
 import ServiceWorker from "./components/ServiceWorker";
 import "./globals.css";
 
@@ -53,6 +54,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Mapbox's style, tiles and fonts all come from here; open the connection before the map asks.
+  preconnect("https://api.mapbox.com", { crossOrigin: "anonymous" });
   return (
     // The Geist variable sits on <html>, where --font-sans (globals.css) reads it.
     <html lang="en" className={geistSans.variable} suppressHydrationWarning>

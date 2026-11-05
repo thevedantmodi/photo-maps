@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 
 import Reveal from './Reveal';
 import SiteHeader, { openSubscribe } from './SiteHeader';
+import { preloadMap } from './MapWrapper';
 
 const ROWS = [0, 1, 2, 3];
 
@@ -66,6 +67,15 @@ export default function Landing({ photo, years, recent }: LandingProps) {
 
   useEffect(() => {
     router.prefetch('/map');
+    // The route prefetch above doesn't include the map itself (it loads on the client), so
+    // fetch and run its code while the visitor is still here, once the page has settled.
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
+    if (w.requestIdleCallback) {
+      w.requestIdleCallback(preloadMap, { timeout: 2000 });
+    } else {
+      const t = window.setTimeout(preloadMap, 1200);
+      return () => window.clearTimeout(t);
+    }
   }, [router]);
 
   const enter = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -73,6 +83,7 @@ export default function Landing({ photo, years, recent }: LandingProps) {
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
     e.preventDefault();
     if (leaving) return;
+    preloadMap();
     // ?intro (for screen recordings) carries through to the map, which then plays its loader in full.
     const href = new URLSearchParams(window.location.search).has('intro') ? '/map?intro' : '/map';
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {

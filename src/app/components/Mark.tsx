@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 
 import {
   CAMERA,
@@ -17,6 +17,17 @@ export const SHUTTER_EVENT = 'pm:shutter';
 export function fireShutter() {
   window.dispatchEvent(new Event(SHUTTER_EVENT));
 }
+
+/**
+ * The map loader is mounted twice in a row: by MapWrapper while the map's code downloads,
+ * then by the map itself. A fresh element would restart its CSS animations, drawing the
+ * camera over again (or, with the main thread busy starting Mapbox, sitting on the first
+ * frame). So every loader reads one clock: the first sets it from how far its animations
+ * have run (they may have started from the server's HTML, before hydration), and each one
+ * after it jumps its animations to the same point. The clock clears once no loader is left.
+ */
+let loaderStart: number | null = null;
+let loadersMounted = 0;
 
 /**
  * The mark: a compact camera seen from the front, its lens a globe — photographs, mapped.
@@ -44,6 +55,28 @@ export default function Mark({
   const { lens } = CAMERA;
   // The turning meridians keep their weight while squashed, so they're set in pixels.
   const arcPx = (sw * 0.85 * width) / VIEW.w;
+
+  useLayoutEffect(() => {
+    const svg = ref.current;
+    if (!detailed || !svg?.closest('.map-loader')) return;
+    loadersMounted++;
+    const anims = svg.getAnimations({ subtree: true });
+    const now = performance.now();
+    if (loaderStart === null) {
+      const ran = Math.max(0, ...anims.map((a) => Number(a.currentTime ?? 0)));
+      loaderStart = now - ran;
+    } else {
+      const t = now - loaderStart;
+      for (const a of anims) a.currentTime = t;
+    }
+    return () => {
+      loadersMounted--;
+      // The next loader mounts in the same commit, after this cleanup: wait for it.
+      setTimeout(() => {
+        if (loadersMounted === 0) loaderStart = null;
+      }, 0);
+    };
+  }, [detailed]);
 
   useEffect(() => {
     if (detailed) return;
