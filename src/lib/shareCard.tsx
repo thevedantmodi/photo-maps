@@ -5,87 +5,77 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { ImageResponse } from 'next/og';
-import QRCode from 'qrcode';
 import sharp from 'sharp';
 
-import { CAMERA, CAMERA_VIEW, equatorPath, globeRadius, knurlPath } from '@/lib/cameraMark';
+import { CAMERA, CAMERA_VIEW, equatorPath, globeRadius } from '@/lib/cameraMark';
+import { exposureLine, type CameraDetails } from '@/lib/camera';
 import { photoTitle } from '@/lib/alt';
 import { placeNameFor } from '@/lib/placeName';
-import { CARD, FONT, PALETTE, PHOTO, QR, RULE, TYPE } from '@/lib/shareTokens';
+import { BORDER, CARD, EDGE_GAP, FONT, PALETTE, TYPE, WINDOW } from '@/lib/shareTokens';
 import type { CardTheme } from '@/lib/shareVersion';
 
-const INNER_WIDTH = CARD.width - 2 * CARD.sidePadding;
-const INNER_HEIGHT = CARD.height - 2 * CARD.safeInset;
+/**
+ * The card is a "letterbox": the photo fitted whole inside a window, a thin border all
+ * round, and the metadata printed along the border like the edge of a strip of film.
+ *
+ *   top edge     the camera mark and name, the year       (under Instagram's top bar: fine to lose)
+ *   left edge    caption · place · camera, reading up     (inside the safe band)
+ *   right edge   date · exposure · link, reading down     (inside the safe band)
+ *   bottom edge  the coordinates                          (under the reply box: fine to lose)
+ */
 
-// Geist averages ~0.52em per character at display sizes with the card's tight tracking,
-// and ~0.56em at 600 weight for the link.
-const TITLE_EM_PER_CHAR = 0.52;
-const URL_EM_PER_CHAR = 0.56;
-const MAX_TITLE_LINES = 3;
+/** How long each side edge's text may run: the safe band between Instagram's overlays. */
+const EDGE_LENGTH = CARD.height - 2 * CARD.safeInset;
 
-const HEADER_HEIGHT = Math.ceil(TYPE.name.fontSize * 1.2) + 28 + RULE;
-const ROW_HEIGHT = Math.ceil(TYPE.row.fontSize * 1.2) + 32 + RULE;
-const URL_WIDTH = INNER_WIDTH - QR.tile - 40;
+// Average advance per character, in em, for estimating how long a line will be before
+// satori lays it out. Geist is proportional (a little wider at 600); Geist Mono is 0.6.
+const EM_REGULAR = 0.56;
+const EM_SEMIBOLD = 0.58;
+const EM_MONO = 0.6;
 
-function titleSize(title: string): number {
-  return TYPE.title.find((t) => title.length <= t.maxChars)!.fontSize;
+type Part = {
+  text: string;
+  fontSize: number;
+  fontWeight?: 400 | 600;
+  letterSpacing?: number;
+  mono?: boolean;
+  muted?: boolean;
+  /** Left out first when the edge runs out of room. */
+  optional?: boolean;
+  /** Shortened with "…" when leaving out the optional parts is not enough. */
+  truncate?: boolean;
+};
+
+function emPerChar(p: Part): number {
+  if (p.mono) return EM_MONO;
+  return p.fontWeight === 600 ? EM_SEMIBOLD : EM_REGULAR;
+}
+
+function partWidth(p: Part): number {
+  return p.text.length * (p.fontSize * emPerChar(p) + (p.letterSpacing ?? 0));
+}
+
+function lineWidth(parts: Part[]): number {
+  return parts.reduce((w, p) => w + partWidth(p), 0) + EDGE_GAP * Math.max(0, parts.length - 1);
 }
 
 /**
- * How many lines a title wraps to, word by word as the renderer breaks it: a long unbroken
- * run (a URL, "</script>") can't share a line, so a plain character count under-estimates.
+ * Fits one edge's parts into `max` px: drops the optional ones, then shortens the
+ * truncatable ones in order, so a long caption gives way rather than running off the card.
  */
-function wrappedLines(text: string, perLine: number): number {
-  let lines = 1;
-  let used = 0;
-  for (const word of text.split(/\s+/).filter(Boolean)) {
-    if (word.length > perLine) {
-      // Broken across lines on its own.
-      lines += (used > 0 ? 1 : 0) + Math.ceil(word.length / perLine) - 1;
-      used = word.length % perLine || perLine;
-      continue;
-    }
-    const need = used === 0 ? word.length : used + 1 + word.length;
-    if (need > perLine) {
-      lines += 1;
-      used = word.length;
-    } else {
-      used = need;
-    }
+function fitEdge(parts: Part[], max: number): Part[] {
+  let out = parts;
+  if (lineWidth(out) > max) out = out.filter((p) => !p.optional);
+  for (const p of out) {
+    const over = lineWidth(out) - max;
+    if (over <= 0) break;
+    if (!p.truncate) continue;
+    const perChar = p.fontSize * emPerChar(p) + (p.letterSpacing ?? 0);
+    const keep = Math.max(1, p.text.length - Math.ceil(over / perChar) - 1);
+    const text = `${p.text.slice(0, keep).trimEnd()}…`;
+    out = out.map((q) => (q === p ? { ...p, text } : q));
   }
-  return lines;
-}
-
-/**
- * The card is laid out by satori, so its heights are not known until after render — but
- * the photo has to be resized before that. Estimate everything else from the text it will
- * hold and give the photo whatever height is left, so a long caption shrinks the photo
- * instead of overlapping it.
- */
-function layout(rawTitle: string, rows: number, url: string) {
-  const fontSize = titleSize(rawTitle);
-  const perLine = Math.floor(INNER_WIDTH / (fontSize * TITLE_EM_PER_CHAR));
-  const limit = MAX_TITLE_LINES * perLine;
-  const title = rawTitle.length > limit ? `${rawTitle.slice(0, limit - 1).trimEnd()}…` : rawTitle;
-  const titleLines = Math.min(MAX_TITLE_LINES, Math.max(1, wrappedLines(title, perLine)));
-  const titleHeight = titleLines * fontSize * TYPE.titleLineHeight + 32;
-
-  const rowsHeight = rows > 0 ? rows * ROW_HEIGHT + RULE : 0;
-
-  const urlPerLine = Math.floor(URL_WIDTH / (TYPE.url.fontSize * URL_EM_PER_CHAR));
-  const urlLines = Math.max(1, Math.ceil(url.length / urlPerLine));
-  const footerHeight =
-    40 +
-    Math.max(QR.tile, TYPE.urlLabel.fontSize * 1.2 + 6 + urlLines * TYPE.url.fontSize * 1.2);
-
-  const available =
-    INNER_HEIGHT - HEADER_HEIGHT - titleHeight - rowsHeight - footerHeight - 2 * PHOTO.gap;
-
-  return {
-    title,
-    titleFontSize: fontSize,
-    photoMaxHeight: Math.min(PHOTO.maxHeight, Math.max(PHOTO.minHeight, Math.floor(available))),
-  };
+  return out;
 }
 
 const FONT_DIR = join(process.cwd(), 'src', 'app', 'fonts');
@@ -100,12 +90,15 @@ const fontFile = (name: string) => readFile(join(FONT_DIR, name));
 let fontsPromise: ReturnType<typeof loadFonts> | null = null;
 
 function loadFonts() {
-  return Promise.all([fontFile('Geist-Regular.ttf'), fontFile('Geist-SemiBold.ttf')]).then(
-    ([regular, semibold]) => [
-      { name: FONT.sans, data: regular, weight: 400 as const, style: 'normal' as const },
-      { name: FONT.sans, data: semibold, weight: 600 as const, style: 'normal' as const },
-    ],
-  );
+  return Promise.all([
+    fontFile('Geist-Regular.ttf'),
+    fontFile('Geist-SemiBold.ttf'),
+    fontFile('GeistMono-Regular.ttf'),
+  ]).then(([regular, semibold, mono]) => [
+    { name: FONT.sans, data: regular, weight: 400 as const, style: 'normal' as const },
+    { name: FONT.sans, data: semibold, weight: 600 as const, style: 'normal' as const },
+    { name: FONT.mono, data: mono, weight: 400 as const, style: 'normal' as const },
+  ]);
 }
 
 function fonts() {
@@ -123,20 +116,24 @@ function formatDate(iso: string | null): string | null {
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-function permalink(base: string, slug: string): string {
-  return `${base}/p/${slug}`;
+/** 27.17328, 78.04211 → ["27.17328° N", "78.04211° E"]. */
+function formatCoords(lat: number, lon: number): [string, string] {
+  return [
+    `${Math.abs(lat).toFixed(5)}° ${lat >= 0 ? 'N' : 'S'}`,
+    `${Math.abs(lon).toFixed(5)}° ${lon >= 0 ? 'E' : 'W'}`,
+  ];
 }
 
-/** The typeable fallback printed on the card — protocol stripped, since nobody types it. */
+/** The typeable link printed on the card — protocol stripped, since nobody types it. */
 function displayUrl(base: string, slug: string): string {
-  return permalink(base, slug).replace(/^https?:\/\//, '');
+  return `${base}/p/${slug}`.replace(/^https?:\/\//, '');
 }
 
-/** The site's camera mark, the detailed version, drawn for satori. */
+/** The site's camera mark, the simple (header) version, drawn for satori. */
 function CameraMark({ color }: { color: string }) {
-  const width = 76;
-  const sw = 1.5;
-  const globe = globeRadius(true);
+  const width = 44;
+  const sw = 2.2;
+  const globe = globeRadius(false);
   const { lens } = CAMERA;
   const line = { fill: 'none', stroke: color, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
   return (
@@ -144,22 +141,59 @@ function CameraMark({ color }: { color: string }) {
       width={width}
       height={(width * CAMERA_VIEW.h) / CAMERA_VIEW.w}
       viewBox={`${CAMERA_VIEW.x} ${CAMERA_VIEW.y} ${CAMERA_VIEW.w} ${CAMERA_VIEW.h}`}
-      style={{ marginRight: 20 }}
+      style={{ marginRight: 14 }}
     >
       <path d={CAMERA.body} {...line} strokeWidth={sw} />
       <path d={CAMERA.grip} {...line} strokeWidth={sw * 0.8} />
       <rect {...CAMERA.shutter} {...line} strokeWidth={sw * 0.85} />
       <rect {...CAMERA.modeDial} {...line} strokeWidth={sw * 0.85} />
-      <path d={knurlPath(7)} {...line} strokeWidth={sw * 0.38} />
       <rect {...CAMERA.smallDial} {...line} strokeWidth={sw * 0.85} />
-      <circle {...CAMERA.afLamp} {...line} strokeWidth={sw * 0.7} />
-      <circle {...CAMERA.lensRelease} {...line} strokeWidth={sw * 0.7} />
       <circle {...lens} {...line} strokeWidth={sw} />
-      <circle cx={lens.cx} cy={lens.cy} r={lens.r - 2.2} {...line} strokeWidth={sw * 0.7} />
       <circle cx={lens.cx} cy={lens.cy} r={globe} {...line} strokeWidth={sw} />
       <path d={equatorPath(globe)} {...line} strokeWidth={sw * 0.85} />
       <ellipse cx={lens.cx} cy={lens.cy} rx={globe * 0.42} ry={globe} {...line} strokeWidth={sw * 0.85} />
     </svg>
+  );
+}
+
+/** One side edge: a band EDGE_LENGTH long, turned to run up (left) or down (right) the card. */
+function SideEdge({ side, parts, ink, muted }: { side: 'left' | 'right'; parts: Part[]; ink: string; muted: string }) {
+  // Laid out horizontally, centred on the border's midline, then turned about its centre:
+  // -90° puts its start at the bottom of the safe band, +90° at the top.
+  const centerX = side === 'left' ? BORDER / 2 : CARD.width - BORDER / 2;
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: centerX - EDGE_LENGTH / 2,
+        top: CARD.height / 2 - BORDER / 2,
+        width: EDGE_LENGTH,
+        height: BORDER,
+        display: 'flex',
+        alignItems: 'center',
+        transform: `rotate(${side === 'left' ? -90 : 90}deg)`,
+        transformOrigin: 'center',
+      }}
+    >
+      {parts.map((p, i) => (
+        <div
+          key={i}
+          style={{
+            display: 'flex',
+            flex: 'none',
+            marginLeft: i === 0 ? 0 : EDGE_GAP,
+            fontFamily: p.mono ? FONT.mono : FONT.sans,
+            fontSize: p.fontSize,
+            fontWeight: p.fontWeight ?? 400,
+            letterSpacing: p.letterSpacing ?? 0,
+            color: p.muted ? muted : ink,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {p.text}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -172,7 +206,7 @@ export type ShareCardPhoto = {
   lat: number | null;
   lon: number | null;
   large_url: string;
-};
+} & Pick<CameraDetails, 'camera' | 'focal_length_mm' | 'f_number' | 'exposure_s' | 'iso'>;
 
 /**
  * Renders a photo's share card to PNG bytes, in the dark or light theme. Shared by the
@@ -189,41 +223,51 @@ export async function renderShareCardPng(
   if (!source.ok) throw new Error(`share card source fetch failed: ${source.status}`);
   const buf = Buffer.from(await source.arrayBuffer());
 
-  const place = photo.lat != null && photo.lon != null ? await placeNameFor(photo.lat, photo.lon) : null;
+  const hasCoords = photo.lat != null && photo.lon != null;
+  const place = hasCoords ? await placeNameFor(photo.lat!, photo.lon!) : null;
   const date = formatDate(photo.date);
   const year = photo.date ? new Date(photo.date).getFullYear() : null;
-  const rows = [
-    ...(place ? [{ label: 'Place', value: place }] : []),
-    ...(date ? [{ label: 'Date', value: date }] : []),
-  ];
-  const url = displayUrl(base, photo.friendly_name);
-  const { title, titleFontSize, photoMaxHeight } = layout(
-    photoTitle(photo),
-    rows.length,
-    url,
+  const exposure = exposureLine(photo);
+
+  const left = fitEdge(
+    [
+      { text: photoTitle(photo), ...TYPE.caption, truncate: true },
+      ...(place ? [{ text: place, ...TYPE.place, muted: true, truncate: true }] : []),
+      ...(photo.camera ? [{ text: photo.camera, ...TYPE.camera, muted: true, optional: true }] : []),
+    ],
+    EDGE_LENGTH,
+  );
+  const right = fitEdge(
+    [
+      ...(date ? [{ text: date, ...TYPE.date }] : []),
+      ...(exposure ? [{ text: exposure, ...TYPE.camera, muted: true, optional: true }] : []),
+      { text: displayUrl(base, photo.friendly_name), ...TYPE.mono, mono: true, muted: true },
+    ],
+    EDGE_LENGTH,
   );
 
-  const [fitted, qr] = await Promise.all([
-    sharp(buf)
-      .resize(PHOTO.maxWidth, photoMaxHeight, { fit: 'inside' })
-      .jpeg({ quality: 85 })
-      .toBuffer({ resolveWithObject: true }),
-    QRCode.toBuffer(permalink(base, photo.friendly_name), {
-      width: QR.renderSize,
-      margin: 0,
-      errorCorrectionLevel: 'M',
-      color: { dark: '#000000', light: '#ffffff' },
-    }),
-  ]);
+  // Fitted whole, never cropped, never upscaled: the window's bars take up the rest.
+  const fitted = await sharp(buf)
+    .resize(WINDOW.width, WINDOW.height, { fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: 85 })
+    .toBuffer({ resolveWithObject: true });
+
+  const edgeRow = {
+    position: 'absolute',
+    left: BORDER,
+    right: BORDER,
+    height: BORDER,
+    display: 'flex',
+    alignItems: 'center',
+  } as const;
 
   const element = (
     <div
       style={{
+        position: 'relative',
         width: CARD.width,
         height: CARD.height,
         display: 'flex',
-        flexDirection: 'column',
-        padding: `${CARD.safeInset}px ${CARD.sidePadding}px`,
         background: colors.bg,
         color: colors.ink,
         fontFamily: FONT.sans,
@@ -231,21 +275,33 @@ export async function renderShareCardPng(
     >
       <div
         style={{
+          position: 'absolute',
+          top: BORDER,
+          left: BORDER,
+          width: WINDOW.width,
+          height: WINDOW.height,
           display: 'flex',
           alignItems: 'center',
-          paddingBottom: 28,
-          borderBottom: `${RULE}px solid ${colors.ink}`,
+          justifyContent: 'center',
+          overflow: 'hidden',
+          borderRadius: WINDOW.radius,
+          background: colors.bar,
         }}
       >
-        <CameraMark color={colors.ink} />
-        <div style={{ display: 'flex', fontSize: TYPE.name.fontSize, letterSpacing: TYPE.name.letterSpacing, lineHeight: 1.2 }}>
-          Vedant Modi
+        <img src={dataUri(fitted.data, 'image/jpeg')} width={fitted.info.width} height={fitted.info.height} />
+      </div>
+
+      <div style={{ ...edgeRow, top: 0, justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <CameraMark color={colors.ink} />
+          <div style={{ display: 'flex', fontSize: TYPE.name.fontSize, letterSpacing: TYPE.name.letterSpacing }}>
+            Vedant Modi
+          </div>
         </div>
         {year !== null ? (
           <div
             style={{
               display: 'flex',
-              marginLeft: 'auto',
               fontSize: TYPE.year.fontSize,
               fontWeight: TYPE.year.fontWeight,
               letterSpacing: TYPE.year.letterSpacing,
@@ -256,74 +312,26 @@ export async function renderShareCardPng(
         ) : null}
       </div>
 
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: photoMaxHeight + 2 * PHOTO.gap,
-        }}
-      >
-        <img src={dataUri(fitted.data, 'image/jpeg')} width={fitted.info.width} height={fitted.info.height} />
-      </div>
+      <SideEdge side="left" parts={left} ink={colors.ink} muted={colors.muted} />
+      <SideEdge side="right" parts={right} ink={colors.ink} muted={colors.muted} />
 
-      <div
-        style={{
-          display: 'flex',
-          marginBottom: 32,
-          fontSize: titleFontSize,
-          fontWeight: 600,
-          lineHeight: TYPE.titleLineHeight,
-          letterSpacing: titleFontSize * TYPE.titleLetterSpacing,
-        }}
-      >
-        {title}
-      </div>
-
-      {rows.length > 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', fontSize: TYPE.row.fontSize, borderBottom: `${RULE}px solid ${colors.ink}` }}>
-          {rows.map((row) => (
-            <div
-              key={row.label}
-              style={{ display: 'flex', padding: '16px 0', borderTop: `${RULE}px solid ${colors.ink}`, lineHeight: 1.2 }}
-            >
-              <div style={{ display: 'flex', width: TYPE.row.labelWidth, flex: 'none', fontWeight: 600 }}>{row.label}</div>
-              <div style={{ display: 'flex', flex: 1 }}>{row.value}</div>
+      {hasCoords ? (
+        <div
+          style={{
+            ...edgeRow,
+            bottom: 0,
+            fontFamily: FONT.mono,
+            fontSize: TYPE.mono.fontSize,
+            color: colors.muted,
+          }}
+        >
+          {formatCoords(photo.lat!, photo.lon!).map((c, i) => (
+            <div key={i} style={{ display: 'flex', marginLeft: i === 0 ? 0 : EDGE_GAP }}>
+              {c}
             </div>
           ))}
         </div>
       ) : null}
-
-      <div style={{ display: 'flex', alignItems: 'flex-end', marginTop: 'auto', paddingTop: 40 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', width: URL_WIDTH, marginRight: 40 }}>
-          <div style={{ display: 'flex', fontSize: TYPE.urlLabel.fontSize, color: colors.muted, marginBottom: 6 }}>
-            See it on the map
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              fontSize: TYPE.url.fontSize,
-              fontWeight: TYPE.url.fontWeight,
-              lineHeight: 1.2,
-              wordBreak: 'break-all',
-            }}
-          >
-            {url}
-          </div>
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            width: QR.tile,
-            height: QR.tile,
-            flex: 'none',
-            padding: QR.padding,
-            background: '#ffffff',
-          }}
-        >
-          <img src={dataUri(qr, 'image/png')} width={QR.tile - 2 * QR.padding} height={QR.tile - 2 * QR.padding} />
-        </div>
-      </div>
     </div>
   );
 

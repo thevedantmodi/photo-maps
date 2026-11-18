@@ -1,13 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+
+// A wrong password shakes the field as well as turning it red.
+const SHAKE: Keyframe[] = [0, -10, 10, -6, 6, -3, 0].map((x) => ({ transform: `translateX(${x}px)` }));
+const SHAKE_MS = 360;
+const DANGER = '#b42318';
 
 // Sign-in for the installed admin app: iOS home-screen apps can't show the browser's Basic
 // Auth prompt, so proxy.ts sends signed-out visits here. The path starts with /admin so it
 // stays inside the admin app's scope.
 export default function AdminLogin() {
   const [error, setError] = useState('');
+  const [wrong, setWrong] = useState(false);
   const [busy, setBusy] = useState(false);
+  const passRef = useRef<HTMLInputElement>(null);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -25,6 +32,14 @@ export default function AdminLogin() {
     }
     setBusy(false);
     setError(res ? 'Wrong username or password' : 'Could not reach the server');
+    if (res) {
+      setWrong(true);
+      const field = passRef.current;
+      if (field && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        field.animate(SHAKE, { duration: SHAKE_MS, easing: 'ease-out' });
+      }
+      field?.select();
+    }
   }
 
   const field = {
@@ -51,9 +66,23 @@ export default function AdminLogin() {
         </label>
         <label>
           Password
-          <input name="pass" type="password" autoComplete="current-password" required style={field} />
+          <input
+            ref={passRef}
+            name="pass"
+            type="password"
+            autoComplete="current-password"
+            required
+            aria-invalid={wrong || undefined}
+            aria-describedby={wrong ? 'login-error' : undefined}
+            onChange={() => setWrong(false)}
+            style={wrong ? { ...field, borderColor: DANGER, color: DANGER } : field}
+          />
         </label>
-        {error && <p role="alert" style={{ margin: 0, color: '#b42318' }}>{error}</p>}
+        {error && (
+          <p id="login-error" role="alert" style={{ margin: 0, color: DANGER }}>
+            {error}
+          </p>
+        )}
         <button
           type="submit"
           disabled={busy}

@@ -109,6 +109,7 @@ export async function POST(req: NextRequest) {
           lon: gps?.longitude ?? null,
           large_name: largeName,
           large_url: getPublicUrl(largeName),
+          ...camera,
         },
         base
       )

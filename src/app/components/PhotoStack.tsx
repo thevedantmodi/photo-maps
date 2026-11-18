@@ -95,7 +95,7 @@ export default function PhotoStack({ photos, onSelect }: PhotoStackProps) {
           type="button"
           className="photo-stack-item"
           aria-label={photoAlt(photo)}
-          initial={{ x: 0, y: 0, scale: 0.5, opacity: 0 }}
+          initial={{ x: 0, y: 0, scale: 0.97, opacity: 0 }}
           animate={{ x: offsets[i].x, y: offsets[i].y, scale: 1, opacity: 1 }}
           transition={{ duration: 0.26, ease: EASE, delay: 0.06 + Math.min(i * 0.02, 0.3) }}
           onClick={(e) => {

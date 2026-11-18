@@ -86,6 +86,21 @@
   --foreground: var(--ink);
 }
 
+/* Lets height: auto (and other size keywords) transition smoothly, for anything that
+   opens and closes. */
+:root {
+  interpolate-size: allow-keywords;
+}
+
+/* While the theme changes (useTheme adds the class for a couple of frames), nothing
+   transitions: every colour flips at once instead of each fading at its own speed. */
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition: none !important;
+}
+
 *,
 *::before,
 *::after {
@@ -116,6 +131,14 @@ a {
 button {
   font: inherit;
   color: inherit;
+  /* A button that sets its own transition lists `scale 150ms ease-out` in it too. */
+  transition: scale 150ms ease-out;
+}
+
+/* Pressed buttons give a little. The scale property composes with any transform the
+   button already has. */
+button:active:not(:disabled) {
+  scale: 0.97;
 }
 
 :focus-visible {
@@ -168,7 +191,7 @@ button {
   background-repeat: no-repeat;
   background-position: 0 100%;
   background-size: 0% 1px;
-  transition: background-size 180ms var(--ease);
+  transition: background-size 180ms var(--ease), scale 150ms ease-out;
 }
 
 .ul:hover,
@@ -1351,7 +1374,7 @@ a:hover > .arrow {
   background: none;
   color: var(--muted);
   cursor: pointer;
-  transition: color var(--dur-fast) ease;
+  transition: color var(--dur-fast) ease, scale 150ms ease-out;
 }
 
 .years-btn[aria-pressed="true"] {
@@ -1872,7 +1895,7 @@ html:has(.pv) {
   from {
     opacity: 0;
     filter: blur(0.2em);
-    transform: scale(0.94);
+    transform: scale(0.97);
   }
 }
 
@@ -2143,7 +2166,7 @@ html:has(.pv) {
   color: inherit;
   text-align: left;
   cursor: pointer;
-  transition: opacity var(--dur-fast) ease;
+  transition: opacity var(--dur-fast) ease, scale 150ms ease-out;
 }
 
 .trip-year-name button:hover {
@@ -2376,7 +2399,7 @@ html:has(.pv) {
 }
 
 @keyframes hang {
-  from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
   to { opacity: 1; transform: none; }
 }
 

@@ -21,7 +21,8 @@ import type { CustomPlace } from "@/lib/customPlaces";
 import type { Photo } from "../types";
 
 const EASE = "cubic-bezier(0.2, 0, 0, 1)";
-const SPRING = "cubic-bezier(0.34, 1.4, 0.64, 1)";
+// A drag down let go short of closing hands off to this, carrying the finger's speed.
+const LET_GO_SPRING = { type: "spring", duration: 0.5, bounce: 0 } as const;
 const OPEN_MS = 380;
 const CLOSE_MS = 320;
 // The title follows the photo in, rather than arriving with it.
@@ -855,19 +856,29 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
         });
         return;
       }
-      const from = el.style.transform || "none";
-      el.style.transform = "";
-      if (bgRef.current) bgRef.current.style.opacity = "";
-      root.style.removeProperty("--drag");
-      root.style.removeProperty("--swipe");
-      root.removeAttribute("data-swipe-ready");
-      root.removeAttribute("data-swipe-cursor");
-      root.removeAttribute("data-swipe-dir");
-      if (from !== "none" && !reducedMotion()) {
-        el.animate([{ transform: from }, { transform: "none" }], { duration: 280, easing: SPRING });
+      const settle = () => {
+        el.style.transform = "";
+        if (bgRef.current) bgRef.current.style.opacity = "";
+        root.style.removeProperty("--drag");
+        root.style.removeProperty("--swipe");
+        root.removeAttribute("data-swipe-ready");
+        root.removeAttribute("data-swipe-cursor");
+        root.removeAttribute("data-swipe-dir");
+      };
+      if (dist === 0 || reducedMotion()) {
+        settle();
+        return;
       }
+      // Short of closing, the photo springs back up from wherever the finger let go,
+      // keeping the speed it had.
+      springRef.current = animate(dist, 0, {
+        ...LET_GO_SPRING,
+        velocity,
+        onUpdate: (y) => dragTo(axis, y, line),
+        onComplete: settle,
+      });
     },
-    [close, go, next, prev, placeX],
+    [close, go, next, prev, placeX, dragTo],
   );
 
   // Touch: a drag locks to whichever way the finger first moves.
@@ -917,6 +928,8 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       cancelHold();
       // A slightly diagonal swipe still counts as sideways; only a clearly downward one closes.
       d.axis = Math.abs(dx) > Math.abs(dy) * 0.7 ? "x" : "y";
+      // From here the trail follows the locked axis.
+      d.trail = [];
     }
     // Sideways towards a photo that's there it follows the finger; past the first or last
     // it stretches like elastic. Down closes.
@@ -926,7 +939,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       d.dist = (x < 0 ? next : prev) ? x : rubber(x, figureRef.current?.clientWidth ?? 0);
     }
     const now = performance.now();
-    d.trail.push({ x: e.clientX, t: now });
+    d.trail.push({ x: d.axis === "y" ? e.clientY : e.clientX, t: now });
     while (d.trail.length > 2 && now - d.trail[0].t > 100) d.trail.shift();
     dragTo(d.axis, d.dist, TOUCH_SWIPE_PX);
   };
@@ -941,7 +954,7 @@ export default function PhotoView({ photo, places, mode, prev, next, year: filte
       return;
     }
     // The photo carries on at the speed the finger let go at (none if it stopped first).
-    endDrag(d.axis ?? "y", d.dist, d.axis === "x" ? speedOf(d.trail) * TOUCH_GAIN : 0, TOUCH_SWIPE_PX);
+    endDrag(d.axis ?? "y", d.dist, d.axis ? speedOf(d.trail) * (d.axis === "x" ? TOUCH_GAIN : 1) : 0, TOUCH_SWIPE_PX);
   };
 
   // The browser took the touch (to scroll, say): not a tap, so no step.

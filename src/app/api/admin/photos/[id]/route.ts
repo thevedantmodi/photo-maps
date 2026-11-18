@@ -59,14 +59,22 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   await db.update(photos).set(update).where(eq(photos.id, id));
 
-  // Caption, date and location all show on the card (the location as its place name), so
-  // any of them changing means new cards.
-  if ('caption' in update || 'date' in update || 'lat' in update || 'lon' in update) {
+  // Caption, date, location (as its place name), camera and exposure all show on the card,
+  // so any of them changing means new cards. The lens does not.
+  const CARD_FIELDS = ['caption', 'date', 'lat', 'lon', 'camera', 'focal_length_mm', 'f_number', 'exposure_s', 'iso'];
+  if (CARD_FIELDS.some((k) => k in update)) {
     const base = await getBaseUrl(req.headers);
     const caption = 'caption' in update ? (update.caption as string | null) : row.caption;
     const date = 'date' in update ? (update.date as Date | null) : row.date;
     const lat = 'lat' in update ? (update.lat as number | null) : row.lat;
     const lon = 'lon' in update ? (update.lon as number | null) : row.lon;
+    const shot = {
+      camera: camera.camera !== undefined ? camera.camera : row.camera,
+      focal_length_mm: camera.focal_length_mm !== undefined ? camera.focal_length_mm : row.focal_length_mm,
+      f_number: camera.f_number !== undefined ? camera.f_number : row.f_number,
+      exposure_s: camera.exposure_s !== undefined ? camera.exposure_s : row.exposure_s,
+      iso: camera.iso !== undefined ? camera.iso : row.iso,
+    };
     after(() =>
       generateAndStoreShareCard(
         {
@@ -78,6 +86,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           lon,
           large_name: row.large_name,
           large_url: getPublicUrl(row.large_name),
+          ...shot,
         },
         base
       )
