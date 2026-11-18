@@ -29,6 +29,10 @@ export const photos = pgTable(
     // read path can tell a fresh card from a stale/never-generated one. Null means "not
     // generated yet" — the share route falls back to a live render in that case.
     share_card_version: text('share_card_version'),
+    // Bumped by the admin's "Rebuild share card" to force a new card (and a new card URL,
+    // so the CDN's copy is skipped) when nothing on the card changed in the database —
+    // a renamed place, say. Part of shareVersion().
+    share_card_nonce: integer('share_card_nonce').notNull().default(0),
     created_at: timestamp('created_at', { withTimezone: true }).default(sql`now()`),
   },
   (table) => ({

@@ -10,6 +10,7 @@ import LocationSection from "./LocationSection";
 import PlacesTab from "./PlacesTab";
 import BackfillTab from "./BackfillTab";
 import LandingPhotoTab from "./LandingPhotoTab";
+import ShareCardsTab from "./ShareCardsTab";
 // Mapbox needs the browser; the tab only mounts once picked.
 const HomeViewTab = dynamic(() => import("./HomeViewTab"), { ssr: false });
 import { photoAlt } from "@/lib/alt";
@@ -507,8 +508,29 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
   );
   const [saving, setSaving] = useState(false);
   const [rotating, setRotating] = useState(false);
+  const [rebuilding, setRebuilding] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
   const [thumbUrl, setThumbUrl] = useState(photo.thumb_url);
+
+  // A fresh share card under a new URL, for when something on it changed outside this form
+  // (a renamed place, say). Saving a field that's on the card already does this.
+  const rebuildCard = async () => {
+    setRebuilding(true);
+    setStatusMsg("Rebuilding the share card…");
+    try {
+      const res = await fetch("/api/admin/share-cards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: photo.id }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
+      setStatusMsg("Share card rebuilt. The new one is ready in a few seconds, under a new link.");
+    } catch (err: unknown) {
+      setStatusMsg(`Error: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setRebuilding(false);
+    }
+  };
   // Camera details, as typed (numbers are checked on save).
   const [cameraName, setCameraName] = useState(photo.camera ?? "");
   const [lens, setLens] = useState(photo.lens ?? "");
@@ -844,6 +866,26 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
             iso: isoNum ?? null,
           }) ?? "No exposure details."}
         </div>
+
+        <button
+          type="button"
+          onClick={rebuildCard}
+          disabled={rebuilding}
+          style={{
+            width: "100%",
+            padding: "9px",
+            marginBottom: 12,
+            background: "none",
+            color: c.text,
+            border: `1px solid ${c.inputBorder}`,
+            borderRadius: 0,
+            fontSize: 14,
+            cursor: rebuilding ? "not-allowed" : "pointer",
+            opacity: rebuilding ? 0.5 : 1,
+          }}
+        >
+          {rebuilding ? "Rebuilding…" : "Rebuild share card"}
+        </button>
 
         {statusMsg && (
           <p style={{ fontSize: 13, color: statusMsg.startsWith("Error") ? c.danger : c.muted, marginBottom: 12 }}>
@@ -1215,6 +1257,7 @@ const TABS = [
   { id: "home", label: "Home view" },
   { id: "backfill", label: "Camera backfill" },
   { id: "landing", label: "Landing photo" },
+  { id: "cards", label: "Share cards" },
 ] as const;
 
 export default function AdminPage() {
@@ -1247,6 +1290,7 @@ export default function AdminPage() {
         {tab === "home" && <HomeViewTab theme={theme} />}
         {tab === "backfill" && <BackfillTab theme={theme} />}
         {tab === "landing" && <LandingPhotoTab theme={theme} />}
+        {tab === "cards" && <ShareCardsTab theme={theme} />}
       </div>
     </main>
   );
