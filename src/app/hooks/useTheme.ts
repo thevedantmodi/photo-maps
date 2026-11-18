@@ -20,8 +20,14 @@ function subscribe(onChange: () => void) {
 }
 
 function apply(theme: Theme) {
-    document.documentElement.setAttribute('data-theme', theme);
+    const root = document.documentElement;
+    // Transitions off while the colours change (globals.css: .theme-switching), so nothing
+    // fades between themes at its own speed. Two frames covers React re-rendering the
+    // components that read the theme.
+    root.classList.add('theme-switching');
+    root.setAttribute('data-theme', theme);
     listeners.forEach((l) => l());
+    requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove('theme-switching')));
 }
 
 function reducedMotion() {
