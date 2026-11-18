@@ -17,13 +17,19 @@ type Versioned = {
   large_name: string;
   lat: number | null;
   lon: number | null;
+  // The camera and exposure print on the card's edges (the lens does not).
+  camera?: string | null;
+  focal_length_mm?: number | null;
+  f_number?: number | null;
+  exposure_s?: number | null;
+  iso?: number | null;
 };
 
 /**
  * Bumped whenever the card's design changes, so every card re-renders in the new look
  * instead of serving the old one from R2 or the CDN.
  */
-const CARD_DESIGN = 'museum-5'; // museum-5: re-rendered for the move to vedant.photos
+const CARD_DESIGN = 'letterbox-1'; // letterbox-1: photo fitted whole, metadata on the border
 
 export type CardTheme = 'dark' | 'light';
 
@@ -38,6 +44,11 @@ export function shareVersion(photo: Versioned): string {
     photo.large_name,
     photo.lat ?? '',
     photo.lon ?? '',
+    photo.camera ?? '',
+    photo.focal_length_mm ?? '',
+    photo.f_number ?? '',
+    photo.exposure_s ?? '',
+    photo.iso ?? '',
   ].join('\u0000');
 
   let hash = 0x811c9dc5;

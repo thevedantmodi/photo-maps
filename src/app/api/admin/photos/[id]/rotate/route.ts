@@ -54,6 +54,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           lon: row.lon,
           large_name: row.large_name,
           large_url: getPublicUrl(row.large_name),
+          camera: row.camera,
+          focal_length_mm: row.focal_length_mm,
+          f_number: row.f_number,
+          exposure_s: row.exposure_s,
+          iso: row.iso,
         },
         base
       )

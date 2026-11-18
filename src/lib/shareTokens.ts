@@ -11,53 +11,47 @@ export const CARD = {
   height: 1920,
   /**
    * Instagram overlays its caption bar and reply box across roughly the top and bottom 250px
-   * of a story. Nothing readable may sit inside these bands.
+   * of a story. Nothing that matters may sit inside these bands: the caption, place, date
+   * and link run along the side edges between them.
    */
   safeInset: 300,
-  sidePadding: 84,
 } as const;
 
 export const PALETTE = {
-  dark: { bg: '#1c1c1c', ink: '#ededed', muted: '#9a9a9a' },
-  light: { bg: '#ededeb', ink: '#141414', muted: '#636361' },
+  // bar: the letterbox around a photo that doesn't fill its window, a step off the border.
+  dark: { bg: '#1c1c1c', ink: '#ededed', muted: '#9a9a9a', bar: '#0a0a0a' },
+  light: { bg: '#ededeb', ink: '#141414', muted: '#636361', bar: '#dededb' },
 } as const;
 
-export const PHOTO = {
-  maxWidth: CARD.width - 2 * CARD.sidePadding,
-  maxHeight: 900,
-  minHeight: 420,
-  /** Space above and below the photo, between the header rule and the title. */
-  gap: 48,
+/** The border all round the photo window; the metadata is printed along it. */
+export const BORDER = 64;
+
+/**
+ * The window the photo sits in. The photo is fitted inside it, never cropped or upscaled;
+ * whatever it doesn't fill shows as bars.
+ */
+export const WINDOW = {
+  width: CARD.width - 2 * BORDER,
+  height: CARD.height - 2 * BORDER,
+  /** radius-xs × 2.5 */
+  radius: 10,
 } as const;
 
-export const QR = {
-  /** rendered size on the card, including its white tile */
-  tile: 168,
-  padding: 14,
-  /** generated larger, so downsampling stays crisp */
-  renderSize: 560,
-} as const;
-
-/** Lines between the rows of the card are this thick. */
-export const RULE = 2;
+/** Space between the items along one edge. */
+export const EDGE_GAP = 22;
 
 export const TYPE = {
-  name: { fontSize: 44, letterSpacing: -0.9 },
-  year: { fontSize: 32, fontWeight: 600, letterSpacing: 0.6 },
-  /** Title size steps down as captions get longer, so most fit on two lines. */
-  title: [
-    { maxChars: 16, fontSize: 120 },
-    { maxChars: 32, fontSize: 96 },
-    { maxChars: 60, fontSize: 72 },
-    { maxChars: Infinity, fontSize: 56 },
-  ],
-  titleLineHeight: 0.95,
-  titleLetterSpacing: -0.04,
-  row: { fontSize: 32, labelWidth: 260 },
-  urlLabel: { fontSize: 28 },
-  url: { fontSize: 34, fontWeight: 600 },
+  name: { fontSize: 26, letterSpacing: -0.5 },
+  year: { fontSize: 26, fontWeight: 600, letterSpacing: 0.5 },
+  caption: { fontSize: 32, fontWeight: 600, letterSpacing: -0.8 },
+  place: { fontSize: 26 },
+  date: { fontSize: 26 },
+  camera: { fontSize: 24 },
+  /** Geist Mono: the coordinates and the typeable link. */
+  mono: { fontSize: 22 },
 } as const;
 
 export const FONT = {
   sans: 'Geist',
+  mono: 'Geist Mono',
 } as const;
