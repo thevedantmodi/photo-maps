@@ -59,6 +59,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           f_number: row.f_number,
           exposure_s: row.exposure_s,
           iso: row.iso,
+          share_card_nonce: row.share_card_nonce,
         },
         base
       )

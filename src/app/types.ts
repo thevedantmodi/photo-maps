@@ -19,6 +19,7 @@ export interface Photo {
   status: string;
   created_at: string | null;
   share_card_version: string | null;
+  share_card_nonce: number;
   thumb_url: string;
   large_url: string;
 }

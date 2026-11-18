@@ -20,7 +20,8 @@ export function legacyShareCardKey(friendly_name: string): string {
 
 // shareVersion() hashes large_name (the R2 object key), not large_url, so callers need to
 // supply both: large_url to fetch the source bytes, large_name to fingerprint the version.
-export type StorableSharePhoto = ShareCardPhoto & { large_name: string };
+// share_card_nonce is in the version too; leave it out only for a photo never rebuilt.
+export type StorableSharePhoto = ShareCardPhoto & { large_name: string; share_card_nonce?: number };
 
 /**
  * Renders a photo's share cards (dark and light) and stores them in R2, then records the

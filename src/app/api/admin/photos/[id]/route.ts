@@ -87,6 +87,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           large_name: row.large_name,
           large_url: getPublicUrl(row.large_name),
           ...shot,
+          share_card_nonce: row.share_card_nonce,
         },
         base
       )

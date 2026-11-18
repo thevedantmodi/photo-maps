@@ -23,6 +23,8 @@ type Versioned = {
   f_number?: number | null;
   exposure_s?: number | null;
   iso?: number | null;
+  // Bumped by the admin's "Rebuild share card" to force a fresh card.
+  share_card_nonce?: number;
 };
 
 /**
@@ -49,6 +51,8 @@ export function shareVersion(photo: Versioned): string {
     photo.f_number ?? '',
     photo.exposure_s ?? '',
     photo.iso ?? '',
+    // 0 and missing hash alike, so a photo never rebuilt keeps the version it had.
+    photo.share_card_nonce ? String(photo.share_card_nonce) : '',
   ].join('\u0000');
 
   let hash = 0x811c9dc5;
