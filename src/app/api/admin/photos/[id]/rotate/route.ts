@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse, after } from 'next/server';
 import { eq } from 'drizzle-orm';
-import { GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { r2, getPublicUrl } from '@/lib/r2';
 import { db } from '@/db';
 import { photos } from '@/db/schema';
@@ -37,10 +37,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       rotated.clone().resize(1600, 1600, { fit: 'inside' }).jpeg({ quality: 85 }).toBuffer(),
     ]);
 
+    // New keys, not an in-place overwrite: the old public URLs may be cached by the browser/CDN.
+    const version = Date.now().toString(36);
+    const thumbName = `${row.friendly_name}_${version}_thumb.jpg`;
+    const largeName = `${row.friendly_name}_${version}_large.jpg`;
+
     await Promise.all([
-      r2.send(new PutObjectCommand({ Bucket: BUCKET, Key: row.thumb_name, Body: newThumb, ContentType: 'image/jpeg' })),
-      r2.send(new PutObjectCommand({ Bucket: BUCKET, Key: row.large_name, Body: newLarge, ContentType: 'image/jpeg' })),
+      r2.send(new PutObjectCommand({ Bucket: BUCKET, Key: thumbName, Body: newThumb, ContentType: 'image/jpeg' })),
+      r2.send(new PutObjectCommand({ Bucket: BUCKET, Key: largeName, Body: newLarge, ContentType: 'image/jpeg' })),
     ]);
+
+    await db.update(photos).set({ thumb_name: thumbName, large_name: largeName }).where(eq(photos.id, id));
+
+    await Promise.all(
+      [row.thumb_name, row.large_name].map((name) =>
+        r2.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: name })).catch((e) =>
+          console.error('[rotate] could not delete replaced object', name, e),
+        ),
+      ),
+    );
 
     const base = await getBaseUrl(req.headers);
     after(() =>
@@ -52,8 +67,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           date: row.date?.toISOString() ?? null,
           lat: row.lat,
           lon: row.lon,
-          large_name: row.large_name,
-          large_url: getPublicUrl(row.large_name),
+          large_name: largeName,
+          large_url: getPublicUrl(largeName),
           camera: row.camera,
           focal_length_mm: row.focal_length_mm,
           f_number: row.f_number,
@@ -65,7 +80,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       )
     );
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({
+      ok: true,
+      thumb_name: thumbName,
+      large_name: largeName,
+      thumb_url: getPublicUrl(thumbName),
+      large_url: getPublicUrl(largeName),
+    });
   } catch (e) {
     console.error('[rotate error]', e);
     return NextResponse.json({ error: String(e) }, { status: 500 });
