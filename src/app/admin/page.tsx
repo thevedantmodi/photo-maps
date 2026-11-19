@@ -492,9 +492,11 @@ interface EditModalProps {
   theme: Theme;
   onClose: () => void;
   onSaved: (updated: AdminPhoto) => void;
+  // A rotate moves the photo's files to new keys; the parent must learn the new ones.
+  onRotated: (files: Pick<AdminPhoto, "thumb_url">) => void;
 }
 
-function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
+function EditModal({ photo, theme, onClose, onSaved, onRotated }: EditModalProps) {
   const c = colors(theme);
   const mod = useModKey();
   const [caption, setCaption] = useState(photo.caption ?? "");
@@ -664,8 +666,10 @@ function EditModal({ photo, theme, onClose, onSaved }: EditModalProps) {
         const err = await res.json();
         throw new Error(err.error || "Rotation failed");
       }
-      // Bust the cache by appending a timestamp
-      setThumbUrl(`${photo.thumb_url}?t=${Date.now()}`);
+      // The rotated files live under new keys, so the returned URL is already cache-safe.
+      const rotated = await res.json();
+      setThumbUrl(rotated.thumb_url);
+      onRotated({ thumb_url: rotated.thumb_url });
       setStatusMsg("Rotated successfully.");
     } catch (err: unknown) {
       setStatusMsg(`Error: ${err instanceof Error ? err.message : String(err)}`);
@@ -1050,6 +1054,10 @@ function ManageTab({ theme }: { theme: Theme }) {
           theme={theme}
           onClose={() => setEditing(null)}
           onSaved={handleSaved}
+          onRotated={(files) => {
+            setPhotos((prev) => prev.map((p) => (p.id === editing.id ? { ...p, ...files } : p)));
+            setEditing((prev) => (prev ? { ...prev, ...files } : prev));
+          }}
         />
       )}
       <Hint theme={theme} style={{ marginBottom: 12 }}>

@@ -3,6 +3,7 @@ import { GetObjectCommand, PutObjectCommand, DeleteObjectCommand } from '@aws-sd
 import { r2, getPublicUrl } from '@/lib/r2';
 import { db } from '@/db';
 import { photos } from '@/db/schema';
+import { eq } from 'drizzle-orm';
 import sharp from 'sharp';
 import exifr from 'exifr';
 import { EXIF_PARSE_OPTIONS, coercePair, extractExifDate, extractGps } from '@/lib/gps';
@@ -46,8 +47,17 @@ export async function POST(req: NextRequest) {
     for await (const chunk of obj.Body as AsyncIterable<Uint8Array>) chunks.push(chunk);
     const buffer = Buffer.concat(chunks);
 
-    const thumbName = `${friendly_name}_thumb.jpg`;
-    const largeName = `${friendly_name}_large.jpg`;
+    // A new key per upload: re-uploading under an existing friendly_name must not reuse the
+    // old public URL, or the browser/CDN keeps serving the previous bytes.
+    const version = Date.now().toString(36);
+    const thumbName = `${friendly_name}_${version}_thumb.jpg`;
+    const largeName = `${friendly_name}_${version}_large.jpg`;
+
+    const [previous] = await db
+      .select({ thumb_name: photos.thumb_name, large_name: photos.large_name })
+      .from(photos)
+      .where(eq(photos.friendly_name, friendly_name))
+      .limit(1);
 
     const imageBuf = await toSharpInput(buffer);
     const [thumbBuf, largeBuf, exifData] = await Promise.all([
@@ -96,6 +106,19 @@ export async function POST(req: NextRequest) {
         status: 'published',
       },
     });
+
+    // The row now points at the new files; drop the ones it replaced.
+    if (previous) {
+      await Promise.all(
+        [previous.thumb_name, previous.large_name]
+          .filter((name) => name !== thumbName && name !== largeName)
+          .map((name) =>
+            r2.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: name })).catch((e) =>
+              console.error('[process] could not delete replaced object', name, e),
+            ),
+          ),
+      );
+    }
 
     const base = await getBaseUrl(req.headers);
     after(() =>
