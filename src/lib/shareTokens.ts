@@ -37,6 +37,29 @@ export const WINDOW = {
   radius: 10,
 } as const;
 
+/**
+ * The map behind the window (lib/staticMap.ts). Zoom 13 in Mapbox's 512px tiles is about
+ * 7 × 13 km across the window: a city's parks, rivers and street grid, not its buildings.
+ * It is kept faint: a quarter of its colour, then washed most of the way to the bar colour,
+ * so the photo stays the only thing on the card with colour in it.
+ */
+export const MAP = {
+  zoom: 13,
+  saturation: 0.25,
+  /** How much of the bar colour lies over the map, per theme. */
+  veil: { light: 0.86, dark: 0.8 },
+  /** Bars thinner than this (a photo that nearly fills the window) don't get a map. */
+  minBar: 24,
+  timeoutMs: 4000,
+  credit: '© Mapbox © OpenStreetMap',
+} as const;
+
+/** A soft shadow that lifts the photo off the map; none over plain bars. */
+export const PHOTO_SHADOW = {
+  light: '0 20px 50px rgba(0, 0, 0, 0.14)',
+  dark: '0 20px 50px rgba(0, 0, 0, 0.45)',
+} as const;
+
 /** Space between the items along one edge. */
 export const EDGE_GAP = 22;
 
@@ -49,6 +72,8 @@ export const TYPE = {
   camera: { fontSize: 24 },
   /** Geist Mono: the coordinates and the typeable link. */
   mono: { fontSize: 22 },
+  /** The map credit, Geist Mono, at the right of the bottom edge. */
+  credit: { fontSize: 18 },
 } as const;
 
 export const FONT = {

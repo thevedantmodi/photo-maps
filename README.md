@@ -76,6 +76,7 @@ NEXT_PUBLIC_R2_PUBLIC_URL=... # public base URL of the bucket
 
 # Mapbox
 NEXT_PUBLIC_MAPBOX_TOKEN=...
+MAPBOX_STATIC_TOKEN=...       # optional: server-side token for the share card's map, if the public one is URL-restricted
 
 # Admin Basic Auth
 ADMIN_USER=...
