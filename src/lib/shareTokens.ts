@@ -46,8 +46,10 @@ export const WINDOW = {
 export const MAP = {
   zoom: 13,
   saturation: 0.25,
+  /** Blur radius (sigma, px at the card's size) that turns the map's labels into texture. */
+  blur: 2,
   /** How much of the bar colour lies over the map, per theme. */
-  veil: { light: 0.86, dark: 0.8 },
+  veil: { light: 0.88, dark: 0.8 },
   /** Bars thinner than this (a photo that nearly fills the window) don't get a map. */
   minBar: 24,
   timeoutMs: 4000,

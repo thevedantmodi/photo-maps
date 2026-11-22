@@ -259,7 +259,7 @@ export async function renderShareCardPng(
   // it. A photo that (nearly) fills the window has no bars to show it in, so no map.
   const hasBars =
     WINDOW.height - fitted.info.height >= 2 * MAP.minBar || WINDOW.width - fitted.info.width >= 2 * MAP.minBar;
-  const map = hasCoords && hasBars ? await mapBackground(photo.lat!, photo.lon!, theme) : null;
+  const map = hasCoords && hasBars ? await mapBackground(photo.lat!, photo.lon!, theme, base) : null;
 
   const edgeRow = {
     position: 'absolute',
