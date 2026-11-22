@@ -31,7 +31,7 @@ type Versioned = {
  * Bumped whenever the card's design changes, so every card re-renders in the new look
  * instead of serving the old one from R2 or the CDN.
  */
-const CARD_DESIGN = 'letterbox-2'; // letterbox-2: the map of the place in the window's bars
+const CARD_DESIGN = 'letterbox-3'; // letterbox-3: the map actually loads (letterbox-2 cards were stored with plain bars)
 
 export type CardTheme = 'dark' | 'light';
 
