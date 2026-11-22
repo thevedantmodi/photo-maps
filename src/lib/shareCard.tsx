@@ -11,12 +11,14 @@ import { CAMERA, CAMERA_VIEW, equatorPath, globeRadius } from '@/lib/cameraMark'
 import { exposureLine, type CameraDetails } from '@/lib/camera';
 import { photoTitle } from '@/lib/alt';
 import { placeNameFor } from '@/lib/placeName';
-import { BORDER, CARD, EDGE_GAP, FONT, PALETTE, TYPE, WINDOW } from '@/lib/shareTokens';
+import { BORDER, CARD, EDGE_GAP, FONT, MAP, PALETTE, PHOTO_SHADOW, TYPE, WINDOW } from '@/lib/shareTokens';
+import { mapBackground } from '@/lib/staticMap';
 import type { CardTheme } from '@/lib/shareVersion';
 
 /**
  * The card is a "letterbox": the photo fitted whole inside a window, a thin border all
  * round, and the metadata printed along the border like the edge of a strip of film.
+ * Where the photo leaves bars, they show a faint map of where it was taken (staticMap.ts).
  *
  *   top edge     the camera mark and name, the year       (under Instagram's top bar: fine to lose)
  *   left edge    caption · place · camera, reading up     (inside the safe band)
@@ -252,6 +254,13 @@ export async function renderShareCardPng(
     .jpeg({ quality: 85 })
     .toBuffer({ resolveWithObject: true });
 
+  // Where the photo leaves bars and was taken somewhere known, the bars show the map of
+  // that place: one map behind the whole window, centred on the spot, so the photo sits on
+  // it. A photo that (nearly) fills the window has no bars to show it in, so no map.
+  const hasBars =
+    WINDOW.height - fitted.info.height >= 2 * MAP.minBar || WINDOW.width - fitted.info.width >= 2 * MAP.minBar;
+  const map = hasCoords && hasBars ? await mapBackground(photo.lat!, photo.lon!, theme) : null;
+
   const edgeRow = {
     position: 'absolute',
     left: BORDER,
@@ -288,7 +297,20 @@ export async function renderShareCardPng(
           background: colors.bar,
         }}
       >
-        <img src={dataUri(fitted.data, 'image/jpeg')} width={fitted.info.width} height={fitted.info.height} />
+        {map ? (
+          <img
+            src={dataUri(map, 'image/jpeg')}
+            width={WINDOW.width}
+            height={WINDOW.height}
+            style={{ position: 'absolute', top: 0, left: 0 }}
+          />
+        ) : null}
+        <img
+          src={dataUri(fitted.data, 'image/jpeg')}
+          width={fitted.info.width}
+          height={fitted.info.height}
+          style={map ? { boxShadow: PHOTO_SHADOW[theme] } : undefined}
+        />
       </div>
 
       <div style={{ ...edgeRow, top: 0, justifyContent: 'space-between' }}>
@@ -330,6 +352,10 @@ export async function renderShareCardPng(
               {c}
             </div>
           ))}
+          {/* Mapbox's terms ask for visible credit; the static image is fetched without its own. */}
+          {map ? (
+            <div style={{ display: 'flex', marginLeft: 'auto', fontSize: TYPE.credit.fontSize }}>{MAP.credit}</div>
+          ) : null}
         </div>
       ) : null}
     </div>
