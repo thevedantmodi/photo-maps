@@ -6,7 +6,9 @@ import { Resend } from 'resend';
 // the weekly digest broadcasts to.
 export const resend = new Resend(process.env.RESEND_API_KEY);
 
-export const FROM = `Photos by Vedant Modi <digest@${process.env.RESEND_EMAIL_DOMAIN}>`;
+// Hardcoded rather than read from RESEND_EMAIL_DOMAIN: the Marketplace integration owns that
+// variable and it can't be edited in Vercel. The domain must be verified in Resend.
+export const FROM = 'Photos by Vedant Modi <digest@vedant.photos>';
 
 const TOKEN_TTL_MS = 48 * 60 * 60 * 1000;
 
