@@ -5,8 +5,8 @@ import type { Photo } from '@/app/types';
 import type { DigestPhoto } from '@/emails/DigestEmail';
 import { renderDigestEmail } from '@/emails/render';
 import { getBaseUrl } from '@/lib/baseUrl';
-import { getPublishedPhotosSince } from '@/lib/photos';
-import { FROM, resend, segmentId } from '@/lib/subscribe';
+import { getPublishedPhotosSince, getRecentPublishedPhotos } from '@/lib/photos';
+import { FROM, normalizeEmail, resend, segmentId } from '@/lib/subscribe';
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_PHOTOS = 12;
@@ -24,7 +24,17 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const photos = await getPublishedPhotosSince(new Date(Date.now() - WEEK_MS));
+  // Test mode: `?test=you@example.com` sends the digest to that one address only, as a plain
+  // email rather than a broadcast, using the latest photos if the week has none. Same auth.
+  const url = new URL(req.url);
+  const testParam = url.searchParams.get('test');
+  const testTo = testParam === null ? null : normalizeEmail(testParam);
+  if (testParam !== null && !testTo) {
+    return NextResponse.json({ error: 'test must be a valid email address' }, { status: 400 });
+  }
+
+  let photos = await getPublishedPhotosSince(new Date(Date.now() - WEEK_MS));
+  if (photos.length === 0 && testTo) photos = await getRecentPublishedPhotos(MAX_PHOTOS);
   if (photos.length === 0) return NextResponse.json({ sent: false, reason: 'no new photos' });
 
   const base = await getBaseUrl(req.headers);
@@ -43,12 +53,28 @@ export async function GET(req: Request) {
     hero: toDigest(first, first.large_url),
     rest: others.map((p) => toDigest(p, p.thumb_url)),
     more,
-    // Resend swaps this for each recipient's own link when the broadcast goes out.
-    unsubscribeUrl: '{{{RESEND_UNSUBSCRIBE_URL}}}',
+    // Resend swaps this for each recipient's own link when the broadcast goes out. A test
+    // send isn't a broadcast, so it gets a placeholder link instead.
+    unsubscribeUrl: testTo ? `${base}/` : '{{{RESEND_UNSUBSCRIBE_URL}}}',
   });
 
   const subject =
     photos.length === 1 ? '1 new photo on the map' : `${photos.length} new photos on the map`;
+
+  if (testTo) {
+    const { error } = await resend.emails.send({
+      from: FROM,
+      to: [testTo],
+      subject: `[Test] ${subject}`,
+      html,
+      text,
+    });
+    if (error) {
+      console.error('[digest] test send failed', error);
+      return NextResponse.json({ error: error.message }, { status: 502 });
+    }
+    return NextResponse.json({ sent: true, test: true, to: testTo, photos: photos.length });
+  }
 
   // Create and send separately: a failed `send: true` still leaves a draft behind, and a
   // week with no subscribers would add one every run. Drop the draft if the send fails.
